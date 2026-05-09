@@ -12,8 +12,9 @@ import Tokens from "@/pages/tokens";
 import Portfolio from "@/pages/portfolio";
 import Alerts from "@/pages/alerts";
 import History from "@/pages/history";
+import Simulation from "@/pages/simulation";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1 } } });
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/portfolio" component={Portfolio} />
       <Route path="/alerts" component={Alerts} />
       <Route path="/history" component={History} />
+      <Route path="/simulation" component={Simulation} />
       <Route component={NotFound} />
     </Switch>
   );

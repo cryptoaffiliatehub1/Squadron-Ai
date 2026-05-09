@@ -6,6 +6,7 @@ import tokensRouter from "./tokens";
 import botRouter from "./bot";
 import alertsRouter from "./alerts";
 import configRouter from "./config";
+import paperRouter from "./paper";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(tokensRouter);
 router.use(botRouter);
 router.use(alertsRouter);
 router.use(configRouter);
+router.use(paperRouter);
 
 export default router;

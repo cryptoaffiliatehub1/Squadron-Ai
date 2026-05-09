@@ -1,4 +1,3 @@
-
 import { Connection, PublicKey, Keypair, VersionedTransaction } from "@solana/web3.js";
 import bs58 from "bs58";
 import { logger } from "./logger";
@@ -9,8 +8,10 @@ export function getRpcUrl(network: SolanaNetwork = "mainnet"): string {
   if (network === "devnet") {
     return "https://api.devnet.solana.com";
   }
-  const custom = process.env["SOLANA_RPC_URL"];
-  if (custom) return custom;
+  const heliusKey = process.env["HELIUS_API_KEY"] ?? process.env["HELIUS_KEY"];
+  const customRpc = process.env["SOLANA_RPC_URL"] ?? process.env["SOLANA_MAINNET_RPC"];
+  if (customRpc) return customRpc;
+  if (heliusKey) return `https://mainnet.helius-rpc.com/?api-key=${heliusKey}`;
   return "https://api.mainnet-beta.solana.com";
 }
 
@@ -19,7 +20,7 @@ export function getConnection(network: SolanaNetwork = "mainnet"): Connection {
 }
 
 export function getWalletKeypair(): Keypair | null {
-  const pk = process.env["WALLET_PRIVATE_KEY"];
+  const pk = process.env["SOLANA_PRIVATE_KEY"] ?? process.env["PRIVATE_KEY"] ?? process.env["WALLET_PRIVATE_KEY"];
   if (!pk) return null;
   try {
     const decoded = bs58.decode(pk);

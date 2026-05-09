@@ -57,11 +57,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { isMainnet } = useNetwork();
 
   const navItems = [
-    { href: "/", label: "Dashboard", icon: Activity },
-    { href: "/history", label: "Journal", icon: BookOpen },
+    { href: "/", label: "Command", icon: Activity },
+    { href: "/tokens", label: "Radar", icon: Radio },
+    { href: "/simulation", label: "Sim", icon: BookOpen },
     { href: "/portfolio", label: "Portfolio", icon: Briefcase },
     { href: "/alerts", label: "Alerts", icon: Bell },
-    { href: "/tokens", label: "Scanner", icon: Radio },
   ];
 
   const networkRingClass = isMainnet

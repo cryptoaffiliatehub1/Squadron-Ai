@@ -1,22 +1,35 @@
 import { Router } from "express";
-import { startBot, stopBot, getBotState } from "../lib/bot";
+import { startBot, stopBot, getBotState, getFullSystemState } from "../lib/bot";
+import { getReadinessReport } from "../lib/systemReadiness";
+import { getCircuitState, resetFortress, humanOverride, engageFortress } from "../lib/circuitBreaker";
+import { getMoonbags, getTotalMoonbagValueSol } from "../lib/moonbagVault";
+import { getScannerState } from "../lib/scanner";
+import { getWatchdogState } from "../lib/watchdog";
+import { getRegime } from "../lib/marketRegime";
+import { getWalletState } from "../lib/walletWatcher";
+import { isSystemAtRisk, getWeights } from "../lib/feedbackLoop";
+import { stopBot as _stop } from "../lib/bot";
 import { logger } from "../lib/logger";
 
 const router = Router();
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const HELIUS_KEY = process.env.HELIUS_KEY;
-
-router.get("/bot/status", (req, res) => {
+router.get("/bot/status", (_req, res) => {
   const state = getBotState();
+  const wallet = getWalletState();
+  const circuit = getCircuitState();
   res.json({
     isRunning: state.isRunning,
     capitalRulePct: 20,
     safetyFilter: "Good",
     tradesExecutedToday: state.tradesExecutedToday,
     lastActivity: state.lastActivity ? state.lastActivity.toISOString() : null,
-    walletConfigured: !!PRIVATE_KEY,
-    helisConfigured: !!HELIUS_KEY,
+    walletConfigured: !!process.env["SOLANA_PRIVATE_KEY"] || !!process.env["PRIVATE_KEY"],
+    heliusConfigured: !!process.env["HELIUS_API_KEY"] || !!process.env["HELIUS_KEY"],
+    paperMode: process.env["PAPER_TRADE"] !== "false",
+    walletStatus: wallet.status,
+    circuitState: circuit.state,
+    conservativeMode: circuit.conservativeMode,
+    dailyGainPct: circuit.dailyGainPct,
   });
 });
 
@@ -35,13 +48,63 @@ router.post("/bot/toggle", (req, res) => {
   const state = getBotState();
   res.json({
     isRunning: state.isRunning,
-    capitalRulePct: 20,
-    safetyFilter: "Good",
     tradesExecutedToday: state.tradesExecutedToday,
     lastActivity: state.lastActivity ? state.lastActivity.toISOString() : null,
-    walletConfigured: !!PRIVATE_KEY,
-    helisConfigured: !!HELIUS_KEY,
   });
+});
+
+router.get("/system/status", (_req, res) => {
+  res.json(getFullSystemState());
+});
+
+router.get("/system/readiness", (_req, res) => {
+  res.json(getReadinessReport());
+});
+
+router.post("/system/kill-switch", (req, res) => {
+  logger.warn("KILL SWITCH ACTIVATED — stopping all trading activity");
+  stopBot();
+  engageFortress("Manual kill switch activated by operator");
+  res.json({ success: true, message: "Kill switch engaged — all positions halted, scanner stopped" });
+});
+
+router.post("/system/reset-fortress", (_req, res) => {
+  resetFortress();
+  res.json({ success: true, message: "Fortress reset — manual confirmation accepted" });
+});
+
+router.post("/system/human-override", (_req, res) => {
+  humanOverride();
+  res.json({ success: true, message: "Human override recorded — 2-hour psychological lockout active" });
+});
+
+router.get("/moonbags", (_req, res) => {
+  const moonbags = getMoonbags();
+  res.json({
+    count: moonbags.length,
+    totalValueSol: getTotalMoonbagValueSol(),
+    positions: moonbags,
+  });
+});
+
+router.get("/regime", (_req, res) => {
+  res.json(getRegime());
+});
+
+router.get("/circuit", (_req, res) => {
+  res.json(getCircuitState());
+});
+
+router.get("/scanner/status", (_req, res) => {
+  res.json(getScannerState());
+});
+
+router.get("/watchdog/status", (_req, res) => {
+  res.json(getWatchdogState());
+});
+
+router.get("/weights", (_req, res) => {
+  res.json({ weights: getWeights(), systemAtRisk: isSystemAtRisk() });
 });
 
 export default router;
