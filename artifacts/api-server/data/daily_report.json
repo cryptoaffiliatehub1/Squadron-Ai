@@ -1,0 +1,13 @@
+{
+  "date": "2026-05-09",
+  "totalTrades": 0,
+  "wins": 0,
+  "losses": 0,
+  "winRate": 0,
+  "avgWinSol": 0,
+  "avgLossSol": 0,
+  "expectancy": 0,
+  "topFailureReason": "none",
+  "totalPnlSol": 0,
+  "isPaperMode": true
+}
