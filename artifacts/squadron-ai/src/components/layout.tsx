@@ -52,9 +52,13 @@ function TopHUD() {
   );
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
+interface LayoutProps {
+  children: React.ReactNode;
+  modeRingClass?: string;
+}
+
+export function Layout({ children, modeRingClass }: LayoutProps) {
   const [location] = useLocation();
-  const { isMainnet } = useNetwork();
 
   const navItems = [
     { href: "/", label: "Command", icon: Activity },
@@ -64,12 +68,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/alerts", label: "Alerts", icon: Bell },
   ];
 
-  const networkRingClass = isMainnet
-    ? "ring-[3px] ring-inset ring-destructive shadow-[inset_0_0_24px_rgba(239,68,68,0.25)]"
-    : "ring-[2px] ring-inset ring-yellow-400/50";
+  const ringClass = modeRingClass ?? "ring-[2px] ring-inset ring-yellow-400/50";
 
   return (
-    <div className={`min-h-screen bg-background text-foreground flex flex-col font-mono pb-16 ${networkRingClass}`}>
+    <div className={`min-h-screen bg-background text-foreground flex flex-col font-mono pb-16 ${ringClass}`}>
       <div className="terminal-scanline pointer-events-none" />
       <TopHUD />
       <main className="flex-1 overflow-x-hidden overflow-y-auto">{children}</main>

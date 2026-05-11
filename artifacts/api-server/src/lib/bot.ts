@@ -12,6 +12,7 @@ import { startFeedbackLoop, stopFeedbackLoop, isSystemAtRisk, getWeights } from 
 import { startWalletWatcher, stopWalletWatcher, getWalletState } from "./walletWatcher";
 import { startReportingEngine } from "./reporting";
 import { logReadinessReport } from "./systemReadiness";
+import { loadTradingMode } from "./tradingMode";
 import type { DexToken } from "./dexScreener";
 
 export interface BotState {
@@ -146,6 +147,7 @@ export function stopBot(): void {
 }
 
 export function initializeOrchestrator(): void {
+  loadTradingMode();
   logReadinessReport();
   startReportingEngine();
 

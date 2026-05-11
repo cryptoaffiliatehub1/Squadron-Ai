@@ -61,7 +61,15 @@ function writeJson(file: string, data: unknown): void {
 }
 
 export function isPaperMode(): boolean {
-  return process.env["PAPER_TRADE"] !== "false";
+  // Delegate to tradingMode module — env var is no longer the source of truth
+  try {
+    // Dynamic import to avoid circular deps at module load time
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { isPaperMode: tm } = require("./tradingMode") as { isPaperMode: () => boolean };
+    return tm();
+  } catch {
+    return true; // safe default
+  }
 }
 
 export function recordPaperTrade(trade: PaperTrade): void {
