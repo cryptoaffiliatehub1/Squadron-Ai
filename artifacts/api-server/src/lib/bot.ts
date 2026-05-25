@@ -1,5 +1,6 @@
 import { logger } from "./logger";
 import { db, skippedTokensTable, detectedTokensTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { runRiskGate, calculateProbabilityScore } from "./riskGate";
 import { analyzeTokenSentiment } from "./aiAnalyst";
 import { classifyRegime, getRegime, isHibernating } from "./marketRegime";
@@ -12,7 +13,7 @@ import { startFeedbackLoop, stopFeedbackLoop, isSystemAtRisk, getWeights } from 
 import { startWalletWatcher, stopWalletWatcher, getWalletState } from "./walletWatcher";
 import { startReportingEngine } from "./reporting";
 import { logReadinessReport } from "./systemReadiness";
-import { loadTradingMode } from "./tradingMode";
+import { loadTradingMode, isPaperMode } from "./tradingMode";
 import type { DexToken } from "./dexScreener";
 
 export interface BotState {
@@ -45,12 +46,15 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
 
   logger.info({ mint: token.tokenMint, symbol: token.tokenSymbol }, "[SCANNING] New token discovered");
 
+  // Initial insert — pending status, with all available data
   await db.insert(detectedTokensTable).values({
     tokenMint: token.tokenMint,
     tokenSymbol: token.tokenSymbol ?? "?",
     tokenName: token.tokenName ?? "Unknown",
+    logoUrl: token.logoUrl ?? null,
     safetyStatus: "pending",
     liquidityUsd: String(token.liquidityUsd ?? 0),
+    volume5m: String(token.volume5m ?? 0),
     mintRevoked: false,
     buyTxns5m: token.buyTxns5m ?? 0,
     sellTxns5m: token.sellTxns5m ?? 0,
@@ -64,8 +68,10 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       tokenMint: token.tokenMint,
       tokenSymbol: token.tokenSymbol ?? "?",
       tokenName: token.tokenName ?? "Unknown",
+      logoUrl: token.logoUrl ?? null,
       reason: riskResult.reasons.join("; "),
       safetyScore: String(riskResult.score),
+      liquidityUsd: String(token.liquidityUsd ?? 0),
     }).onConflictDoNothing().catch(() => {});
     return;
   }
@@ -98,6 +104,12 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     getWalletState().solPriceUsd || 150,
     probabilityScore,
   );
+
+  // Update detected token with final score and status
+  await db.update(detectedTokensTable)
+    .set({ safetyStatus: "good", probabilityScore })
+    .where(eq(detectedTokensTable.tokenMint, token.tokenMint))
+    .catch(() => {});
 
   if (positionSize.amountSol < 0.001) {
     logger.info({ positionSize }, "Position too small — skipping");
@@ -171,6 +183,7 @@ export function getFullSystemState() {
     systemAtRisk: isSystemAtRisk(),
     walletConfigured: !!process.env["SOLANA_PRIVATE_KEY"],
     heliusConfigured: !!process.env["HELIUS_API_KEY"],
-    paperMode: process.env["PAPER_TRADE"] !== "false",
+    // FIX 8: use isPaperMode() from tradingMode — not PAPER_TRADE env var
+    paperMode: isPaperMode(),
   };
 }

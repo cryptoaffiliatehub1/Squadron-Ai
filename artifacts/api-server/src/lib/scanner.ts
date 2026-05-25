@@ -45,67 +45,189 @@ function failover(to: ScannerSource, reason: string): void {
   logger.warn({ from, to, reason }, `[SCANNER_FAILOVER] ${from} → ${to}: ${reason}`);
 }
 
-async function probeDexScreener(): Promise<boolean> {
+// ── FIX 1: Rebuild DEX Screener parser ──────────────────────────────────────
+// Step 1: fetch token-profiles to get boosted/trending token addresses + icons
+// Step 2: batch-fetch /latest/dex/tokens/{addresses} for full pair data
+// Step 3: merge and parse — never discard a token, use safe defaults for nulls
+// Secondary fallback: search endpoint where pairs come at top level
+
+interface ProfileRaw {
+  chainId: string;
+  tokenAddress: string;
+  icon?: string;
+  symbol?: string;
+  name?: string;
+}
+
+interface PairDataRaw {
+  chainId: string;
+  dexId?: string;
+  pairAddress?: string;
+  baseToken?: { address?: string; name?: string; symbol?: string };
+  priceUsd?: string;
+  liquidity?: { usd?: number };
+  volume?: { h24?: number; m5?: number };
+  priceChange?: { h24?: number };
+  txns?: { m5?: { buys?: number; sells?: number } };
+  pairCreatedAt?: number;
+  info?: { imageUrl?: string };
+  boosts?: { active?: number };
+}
+
+function parsePairToToken(
+  tokenAddress: string,
+  pair: PairDataRaw | undefined,
+  profile: ProfileRaw,
+): Partial<DexToken> {
+  const logoUrl = pair?.info?.imageUrl ?? profile?.icon ?? "";
+  return {
+    tokenMint: tokenAddress,
+    tokenSymbol: pair?.baseToken?.symbol ?? profile?.symbol ?? "?",
+    tokenName: pair?.baseToken?.name ?? profile?.name ?? "Unknown",
+    logoUrl: logoUrl || undefined,
+    liquidityUsd: parseFloat(String(pair?.liquidity?.usd ?? 0)) || 0,
+    priceUsd: parseFloat(pair?.priceUsd ?? "0") || 0,
+    volume24h: Number(pair?.volume?.h24 ?? 0),
+    volume5m: parseFloat(String(pair?.volume?.m5 ?? 0)) || 0,
+    priceChange24h: Number(pair?.priceChange?.h24 ?? 0),
+    pairAddress: pair?.pairAddress ?? "",
+    dexId: pair?.dexId ?? "dexscreener",
+    chainId: "solana",
+    createdAt: pair?.pairCreatedAt ?? Date.now(),
+    isBoosted: (pair?.boosts?.active ?? 0) > 0,
+    isTrending: true,
+    buyTxns5m: pair?.txns?.m5?.buys ?? 0,
+    sellTxns5m: pair?.txns?.m5?.sells ?? 0,
+  };
+}
+
+async function fetchPairsForAddresses(addresses: string[]): Promise<Map<string, PairDataRaw>> {
+  const pairsMap = new Map<string, PairDataRaw>();
+  if (addresses.length === 0) return pairsMap;
+
+  // Batch in groups of 30 (DEX Screener limit)
+  const chunks: string[][] = [];
+  for (let i = 0; i < addresses.length; i += 30) {
+    chunks.push(addresses.slice(i, i + 30));
+  }
+
+  await Promise.allSettled(
+    chunks.map(async (chunk) => {
+      const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
+        `https://api.dexscreener.com/latest/dex/tokens/${chunk.join(",")}`,
+        { headers: getRotatedHeaders(), timeout: 12_000 },
+      );
+      for (const pair of resp.data?.pairs ?? []) {
+        if (pair?.chainId !== "solana") continue;
+        const addr = pair?.baseToken?.address;
+        if (!addr) continue;
+        // Keep the highest-liquidity pair for each token
+        const existing = pairsMap.get(addr);
+        if (!existing || (pair.liquidity?.usd ?? 0) > (existing.liquidity?.usd ?? 0)) {
+          pairsMap.set(addr, pair);
+        }
+      }
+    }),
+  );
+
+  return pairsMap;
+}
+
+async function searchFallbackParser(): Promise<Partial<DexToken>[]> {
+  // Secondary fallback: search endpoint where pairs array comes at the top level
   try {
-    const resp = await axios.get("https://api.dexscreener.com/token-profiles/latest/v1", {
-      headers: getRotatedHeaders(),
-      timeout: 8000,
-      validateStatus: (s) => s < 400,
-    });
-    state.lastDexProbe = new Date();
-    return resp.status === 200;
+    const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
+      "https://api.dexscreener.com/latest/dex/search?q=solana&order=h6_volume",
+      { headers: getRotatedHeaders(), timeout: 10_000 },
+    );
+    const pairs = resp.data?.pairs ?? [];
+    return pairs
+      .filter((p) => p?.chainId === "solana")
+      .slice(0, 30)
+      .map((p) => parsePairToToken(p?.baseToken?.address ?? "", p, {} as ProfileRaw));
   } catch {
-    return false;
+    return [];
   }
 }
 
 async function scanDexScreener(): Promise<Partial<DexToken>[]> {
   try {
-    const resp = await axios.get<{ pairs?: unknown[] }>(
+    const profileResp = await axios.get<ProfileRaw[] | unknown>(
       "https://api.dexscreener.com/token-profiles/latest/v1",
       { headers: getRotatedHeaders(), timeout: 10_000 },
     );
 
-    if (resp.status === 429 || resp.status === 403 || resp.status === 500) {
+    if (profileResp.status === 429 || profileResp.status === 403 || profileResp.status === 500) {
       state.dexScreenerRateLimited = true;
       state.dexScreenerRateLimitedUntil = new Date(Date.now() + 10 * 60 * 1000);
-      failover("pumpfun", `DEX Screener returned ${resp.status}`);
+      failover("pumpfun", `DEX Screener returned ${profileResp.status}`);
       return [];
     }
 
-    const profiles = Array.isArray(resp.data) ? resp.data : [];
+    const profiles: ProfileRaw[] = Array.isArray(profileResp.data) ? profileResp.data : [];
+    const solanaProfiles = profiles.filter((p) => p?.chainId === "solana");
+
+    if (solanaProfiles.length === 0) {
+      // No profiles → try search endpoint fallback
+      const fallback = await searchFallbackParser();
+      if (fallback.length > 0) {
+        state.lastSuccessfulScan = new Date();
+        return fallback;
+      }
+      return [];
+    }
+
+    // Step 2: batch-fetch pair data for full details
+    const addresses = solanaProfiles
+      .map((p) => p.tokenAddress)
+      .filter((a): a is string => !!a);
+
+    const pairsMap = await fetchPairsForAddresses(addresses);
+
     state.lastSuccessfulScan = new Date();
 
-    return profiles
-      .filter((p: any) => p?.chainId === "solana")
-      .map((p: any) => ({
-        tokenMint: p?.tokenAddress ?? "",
-        tokenSymbol: p?.symbol ?? "?",
-        tokenName: p?.name ?? "Unknown",
-        liquidityUsd: 0,
-        priceUsd: 0,
-        volume24h: 0,
-        volume5m: 0,
-        priceChange24h: 0,
-        pairAddress: "",
-        dexId: "dexscreener",
-        chainId: "solana",
-        createdAt: Date.now(),
-        isBoosted: true,
-        isTrending: true,
-        buyTxns5m: 0,
-        sellTxns5m: 0,
-      }));
+    // Step 3: build token list — never discard, safe defaults for nulls
+    const tokens = solanaProfiles.map((profile) => {
+      const addr = profile.tokenAddress ?? "";
+      const pair = pairsMap.get(addr);
+      return parsePairToToken(addr, pair, profile);
+    });
+
+    // FIX 1: Log first 3 successfully parsed tokens to confirm parser works
+    tokens.slice(0, 3).forEach((t, i) => {
+      logger.info(
+        {
+          index: i + 1,
+          name: t.tokenName,
+          symbol: t.tokenSymbol,
+          liquidityUsd: t.liquidityUsd,
+          volume5m: t.volume5m,
+          mint: t.tokenMint?.slice(0, 8),
+        },
+        `[PARSER_CHECK] Token ${i + 1} parsed successfully`,
+      );
+    });
+
+    return tokens;
   } catch (err: any) {
     const status = err?.response?.status;
     if (status === 429 || status === 403 || status === 500) {
       state.dexScreenerRateLimited = true;
       state.dexScreenerRateLimitedUntil = new Date(Date.now() + 10 * 60 * 1000);
       failover("pumpfun", `DEX Screener HTTP ${status}`);
+    } else {
+      logger.warn({ err: err?.message }, "[SCANNER] DEX Screener scan error — trying search fallback");
+      // Try search fallback before giving up
+      const fallback = await searchFallbackParser();
+      if (fallback.length > 0) {
+        state.lastSuccessfulScan = new Date();
+        return fallback;
+      }
     }
     return [];
   }
 }
+// ── End FIX 1 ────────────────────────────────────────────────────────────────
 
 async function scanBirdeye(): Promise<Partial<DexToken>[]> {
   const key = process.env["BIRDEYE_API_KEY"];
@@ -121,6 +243,7 @@ async function scanBirdeye(): Promise<Partial<DexToken>[]> {
       tokenMint: t.address ?? "",
       tokenSymbol: t.symbol ?? "?",
       tokenName: t.name ?? "Unknown",
+      logoUrl: t.logoURI ?? undefined,
       liquidityUsd: t.liquidity ?? 0,
       priceUsd: t.price ?? 0,
       volume24h: t.volume24h ?? 0,
@@ -138,6 +261,20 @@ async function scanBirdeye(): Promise<Partial<DexToken>[]> {
   } catch (err) {
     logger.warn({ err }, "[SCANNER] Birdeye scan failed");
     return [];
+  }
+}
+
+async function probeDexScreener(): Promise<boolean> {
+  try {
+    const resp = await axios.get("https://api.dexscreener.com/token-profiles/latest/v1", {
+      headers: getRotatedHeaders(),
+      timeout: 8000,
+      validateStatus: (s) => s < 400,
+    });
+    state.lastDexProbe = new Date();
+    return resp.status === 200;
+  } catch {
+    return false;
   }
 }
 
@@ -162,8 +299,9 @@ function connectPumpFun(): void {
             tokenMint: data.mint,
             tokenSymbol: data.symbol ?? "?",
             tokenName: data.name ?? "Unknown",
+            logoUrl: data.imageUri ?? undefined,
             liquidityUsd: data.vSolInBondingCurve ?? 0,
-            priceUsd: data.traderPublicKey ? 0 : 0,
+            priceUsd: 0,
             volume24h: 0,
             volume5m: 0,
             priceChange24h: 0,
@@ -184,11 +322,9 @@ function connectPumpFun(): void {
       state.pumpFunConnected = false;
       pumpFunWs = null;
       state.wsReconnectAttempts++;
-
       if (state.wsReconnectAttempts > 3 && state.activeSource === "pumpfun") {
         failover("birdeye", "Pump.fun WebSocket failed repeatedly");
       }
-
       setTimeout(() => connectPumpFun(), Math.min(5000 * state.wsReconnectAttempts, 30000));
     };
 
@@ -208,7 +344,11 @@ function connectPumpFun(): void {
 async function runScanCycle(): Promise<void> {
   let tokens: Partial<DexToken>[] = [];
 
-  if (state.dexScreenerRateLimited && state.dexScreenerRateLimitedUntil && Date.now() > state.dexScreenerRateLimitedUntil.getTime()) {
+  if (
+    state.dexScreenerRateLimited &&
+    state.dexScreenerRateLimitedUntil &&
+    Date.now() > state.dexScreenerRateLimitedUntil.getTime()
+  ) {
     state.dexScreenerRateLimited = false;
     failover("dexscreener", "Rate limit window expired — resuming DEX Screener");
   }
@@ -228,12 +368,17 @@ async function runScanCycle(): Promise<void> {
   if (onToken) {
     for (const token of tokens) {
       if (token.tokenMint) {
-        await onToken(token).catch((err) => logger.error({ err, mint: token.tokenMint }, "Scanner: token callback error"));
+        await onToken(token).catch((err) =>
+          logger.error({ err, mint: token.tokenMint }, "Scanner: token callback error"),
+        );
       }
     }
   }
 
-  logger.info({ source: state.activeSource, tokenCount: tokens.length }, `[SCANNING] Scan cycle complete`);
+  logger.info(
+    { source: state.activeSource, tokenCount: tokens.length },
+    `[SCANNING] Scan cycle complete`,
+  );
 }
 
 function scheduleDailyReset(): void {
@@ -257,7 +402,10 @@ export function startTripleRadarScanner(callback: TokenCallback): void {
   onToken = callback;
 
   runScanCycle().catch((e) => logger.error({ e }, "Scanner: initial cycle failed"));
-  scanInterval = setInterval(() => runScanCycle().catch((e) => logger.error({ e }, "Scanner cycle error")), 8_000);
+  scanInterval = setInterval(
+    () => runScanCycle().catch((e) => logger.error({ e }, "Scanner cycle error")),
+    8_000,
+  );
 
   probeInterval = setInterval(async () => {
     if (state.activeSource !== "dexscreener") {
@@ -268,7 +416,9 @@ export function startTripleRadarScanner(callback: TokenCallback): void {
 
   scheduleDailyReset();
   setScannerOnline(true);
-  logger.info("[SCANNER] Triple-radar scanner started — DEX Screener primary, Pump.fun secondary, Birdeye tertiary");
+  logger.info(
+    "[SCANNER] Triple-radar scanner started — DEX Screener primary, Pump.fun secondary, Birdeye tertiary",
+  );
 }
 
 export function stopTripleRadarScanner(): void {

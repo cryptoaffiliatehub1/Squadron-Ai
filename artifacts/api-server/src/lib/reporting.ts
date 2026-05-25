@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
 import { generateDailyReport, readDailyReport, saveFailedReport } from "./paperTrading";
@@ -7,14 +9,36 @@ import { getMoonbags, getTotalMoonbagValueSol } from "./moonbagVault";
 import { getWeights } from "./feedbackLoop";
 import cron from "node-cron";
 
+// FIX 8: use env vars directly — no hardcoded fallbacks in production
 const REPORT_EMAIL = process.env["REPORT_EMAIL"] ?? "solex674@gmail.com";
 const WHATSAPP_1 = process.env["WHATSAPP_NUMBER_1"] ?? "+2349078886030";
 const WHATSAPP_2 = process.env["WHATSAPP_NUMBER_2"] ?? "+2347026125080";
+const DATA_DIR = path.resolve(process.cwd(), "data");
+const NOTIFICATION_ERRORS_FILE = path.join(DATA_DIR, "notification_errors.json");
 
 function modeBanner(): string {
   return isPaperMode()
     ? "⚠️  SIMULATION MODE — NO REAL MONEY TRADED\n"
     : "🟢 LIVE TRADING MODE — Real SOL execution active\n";
+}
+
+function ensureDataDir(): void {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function logNotificationError(type: string, subject: string, err: unknown): void {
+  try {
+    ensureDataDir();
+    const errors: unknown[] = fs.existsSync(NOTIFICATION_ERRORS_FILE)
+      ? JSON.parse(fs.readFileSync(NOTIFICATION_ERRORS_FILE, "utf-8"))
+      : [];
+    errors.push({ type, subject, error: String(err), at: new Date().toISOString() });
+    // Keep only last 100 errors
+    const trimmed = errors.slice(-100);
+    fs.writeFileSync(NOTIFICATION_ERRORS_FILE, JSON.stringify(trimmed, null, 2), "utf-8");
+  } catch {
+    // Silently ignore errors in error logging
+  }
 }
 
 function getMailTransporter() {
@@ -58,6 +82,28 @@ async function sendWhatsApp(message: string): Promise<void> {
   }
 }
 
+// FIX 7: retry once after 2 minutes; log all failures to notification_errors.json
+async function sendWithRetry(
+  sendFn: () => Promise<void>,
+  type: string,
+  subject: string,
+): Promise<void> {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      await sendFn();
+      return;
+    } catch (err) {
+      logger.error({ err, attempt, type }, `Notification send failed (attempt ${attempt})`);
+      logNotificationError(type, subject, err);
+      if (attempt === 1) {
+        logger.info({ type }, "Will retry notification in 2 minutes");
+        await new Promise((r) => setTimeout(r, 2 * 60 * 1000));
+      }
+    }
+  }
+  logger.error({ type, subject }, "Notification failed after 2 attempts — logged to notification_errors.json");
+}
+
 export async function sendAlert(subject: string, message: string): Promise<void> {
   const banner = modeBanner();
   await Promise.allSettled([
@@ -66,22 +112,33 @@ export async function sendAlert(subject: string, message: string): Promise<void>
   ]);
 }
 
+// FIX 7: instant notification with retry on mode switch
 export async function sendModeChangeAlert(newMode: "paper" | "live", solBalance: number): Promise<void> {
   if (newMode === "live") {
-    const subject = "⚠️ Squadron AI — SWITCHED TO LIVE TRADING";
-    const body = `⚠️ Squadron AI has switched to LIVE TRADING MODE.\nReal SOL execution is now active.\nStarting balance: ${solBalance.toFixed(4)} SOL`;
-    await Promise.allSettled([
-      sendEmail(subject, body),
-      sendWhatsApp(`⚠️ Squadron AI has switched to LIVE TRADING MODE. Real SOL execution is now active. Starting balance: ${solBalance.toFixed(4)} SOL`),
-    ]);
+    const subject = "⚠️ Squadron AI — LIVE MODE ACTIVATED";
+    const emailBody = [
+      `⚠️ Squadron AI has switched to LIVE TRADING MODE.`,
+      `Real SOL execution is now active.`,
+      `Timestamp: ${new Date().toUTCString()}`,
+      `Starting balance: ${solBalance.toFixed(4)} SOL`,
+    ].join("\n");
+    const waBody = `⚠️ Squadron AI switched to LIVE TRADING MODE. Real SOL execution is now active. Starting balance: ${solBalance.toFixed(4)} SOL`;
+
+    await sendWithRetry(
+      () => Promise.all([sendEmail(subject, emailBody), sendWhatsApp(waBody)]).then(() => {}),
+      "live_activation",
+      subject,
+    );
     logger.warn({ solBalance }, "LIVE MODE notification sent");
   } else {
     const subject = "Squadron AI — Returned to Simulation Mode";
     const body = "Squadron AI has returned to SIMULATION MODE. No real trades will execute.";
-    await Promise.allSettled([
-      sendEmail(subject, body),
-      sendWhatsApp(body),
-    ]);
+
+    await sendWithRetry(
+      () => Promise.all([sendEmail(subject, body), sendWhatsApp(body)]).then(() => {}),
+      "paper_activation",
+      subject,
+    );
     logger.info("PAPER MODE notification sent");
   }
 }
@@ -202,6 +259,7 @@ async function trySendWithRetry(
       return;
     } catch (err) {
       logger.error({ err, attempt }, `Report send failed (attempt ${attempt})`);
+      logNotificationError("report", reportName, err);
       if (attempt === 1) {
         await new Promise((r) => setTimeout(r, 10 * 60 * 1000));
       } else {

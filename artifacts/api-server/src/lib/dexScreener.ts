@@ -8,6 +8,7 @@ export interface DexToken {
   tokenMint: string;
   tokenName: string;
   tokenSymbol: string;
+  logoUrl?: string;
   liquidityUsd: number;
   priceUsd: number;
   volume24h: number;

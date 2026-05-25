@@ -2,6 +2,7 @@ import { logger } from "./logger";
 import { getSolBalance, getWalletPublicKey } from "./solana";
 import { initializeBalances, updateBalance } from "./circuitBreaker";
 import { sendAlert } from "./reporting";
+import { isPaperMode } from "./tradingMode";
 
 const MIN_BALANCE_FOR_START = 0.00005;
 const LOW_BALANCE_WARN = 0.001;
@@ -107,7 +108,8 @@ async function checkWallet(): Promise<void> {
 
       state.status = "ACTIVE";
 
-      const isPaper = process.env["PAPER_TRADE"] !== "false";
+      // FIX 8: use isPaperMode() from tradingMode — not PAPER_TRADE env var
+      const isPaper = isPaperMode();
       await sendAlert(
         "Squadron AI is now LIVE",
         `Squadron AI is now ${isPaper ? "PAPER TRADING" : "LIVE"} — Starting balance: ${solBalance.toFixed(4)} SOL ($${state.usdBalance.toFixed(2)})`,

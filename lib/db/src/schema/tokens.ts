@@ -8,8 +8,10 @@ export const skippedTokensTable = pgTable("skipped_tokens", {
   tokenMint: text("token_mint").notNull(),
   tokenName: text("token_name").notNull(),
   tokenSymbol: text("token_symbol").notNull(),
+  logoUrl: text("logo_url"),
   reason: text("reason").notNull(),
   safetyScore: text("safety_score"),
+  liquidityUsd: numeric("liquidity_usd", { precision: 20, scale: 2 }),
   detectedAt: timestamp("detected_at").notNull().defaultNow(),
 });
 
@@ -18,12 +20,15 @@ export const detectedTokensTable = pgTable("detected_tokens", {
   tokenMint: text("token_mint").notNull(),
   tokenName: text("token_name").notNull(),
   tokenSymbol: text("token_symbol").notNull(),
+  logoUrl: text("logo_url"),
   safetyStatus: safetyStatusEnum("safety_status").notNull().default("pending"),
   marketCap: numeric("market_cap", { precision: 20, scale: 2 }),
   liquidityUsd: numeric("liquidity_usd", { precision: 20, scale: 2 }),
+  volume5m: numeric("volume_5m", { precision: 20, scale: 2 }),
   mintRevoked: boolean("mint_revoked"),
   buyTxns5m: integer("buy_txns_5m"),
   sellTxns5m: integer("sell_txns_5m"),
+  probabilityScore: integer("probability_score"),
   detectedAt: timestamp("detected_at").notNull().defaultNow(),
 });
 

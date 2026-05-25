@@ -12,22 +12,62 @@ import type { PositionSize } from "./positionSizer";
 
 export const REBATE_ADDRESS = "3hR4Yzj9Swno23rMja4Z8f13ButU39sh9NsMvHM9Gmwi";
 const EARLY_LAUNCH_MIN = 10;
-const JITO_BASE_TIP = 0.005;
-const JITO_NORMAL_MIN = 0.00001;
-const JITO_NORMAL_MAX = 0.00005;
 const TAKE_PROFIT_MULTIPLIER = 2.5;
 const MOONBAG_FRACTION = 0.5;
+const TIP_TARGET_USD = 0.10;       // $0.10 per trade
+const TIP_EARLY_USD = 0.20;        // $0.20 for tokens <10 min old
+const TIP_JITTER_PCT = 0.05;       // ±5%
+const TIP_FALLBACK_SOL = 0.0005;   // safe minimum if price fetch fails
 
 function isEarlyLaunch(createdAt: number): boolean {
   return (Date.now() - createdAt) / 60_000 < EARLY_LAUNCH_MIN;
 }
 
-function calculateJitoTip(createdAt: number, recentFeesMean = 0.000025): number {
-  const early = isEarlyLaunch(createdAt);
-  if (early) return JITO_BASE_TIP;
-  const jitter = Math.random() * (JITO_NORMAL_MAX - JITO_NORMAL_MIN) + JITO_NORMAL_MIN;
-  return recentFeesMean * 1.15 + jitter;
+// ── FIX 9: Dynamic Jito tip — $0.10 (or $0.20 early) / current SOL price ────
+async function fetchSolPriceUsd(): Promise<number> {
+  const key = process.env["BIRDEYE_API_KEY"];
+  if (!key) {
+    // Fallback: Jupiter price API (no key needed)
+    try {
+      const resp = await axios.get<{ data: Record<string, { price: number }> }>(
+        "https://price.jup.ag/v6/price?ids=So11111111111111111111111111111111111111112",
+        { timeout: 3_000 },
+      );
+      const price = resp.data?.data?.["So11111111111111111111111111111111111111112"]?.price;
+      if (price && price > 0) return price;
+    } catch {}
+    return 150;
+  }
+  try {
+    const resp = await axios.get(
+      "https://public-api.birdeye.so/defi/price?address=So11111111111111111111111111111111111111112",
+      { headers: { "X-API-KEY": key }, timeout: 3_000 },
+    );
+    const price = resp.data?.data?.value ?? 0;
+    return price > 0 ? price : 150;
+  } catch {
+    return 150;
+  }
 }
+
+async function calculateJitoTip(createdAt: number): Promise<number> {
+  try {
+    const solPrice = await fetchSolPriceUsd();
+    const targetUsd = isEarlyLaunch(createdAt) ? TIP_EARLY_USD : TIP_TARGET_USD;
+    const baseTip = targetUsd / solPrice;
+    const jitter = baseTip * TIP_JITTER_PCT * (Math.random() * 2 - 1);
+    const tip = Math.max(baseTip + jitter, TIP_FALLBACK_SOL);
+    logger.info(
+      { targetUsd, solPrice, tipSol: tip.toFixed(6) },
+      `[JITO_TIP] Dynamic tip: $${targetUsd.toFixed(2)} = ${tip.toFixed(6)} SOL @ $${solPrice.toFixed(2)}/SOL`,
+    );
+    return tip;
+  } catch {
+    logger.warn("[JITO_TIP] Price fetch failed — using fallback tip");
+    return TIP_FALLBACK_SOL;
+  }
+}
+// ── End FIX 9 ────────────────────────────────────────────────────────────────
 
 export async function executeBuy(
   token: DexToken,
@@ -37,9 +77,12 @@ export async function executeBuy(
   filterDetails: Record<string, boolean | string>,
 ): Promise<{ success: boolean; txSignature?: string; tradeId?: number }> {
   const paper = isPaperMode();
-  const tip = calculateJitoTip(token.createdAt);
+  const tip = await calculateJitoTip(token.createdAt);
 
-  logger.info({ mint: token.tokenMint, symbol: token.tokenSymbol, amountSol: positionSize.amountSol, tip, paper }, "[JUPITER_QUOTE] Requesting quote");
+  logger.info(
+    { mint: token.tokenMint, symbol: token.tokenSymbol, amountSol: positionSize.amountSol, tip, paper },
+    "[JUPITER_QUOTE] Requesting quote",
+  );
 
   const quote = await getQuote(token.tokenMint, positionSize.amountSol);
   if (!quote) {
@@ -72,7 +115,10 @@ export async function executeBuy(
     });
 
     incrementOpenPositions();
-    logger.info({ mint: token.tokenMint, symbol: token.tokenSymbol, amountSol: positionSize.amountSol }, "[PAPER_TRADE] BUY simulated");
+    logger.info(
+      { mint: token.tokenMint, symbol: token.tokenSymbol, amountSol: positionSize.amountSol },
+      "[PAPER_TRADE] BUY simulated",
+    );
     return { success: true, txSignature: `paper_${tradeId}` };
   }
 
@@ -163,7 +209,10 @@ export async function executeGoldenExit(
   });
 
   decrementOpenPositions();
-  logger.info({ tradeId, moonbagTokens: remainingTokens, symbol: token.tokenSymbol }, "Moonbag created — cost basis = 0");
+  logger.info(
+    { tradeId, moonbagTokens: remainingTokens, symbol: token.tokenSymbol },
+    "Moonbag created — cost basis = 0",
+  );
 }
 
 export async function checkLiquidityDrop(
@@ -174,7 +223,10 @@ export async function checkLiquidityDrop(
   if (prevLiquidityUsd <= 0) return;
   const dropPct = ((prevLiquidityUsd - currentLiquidityUsd) / prevLiquidityUsd) * 100;
   if (dropPct >= 35) {
-    logger.warn({ tokenMint, dropPct }, "LIQUIDITY ALERT: Pool dropped ≥35% — firing emergency Jito exit for all moonbag positions");
+    logger.warn(
+      { tokenMint, dropPct },
+      "LIQUIDITY ALERT: Pool dropped ≥35% — firing emergency Jito exit for all moonbag positions",
+    );
     const moonbags = getMoonbags().filter((m) => m.tokenMint === tokenMint);
     for (const m of moonbags) {
       removeMoonbag(m.id);
