@@ -1,0 +1,2 @@
+- [UI Architecture — Header toggles](ui-header-toggles.md) — BOT chip + MODE chip in Layout; BotContext is global; network label reads from API not local state.
+- [UI Architecture — Alerts page](ui-alerts-page.md) — Events tab assembled client-side from history/skipped/circuit/wallet APIs; Price Alerts tab uses existing CRUD routes.

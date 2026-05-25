@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NetworkProvider } from "@/contexts/network";
 import { TradingModeProvider } from "@/contexts/trading-mode";
+import { BotProvider } from "@/contexts/bot";
 import NotFound from "@/pages/not-found";
 
 import Dashboard from "@/pages/dashboard";
@@ -39,10 +40,12 @@ function App() {
       <TooltipProvider>
         <NetworkProvider>
           <TradingModeProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
+            <BotProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </BotProvider>
           </TradingModeProvider>
         </NetworkProvider>
       </TooltipProvider>
