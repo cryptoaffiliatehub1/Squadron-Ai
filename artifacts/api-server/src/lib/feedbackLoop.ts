@@ -1,6 +1,7 @@
 import { logger } from "./logger";
 import { logWeightChange, generateDailyReport, isPaperMode } from "./paperTrading";
 import { recordOutcome } from "./marketRegime";
+import { recordRugMissed } from "./sessionStats";
 
 export interface ScoringWeights {
   rugcheck: number;
@@ -35,12 +36,17 @@ export function classifyLoss(category: "rug" | "exit_lag" | "volume_trap" | "reg
 
   if (category === "rug") {
     recordOutcome("rug");
+    recordRugMissed(); // Track rug that slipped through risk gate
   }
 }
 
 export function classifyWin(): void {
   lossCategories.push(undefined as unknown as "rug");
   recordOutcome("win");
+}
+
+export function getSessionRugMissedCount(): number {
+  return lossCategories.filter((c) => c === "rug").length;
 }
 
 export async function runPostMortem(): Promise<void> {

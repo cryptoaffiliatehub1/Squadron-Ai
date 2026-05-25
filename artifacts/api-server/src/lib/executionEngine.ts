@@ -7,6 +7,7 @@ import { getMoonbags, addMoonbag, removeMoonbag } from "./moonbagVault";
 import { decrementOpenPositions, incrementOpenPositions } from "./positionSizer";
 import { recordOutcome } from "./marketRegime";
 import { recordTradeResult, updateBalance } from "./circuitBreaker";
+import { recordJitoTip } from "./sessionStats";
 import type { DexToken } from "./dexScreener";
 import type { PositionSize } from "./positionSizer";
 
@@ -14,20 +15,19 @@ export const REBATE_ADDRESS = "3hR4Yzj9Swno23rMja4Z8f13ButU39sh9NsMvHM9Gmwi";
 const EARLY_LAUNCH_MIN = 10;
 const TAKE_PROFIT_MULTIPLIER = 2.5;
 const MOONBAG_FRACTION = 0.5;
-const TIP_TARGET_USD = 0.10;       // $0.10 per trade
-const TIP_EARLY_USD = 0.20;        // $0.20 for tokens <10 min old
-const TIP_JITTER_PCT = 0.05;       // ±5%
-const TIP_FALLBACK_SOL = 0.0005;   // safe minimum if price fetch fails
+const TIP_TARGET_USD = 0.10;     // $0.10 per normal trade
+const TIP_EARLY_USD = 0.20;      // $0.20 for tokens <10 min old
+const TIP_JITTER_PCT = 0.05;     // ±5% jitter
+const TIP_FALLBACK_SOL = 0.0005; // safe minimum if price fetch fails
 
 function isEarlyLaunch(createdAt: number): boolean {
   return (Date.now() - createdAt) / 60_000 < EARLY_LAUNCH_MIN;
 }
 
-// ── FIX 9: Dynamic Jito tip — $0.10 (or $0.20 early) / current SOL price ────
+// ── Dynamic Jito tip: $0.10 (or $0.20 early) / SOL_price with ±5% jitter ────
 async function fetchSolPriceUsd(): Promise<number> {
   const key = process.env["BIRDEYE_API_KEY"];
   if (!key) {
-    // Fallback: Jupiter price API (no key needed)
     try {
       const resp = await axios.get<{ data: Record<string, { price: number }> }>(
         "https://price.jup.ag/v6/price?ids=So11111111111111111111111111111111111111112",
@@ -59,7 +59,7 @@ async function calculateJitoTip(createdAt: number): Promise<number> {
     const tip = Math.max(baseTip + jitter, TIP_FALLBACK_SOL);
     logger.info(
       { targetUsd, solPrice, tipSol: tip.toFixed(6) },
-      `[JITO_TIP] Dynamic tip: $${targetUsd.toFixed(2)} = ${tip.toFixed(6)} SOL @ $${solPrice.toFixed(2)}/SOL`,
+      `[JITO_TIP] $${targetUsd} = ${tip.toFixed(6)} SOL @ $${solPrice.toFixed(2)}/SOL`,
     );
     return tip;
   } catch {
@@ -67,7 +67,6 @@ async function calculateJitoTip(createdAt: number): Promise<number> {
     return TIP_FALLBACK_SOL;
   }
 }
-// ── End FIX 9 ────────────────────────────────────────────────────────────────
 
 export async function executeBuy(
   token: DexToken,
@@ -78,6 +77,9 @@ export async function executeBuy(
 ): Promise<{ success: boolean; txSignature?: string; tradeId?: number }> {
   const paper = isPaperMode();
   const tip = await calculateJitoTip(token.createdAt);
+
+  // Track Jito tip in session stats for reporting
+  recordJitoTip(tip);
 
   logger.info(
     { mint: token.tokenMint, symbol: token.tokenSymbol, amountSol: positionSize.amountSol, tip, paper },
@@ -154,7 +156,8 @@ export async function executeGoldenExit(
   currentPrice: number,
   tokensHeld: number,
 ): Promise<void> {
-  const currentMultiplier = entryAmountSol > 0 ? (tokensHeld * currentPrice) / entryAmountSol : 0;
+  const currentMultiplier =
+    entryAmountSol > 0 ? (tokensHeld * currentPrice) / entryAmountSol : 0;
 
   if (currentMultiplier < TAKE_PROFIT_MULTIPLIER) return;
 

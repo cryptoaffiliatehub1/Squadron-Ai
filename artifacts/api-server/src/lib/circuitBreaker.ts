@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { recordCircuitBreakerTrigger, recordConservativeMode } from "./sessionStats";
 
 export type CircuitState =
   | "NORMAL"
@@ -21,6 +22,8 @@ interface CircuitBreakerState {
   humanOverrideAt: Date | null;
   killSwitchHistory: Array<{ at: string; reason: string }>;
   dayStartAt: Date;
+  fortressTriggerCount: number;
+  conservativeModeTriggerCount: number;
 }
 
 const DAILY_GAIN_TARGET_PCT = 5;
@@ -42,6 +45,8 @@ const state: CircuitBreakerState = {
   humanOverrideAt: null,
   killSwitchHistory: [],
   dayStartAt: new Date(),
+  fortressTriggerCount: 0,
+  conservativeModeTriggerCount: 0,
 };
 
 export function initializeBalances(balance: number): void {
@@ -64,21 +69,32 @@ export function updateBalance(newBalance: number): void {
 function _checkThresholds(): void {
   if (state.state === "FORTRESS_LOCKED" || state.state === "GLOBAL_FLOOR_HIT") return;
 
-  if (state.startOfLifeBalance !== null && state.currentBalance < state.startOfLifeBalance * (GLOBAL_FLOOR_PCT / 100)) {
+  if (
+    state.startOfLifeBalance !== null &&
+    state.currentBalance < state.startOfLifeBalance * (GLOBAL_FLOOR_PCT / 100)
+  ) {
     state.state = "GLOBAL_FLOOR_HIT";
     state.reason = `Balance dropped below ${GLOBAL_FLOOR_PCT}% of starting balance (${state.startOfLifeBalance.toFixed(4)} SOL). MANUAL RESTART REQUIRED.`;
-    logger.error({ balance: state.currentBalance, floor: state.startOfLifeBalance }, "GLOBAL FLOOR HIT — MANUAL RESTART REQUIRED");
+    logger.error(
+      { balance: state.currentBalance, floor: state.startOfLifeBalance },
+      "GLOBAL FLOOR HIT — MANUAL RESTART REQUIRED",
+    );
     return;
   }
 
-  if (state.dailyGainPct <= -DAILY_LOSS_LIMIT_PCT && state.state !== "FORTRESS_LOCKED") {
+  if (state.dailyGainPct <= -DAILY_LOSS_LIMIT_PCT) {
     engageFortress(`Daily loss limit of ${DAILY_LOSS_LIMIT_PCT}% reached`);
     return;
   }
 
   if (state.dailyGainPct >= DAILY_GAIN_TARGET_PCT && !state.conservativeMode) {
     state.conservativeMode = true;
-    logger.info({ dailyGainPct: state.dailyGainPct }, `Daily ${DAILY_GAIN_TARGET_PCT}% target achieved — switching to Conservative Mode`);
+    state.conservativeModeTriggerCount++;
+    recordConservativeMode();
+    logger.info(
+      { dailyGainPct: state.dailyGainPct },
+      `Daily ${DAILY_GAIN_TARGET_PCT}% target achieved — switching to Conservative Mode`,
+    );
   }
 
   if (state.currentBalance < 0.001) {
@@ -97,6 +113,8 @@ export function engageFortress(reason: string): void {
   state.reason = reason;
   state.lockedUntil = new Date(Date.now() + 12 * 60 * 60 * 1000);
   state.killSwitchHistory.push({ at: new Date().toISOString(), reason });
+  state.fortressTriggerCount++;
+  recordCircuitBreakerTrigger();
   logger.error({ reason, lockedUntil: state.lockedUntil }, "FORTRESS LOCKED: DAILY LOSS LIMIT REACHED");
 }
 
@@ -155,7 +173,15 @@ export function resetDay(): void {
 
 export function canTrade(): boolean {
   if (state.lockedUntil && Date.now() < state.lockedUntil.getTime()) return false;
-  return state.state === "NORMAL" || state.state === "LOW_BALANCE_PAUSE" === false;
+  return state.state === "NORMAL" || state.state === "OBSERVATION_MODE";
+}
+
+export function isHibernating(): boolean {
+  return (
+    state.state === "FORTRESS_LOCKED" ||
+    state.state === "GLOBAL_FLOOR_HIT" ||
+    state.state === "PSYCHOLOGICAL_LOCKOUT"
+  );
 }
 
 export function getMaxEntryPct(): number {

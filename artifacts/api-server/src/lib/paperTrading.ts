@@ -33,6 +33,9 @@ export interface DailyReport {
   expectancy: number;
   topFailureReason: string;
   totalPnlSol: number;
+  // Biggest trades
+  biggestWin: { tokenSymbol: string; multiplier: number; pnlSol: number } | null;
+  biggestLoss: { tokenSymbol: string; pnlSol: number; reason: string } | null;
   isPaperMode: boolean;
 }
 
@@ -61,14 +64,12 @@ function writeJson(file: string, data: unknown): void {
 }
 
 export function isPaperMode(): boolean {
-  // Delegate to tradingMode module — env var is no longer the source of truth
+  // Delegate to tradingMode — env var is no longer source of truth
   try {
-    // Dynamic import to avoid circular deps at module load time
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { isPaperMode: tm } = require("./tradingMode") as { isPaperMode: () => boolean };
     return tm();
   } catch {
-    return true; // safe default
+    return true;
   }
 }
 
@@ -89,29 +90,55 @@ export function getPaperTrades(): PaperTrade[] {
 
 export function generateDailyReport(): DailyReport {
   const trades = getPaperTrades();
-  const today = new Date().toISOString().split("T")[0];
-  const todayTrades = trades.filter((t) => t.exitTimestamp?.startsWith(today) || t.timestamp.startsWith(today));
+  const today = new Date().toISOString().split("T")[0]!;
+  const todayTrades = trades.filter(
+    (t) => t.exitTimestamp?.startsWith(today) || t.timestamp.startsWith(today),
+  );
 
   const sells = todayTrades.filter((t) => t.type === "sell" && t.pnlSol !== null);
   const wins = sells.filter((t) => (t.pnlSol ?? 0) > 0);
   const losses = sells.filter((t) => (t.pnlSol ?? 0) <= 0);
 
-  const avgWin = wins.length > 0 ? wins.reduce((s, t) => s + (t.pnlSol ?? 0), 0) / wins.length : 0;
-  const avgLoss = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + (t.pnlSol ?? 0), 0) / losses.length) : 0;
+  const avgWin =
+    wins.length > 0 ? wins.reduce((s, t) => s + (t.pnlSol ?? 0), 0) / wins.length : 0;
+  const avgLoss =
+    losses.length > 0
+      ? Math.abs(losses.reduce((s, t) => s + (t.pnlSol ?? 0), 0) / losses.length)
+      : 0;
   const winRate = sells.length > 0 ? wins.length / sells.length : 0;
   const expectancy = avgWin * winRate - avgLoss * (1 - winRate);
 
   const failReasons: Record<string, number> = {};
   todayTrades.forEach((t) => {
     Object.entries(t.filterDetails).forEach(([k, v]) => {
-      if (v === false) {
-        failReasons[k] = (failReasons[k] ?? 0) + 1;
-      }
+      if (v === false) failReasons[k] = (failReasons[k] ?? 0) + 1;
     });
   });
-  const topFailureReason = Object.entries(failReasons).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "none";
-
+  const topFailureReason =
+    Object.entries(failReasons).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "none";
   const totalPnlSol = sells.reduce((s, t) => s + (t.pnlSol ?? 0), 0);
+
+  // Biggest win/loss
+  let biggestWin: DailyReport["biggestWin"] = null;
+  let biggestLoss: DailyReport["biggestLoss"] = null;
+
+  if (wins.length > 0) {
+    const best = wins.reduce((a, b) => ((a.pnlSol ?? 0) >= (b.pnlSol ?? 0) ? a : b));
+    const multiplier =
+      best.entryPrice > 0 && best.exitPrice !== null
+        ? (best.amountSol + (best.pnlSol ?? 0)) / best.amountSol
+        : 0;
+    biggestWin = { tokenSymbol: best.tokenSymbol, multiplier, pnlSol: best.pnlSol ?? 0 };
+  }
+
+  if (losses.length > 0) {
+    const worst = losses.reduce((a, b) => ((a.pnlSol ?? 0) <= (b.pnlSol ?? 0) ? a : b));
+    const reason =
+      Object.entries(worst.filterDetails)
+        .filter(([, v]) => v === false)
+        .map(([k]) => k)[0] ?? "exit";
+    biggestLoss = { tokenSymbol: worst.tokenSymbol, pnlSol: worst.pnlSol ?? 0, reason };
+  }
 
   const report: DailyReport = {
     date: today,
@@ -124,6 +151,8 @@ export function generateDailyReport(): DailyReport {
     expectancy,
     topFailureReason,
     totalPnlSol,
+    biggestWin,
+    biggestLoss,
     isPaperMode: isPaperMode(),
   };
 
@@ -135,14 +164,23 @@ export function readDailyReport(): DailyReport | null {
   return readJson<DailyReport | null>(DAILY_REPORT_FILE, null);
 }
 
-export function logWeightChange(change: { timestamp: string; reason: string; weights: Record<string, number> }): void {
+export function logWeightChange(change: {
+  timestamp: string;
+  reason: string;
+  weights: Record<string, number>;
+}): void {
   const history = readJson<unknown[]>(WEIGHTS_FILE, []);
   history.push(change);
   writeJson(WEIGHTS_FILE, history);
+}
+
+export function readWeightsHistory(): unknown[] {
+  return readJson<unknown[]>(WEIGHTS_FILE, []);
 }
 
 export function saveFailedReport(name: string, content: string): void {
   ensureDir(FAILED_REPORTS_DIR);
   const file = path.join(FAILED_REPORTS_DIR, `report_${name}.txt`);
   fs.writeFileSync(file, content, "utf-8");
+  logger.info({ file }, "Failed report saved to disk");
 }

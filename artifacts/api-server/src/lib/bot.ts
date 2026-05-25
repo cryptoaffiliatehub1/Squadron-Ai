@@ -14,6 +14,7 @@ import { startWalletWatcher, stopWalletWatcher, getWalletState } from "./walletW
 import { startReportingEngine } from "./reporting";
 import { logReadinessReport } from "./systemReadiness";
 import { loadTradingMode, isPaperMode } from "./tradingMode";
+import { recordSkippedToken } from "./sessionStats";
 import type { DexToken } from "./dexScreener";
 
 export interface BotState {
@@ -29,6 +30,24 @@ const state: BotState = {
 };
 
 const seenMints = new Set<string>();
+
+// ── Rug detection heuristic for skip reason ────────────────────────────────
+const RUG_SIGNALS = [
+  "rugcheck",
+  "freeze",
+  "mint authority",
+  "ghost volume",
+  "wash trade",
+  "supply audit",
+  "holder",
+  "birdeye",
+  "freeze or mint",
+];
+
+function isLikelyRug(reasons: string[]): boolean {
+  const combined = reasons.join(" ").toLowerCase();
+  return RUG_SIGNALS.some((s) => combined.includes(s));
+}
 
 async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void> {
   if (!rawToken.tokenMint || seenMints.has(rawToken.tokenMint)) return;
@@ -46,7 +65,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
 
   logger.info({ mint: token.tokenMint, symbol: token.tokenSymbol }, "[SCANNING] New token discovered");
 
-  // Initial insert — pending status, with all available data
+  // Initial insert — pending, with all available scanner data
   await db.insert(detectedTokensTable).values({
     tokenMint: token.tokenMint,
     tokenSymbol: token.tokenSymbol ?? "?",
@@ -64,6 +83,10 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
 
   if (!riskResult.passed) {
     logger.info({ mint: token.tokenMint, reasons: riskResult.reasons }, "[AUDIT_FAIL] Token failed risk gate");
+
+    // Count rug catches for reporting
+    recordSkippedToken(isLikelyRug(riskResult.reasons));
+
     await db.insert(skippedTokensTable).values({
       tokenMint: token.tokenMint,
       tokenSymbol: token.tokenSymbol ?? "?",
@@ -105,7 +128,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     probabilityScore,
   );
 
-  // Update detected token with final score and status
+  // Update detected token with final score and approved status
   await db.update(detectedTokensTable)
     .set({ safetyStatus: "good", probabilityScore })
     .where(eq(detectedTokensTable.tokenMint, token.tokenMint))
@@ -183,7 +206,6 @@ export function getFullSystemState() {
     systemAtRisk: isSystemAtRisk(),
     walletConfigured: !!process.env["SOLANA_PRIVATE_KEY"],
     heliusConfigured: !!process.env["HELIUS_API_KEY"],
-    // FIX 8: use isPaperMode() from tradingMode — not PAPER_TRADE env var
     paperMode: isPaperMode(),
   };
 }
