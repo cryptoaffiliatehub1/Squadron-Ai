@@ -53,23 +53,16 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
   if (!rawToken.tokenMint || seenMints.has(rawToken.tokenMint)) return;
   seenMints.add(rawToken.tokenMint);
 
-  if (!state.isRunning) return;
-  if (!canTrade() || isHibernating()) return;
-  if (!canOpenNewPosition()) {
-    logger.info("Max open positions reached — skipping new token");
-    return;
-  }
-
   const token = rawToken as DexToken;
-  state.lastActivity = new Date();
 
-  logger.info({ mint: token.tokenMint, symbol: token.tokenSymbol }, "[SCANNING] New token discovered");
-
-  // Initial insert — pending, with all available scanner data
+  // Always record every scanned token in DB so the Radar page shows live data
+  // even when the bot is not actively trading.
+  // Note: no unique constraint on token_mint in schema — seenMints set above
+  // prevents duplicates within a session, so a plain insert is safe here.
   await db.insert(detectedTokensTable).values({
     tokenMint: token.tokenMint,
     tokenSymbol: token.tokenSymbol ?? "?",
-    tokenName: token.tokenName ?? "Unknown",
+    tokenName: token.tokenName ?? token.tokenMint.slice(0, 8),
     logoUrl: token.logoUrl ?? null,
     safetyStatus: "pending",
     liquidityUsd: String(token.liquidityUsd ?? 0),
@@ -77,7 +70,19 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     mintRevoked: false,
     buyTxns5m: token.buyTxns5m ?? 0,
     sellTxns5m: token.sellTxns5m ?? 0,
-  }).onConflictDoNothing().catch(() => {});
+  }).catch(() => {});
+
+  // Trading logic only runs when the bot is active
+  if (!state.isRunning) return;
+  if (!canTrade() || isHibernating()) return;
+  if (!canOpenNewPosition()) {
+    logger.info("Max open positions reached — skipping new token");
+    return;
+  }
+
+  state.lastActivity = new Date();
+
+  logger.info({ mint: token.tokenMint, symbol: token.tokenSymbol }, "[SCANNING] New token discovered");
 
   const riskResult = await runRiskGate(token);
 
@@ -166,25 +171,28 @@ export function startBot(): void {
   seenMints.clear();
   classifyRegime();
 
-  startTripleRadarScanner(handleDiscoveredToken);
+  // Scanner already running from initializeOrchestrator — just start trading subsystems
   startWatchdog(handleDiscoveredToken);
   startFeedbackLoop();
 
-  logger.info("Trading bot started — scanner, watchdog, and feedback loop active");
+  logger.info("Trading bot started — watchdog and feedback loop active");
 }
 
 export function stopBot(): void {
   state.isRunning = false;
-  stopTripleRadarScanner();
   stopWatchdog();
   stopFeedbackLoop();
-  logger.info("Trading bot stopped");
+  // Scanner keeps running so Radar page stays live even when bot is off
+  logger.info("Trading bot stopped — scanner remains active for radar display");
 }
 
 export function initializeOrchestrator(): void {
   loadTradingMode();
   logReadinessReport();
   startReportingEngine();
+
+  // Start scanner immediately — Radar shows live tokens regardless of bot/wallet state
+  startTripleRadarScanner(handleDiscoveredToken);
 
   startWalletWatcher(async () => {
     logger.info("Wallet funded — auto-starting bot");
