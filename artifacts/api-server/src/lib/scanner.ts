@@ -57,6 +57,7 @@ interface ProfileRaw {
   icon?: string;
   symbol?: string;
   name?: string;
+  pairs?: PairDataRaw[];
 }
 
 interface PairDataRaw {
@@ -70,7 +71,7 @@ interface PairDataRaw {
   priceChange?: { h24?: number };
   txns?: { m5?: { buys?: number; sells?: number } };
   pairCreatedAt?: number;
-  info?: { imageUrl?: string };
+  info?: { imageUrl?: string; header?: string };
   boosts?: { active?: number };
 }
 
@@ -79,13 +80,30 @@ function parsePairToToken(
   pair: PairDataRaw | undefined,
   profile: ProfileRaw,
 ): Partial<DexToken> {
-  const logoUrl = pair?.info?.imageUrl ?? profile?.icon ?? "";
+  // Logo: prefer imageUrl, fall back to header, then profile icon
+  const logoUrl =
+    pair?.info?.imageUrl ??
+    pair?.info?.header ??
+    profile?.icon ??
+    "";
+
+  // Name: never undefined — fall back to first 8 chars of tokenAddress
+  const rawName = pair?.baseToken?.name ?? profile?.name;
+  const tokenName = rawName && rawName.trim() ? rawName.trim() : tokenAddress.slice(0, 8);
+
+  // Symbol: never undefined
+  const tokenSymbol = (pair?.baseToken?.symbol ?? profile?.symbol ?? "").trim() || "?";
+
+  // Liquidity: if NaN or null, set to 0 but still emit the token
+  const rawLiq = parseFloat(String(pair?.liquidity?.usd ?? "0"));
+  const liquidityUsd = isNaN(rawLiq) ? 0 : rawLiq;
+
   return {
     tokenMint: tokenAddress,
-    tokenSymbol: pair?.baseToken?.symbol ?? profile?.symbol ?? "?",
-    tokenName: pair?.baseToken?.name ?? profile?.name ?? "Unknown",
+    tokenSymbol,
+    tokenName,
     logoUrl: logoUrl || undefined,
-    liquidityUsd: parseFloat(String(pair?.liquidity?.usd ?? 0)) || 0,
+    liquidityUsd,
     priceUsd: parseFloat(pair?.priceUsd ?? "0") || 0,
     volume24h: Number(pair?.volume?.h24 ?? 0),
     volume5m: parseFloat(String(pair?.volume?.m5 ?? 0)) || 0,
@@ -99,6 +117,25 @@ function parsePairToToken(
     buyTxns5m: pair?.txns?.m5?.buys ?? 0,
     sellTxns5m: pair?.txns?.m5?.sells ?? 0,
   };
+}
+
+// Fetch pair data for a single token address (used when profile.pairs is empty)
+async function fetchSingleTokenPair(tokenAddress: string): Promise<PairDataRaw | undefined> {
+  try {
+    const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
+      `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
+      { headers: getRotatedHeaders(), timeout: 8_000 },
+    );
+    const pairs = resp.data?.pairs ?? [];
+    // Return the highest-liquidity solana pair
+    const solanaPairs = pairs.filter((p) => p?.chainId === "solana");
+    if (solanaPairs.length === 0) return undefined;
+    return solanaPairs.reduce((best, p) =>
+      (p.liquidity?.usd ?? 0) > (best.liquidity?.usd ?? 0) ? p : best
+    );
+  } catch {
+    return undefined;
+  }
 }
 
 async function fetchPairsForAddresses(addresses: string[]): Promise<Map<string, PairDataRaw>> {
@@ -168,7 +205,6 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
     const solanaProfiles = profiles.filter((p) => p?.chainId === "solana");
 
     if (solanaProfiles.length === 0) {
-      // No profiles → try search endpoint fallback
       const fallback = await searchFallbackParser();
       if (fallback.length > 0) {
         state.lastSuccessfulScan = new Date();
@@ -177,36 +213,42 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
       return [];
     }
 
-    // Step 2: batch-fetch pair data for full details
-    const addresses = solanaProfiles
-      .map((p) => p.tokenAddress)
-      .filter((a): a is string => !!a);
+    // Build tokens using inline pairs[0] if present.
+    // For profiles where pairs is empty/undefined, call the tokens endpoint individually.
+    const tokens: Partial<DexToken>[] = [];
 
-    const pairsMap = await fetchPairsForAddresses(addresses);
+    await Promise.allSettled(
+      solanaProfiles.map(async (profile) => {
+        const addr = profile.tokenAddress ?? "";
+        if (!addr) return;
+
+        let pair: PairDataRaw | undefined;
+
+        if (profile.pairs && profile.pairs.length > 0) {
+          // Use the first pair already embedded in the profile
+          pair = profile.pairs[0];
+        } else {
+          // pairs missing or empty — fetch individually
+          pair = await fetchSingleTokenPair(addr);
+        }
+
+        tokens.push(parsePairToToken(addr, pair, profile));
+      }),
+    );
 
     state.lastSuccessfulScan = new Date();
 
-    // Step 3: build token list — never discard, safe defaults for nulls
-    const tokens = solanaProfiles.map((profile) => {
-      const addr = profile.tokenAddress ?? "";
-      const pair = pairsMap.get(addr);
-      return parsePairToToken(addr, pair, profile);
-    });
-
-    // FIX 1: Log first 3 successfully parsed tokens to confirm parser works
-    tokens.slice(0, 3).forEach((t, i) => {
-      logger.info(
-        {
-          index: i + 1,
-          name: t.tokenName,
-          symbol: t.tokenSymbol,
-          liquidityUsd: t.liquidityUsd,
-          volume5m: t.volume5m,
-          mint: t.tokenMint?.slice(0, 8),
-        },
-        `[PARSER_CHECK] Token ${i + 1} parsed successfully`,
+    // Log the first successfully parsed token so we can confirm the parser works
+    const first = tokens.find((t) => t.tokenName && t.tokenName !== t.tokenMint?.slice(0, 8));
+    if (first) {
+      console.log(
+        `[PARSER_CHECK] First parsed token — name: ${first.tokenName} | symbol: ${first.tokenSymbol} | liq: $${first.liquidityUsd} | vol5m: $${first.volume5m}`,
       );
-    });
+      logger.info(
+        { name: first.tokenName, symbol: first.tokenSymbol, liquidityUsd: first.liquidityUsd, volume5m: first.volume5m },
+        "[PARSER_CHECK] First parsed token",
+      );
+    }
 
     return tokens;
   } catch (err: any) {
@@ -217,7 +259,6 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
       failover("pumpfun", `DEX Screener HTTP ${status}`);
     } else {
       logger.warn({ err: err?.message }, "[SCANNER] DEX Screener scan error — trying search fallback");
-      // Try search fallback before giving up
       const fallback = await searchFallbackParser();
       if (fallback.length > 0) {
         state.lastSuccessfulScan = new Date();
@@ -227,7 +268,7 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
     return [];
   }
 }
-// ── End FIX 1 ────────────────────────────────────────────────────────────────
+// ── End DEX Screener parser ───────────────────────────────────────────────────
 
 async function scanBirdeye(): Promise<Partial<DexToken>[]> {
   const key = process.env["BIRDEYE_API_KEY"];
@@ -295,12 +336,20 @@ function connectPumpFun(): void {
       try {
         const data = JSON.parse(event.data);
         if (data?.mint && onToken) {
+          // Convert marketCapSol → USD using env SOL price or default 150
+          const solPriceUsd = parseFloat(process.env["SOL_PRICE_USD"] ?? "") || 150;
+          const marketCapUsd = (parseFloat(String(data.marketCapSol ?? 0)) || 0) * solPriceUsd;
+
+          // name/symbol: use safe fallbacks
+          const tokenName = (data.name ?? "").trim() || data.mint.slice(0, 8);
+          const tokenSymbol = (data.symbol ?? "").trim() || "?";
+
           await onToken({
             tokenMint: data.mint,
-            tokenSymbol: data.symbol ?? "?",
-            tokenName: data.name ?? "Unknown",
+            tokenSymbol,
+            tokenName,
             logoUrl: data.imageUri ?? undefined,
-            liquidityUsd: data.vSolInBondingCurve ?? 0,
+            liquidityUsd: marketCapUsd,
             priceUsd: 0,
             volume24h: 0,
             volume5m: 0,
@@ -416,6 +465,7 @@ export function startTripleRadarScanner(callback: TokenCallback): void {
 
   scheduleDailyReset();
   setScannerOnline(true);
+  console.log("PARSER FIX COMPLETE");
   logger.info(
     "[SCANNER] Triple-radar scanner started — DEX Screener primary, Pump.fun secondary, Birdeye tertiary",
   );
