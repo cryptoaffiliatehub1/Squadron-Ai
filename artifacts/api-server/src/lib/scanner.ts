@@ -45,19 +45,27 @@ function failover(to: ScannerSource, reason: string): void {
   logger.warn({ from, to, reason }, `[SCANNER_FAILOVER] ${from} → ${to}: ${reason}`);
 }
 
-// ── FIX 1: Rebuild DEX Screener parser ──────────────────────────────────────
-// Step 1: fetch token-profiles to get boosted/trending token addresses + icons
-// Step 2: batch-fetch /latest/dex/tokens/{addresses} for full pair data
-// Step 3: merge and parse — never discard a token, use safe defaults for nulls
-// Secondary fallback: search endpoint where pairs come at top level
+// ── DEX Screener parser ──────────────────────────────────────────────────────
+// CONFIRMED real API shapes (verified by live curl):
+//
+// GET /token-profiles/latest/v1  →  array of:
+//   { chainId, tokenAddress, icon, header, openGraph, links, cto, updatedAt }
+//   *** NO pairs, NO name, NO symbol inside the profile object ***
+//
+// GET /latest/dex/tokens/{addr}  →  { schemaVersion, pairs: [ ... ] }
+//   pairs[0]: { chainId, dexId, pairAddress, baseToken: {address,name,symbol},
+//               priceUsd, liquidity: {usd}, volume: {h24,h6,h1,m5},
+//               txns: {m5:{buys,sells}}, priceChange: {h24}, pairCreatedAt }
+//   *** NO info field on pairs — logo comes from the profile object only ***
+
+// Guard so the raw dump fires only once per process lifetime
+let _rawDumped = false;
 
 interface ProfileRaw {
   chainId: string;
   tokenAddress: string;
-  icon?: string;
-  symbol?: string;
-  name?: string;
-  pairs?: PairDataRaw[];
+  icon?: string;    // token logo URL  ← this is the logo source
+  header?: string;  // banner image URL (fallback logo)
 }
 
 interface PairDataRaw {
@@ -65,88 +73,78 @@ interface PairDataRaw {
   dexId?: string;
   pairAddress?: string;
   baseToken?: { address?: string; name?: string; symbol?: string };
-  priceUsd?: string;
+  priceUsd?: string | number;
   liquidity?: { usd?: number };
   volume?: { h24?: number; m5?: number };
   priceChange?: { h24?: number };
   txns?: { m5?: { buys?: number; sells?: number } };
   pairCreatedAt?: number;
-  info?: { imageUrl?: string; header?: string };
-  boosts?: { active?: number };
 }
 
-function parsePairToToken(
+function buildToken(
   tokenAddress: string,
   pair: PairDataRaw | undefined,
-  profile: ProfileRaw,
+  iconUrl: string | undefined,
 ): Partial<DexToken> {
-  // Logo: prefer imageUrl, fall back to header, then profile icon
-  const logoUrl =
-    pair?.info?.imageUrl ??
-    pair?.info?.header ??
-    profile?.icon ??
-    "";
+  // Logo comes from the profile icon/header — pairs have no info field
+  const logoUrl = iconUrl || undefined;
 
-  // Name: never undefined — fall back to first 8 chars of tokenAddress
-  const rawName = pair?.baseToken?.name ?? profile?.name;
-  const tokenName = rawName && rawName.trim() ? rawName.trim() : tokenAddress.slice(0, 8);
+  // Name/symbol come exclusively from pair.baseToken — never from the profile
+  const rawName = pair?.baseToken?.name?.trim();
+  const tokenName = rawName || tokenAddress.slice(0, 8);
 
-  // Symbol: never undefined
-  const tokenSymbol = (pair?.baseToken?.symbol ?? profile?.symbol ?? "").trim() || "?";
+  const rawSymbol = pair?.baseToken?.symbol?.trim();
+  const tokenSymbol = rawSymbol || "?";
 
-  // Liquidity: if NaN or null, set to 0 but still emit the token
-  const rawLiq = parseFloat(String(pair?.liquidity?.usd ?? "0"));
-  const liquidityUsd = isNaN(rawLiq) ? 0 : rawLiq;
+  // Liquidity: NaN → 0 but still emit the token so it shows as a card
+  const rawLiq = Number(pair?.liquidity?.usd ?? 0);
+  const liquidityUsd = isFinite(rawLiq) ? rawLiq : 0;
 
   return {
     tokenMint: tokenAddress,
     tokenSymbol,
     tokenName,
-    logoUrl: logoUrl || undefined,
+    logoUrl,
     liquidityUsd,
-    priceUsd: parseFloat(pair?.priceUsd ?? "0") || 0,
+    priceUsd: Number(pair?.priceUsd ?? 0) || 0,
     volume24h: Number(pair?.volume?.h24 ?? 0),
-    volume5m: parseFloat(String(pair?.volume?.m5 ?? 0)) || 0,
+    volume5m: Number(pair?.volume?.m5 ?? 0),
     priceChange24h: Number(pair?.priceChange?.h24 ?? 0),
     pairAddress: pair?.pairAddress ?? "",
     dexId: pair?.dexId ?? "dexscreener",
     chainId: "solana",
     createdAt: pair?.pairCreatedAt ?? Date.now(),
-    isBoosted: (pair?.boosts?.active ?? 0) > 0,
+    isBoosted: false,
     isTrending: true,
     buyTxns5m: pair?.txns?.m5?.buys ?? 0,
     sellTxns5m: pair?.txns?.m5?.sells ?? 0,
   };
 }
 
-// Fetch pair data for a single token address (used when profile.pairs is empty)
-async function fetchSingleTokenPair(tokenAddress: string): Promise<PairDataRaw | undefined> {
+// Fetch the best (highest-liquidity) Solana pair for a token address
+async function fetchBestPair(tokenAddress: string): Promise<PairDataRaw | undefined> {
   try {
     const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
       `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
       { headers: getRotatedHeaders(), timeout: 8_000 },
     );
-    const pairs = resp.data?.pairs ?? [];
-    // Return the highest-liquidity solana pair
-    const solanaPairs = pairs.filter((p) => p?.chainId === "solana");
+    const solanaPairs = (resp.data?.pairs ?? []).filter((p) => p?.chainId === "solana");
     if (solanaPairs.length === 0) return undefined;
     return solanaPairs.reduce((best, p) =>
-      (p.liquidity?.usd ?? 0) > (best.liquidity?.usd ?? 0) ? p : best
+      (p.liquidity?.usd ?? 0) > (best.liquidity?.usd ?? 0) ? p : best,
     );
   } catch {
     return undefined;
   }
 }
 
+// Batch-fetch pairs for up to 30 addresses at a time
 async function fetchPairsForAddresses(addresses: string[]): Promise<Map<string, PairDataRaw>> {
   const pairsMap = new Map<string, PairDataRaw>();
   if (addresses.length === 0) return pairsMap;
 
-  // Batch in groups of 30 (DEX Screener limit)
   const chunks: string[][] = [];
-  for (let i = 0; i < addresses.length; i += 30) {
-    chunks.push(addresses.slice(i, i + 30));
-  }
+  for (let i = 0; i < addresses.length; i += 30) chunks.push(addresses.slice(i, i + 30));
 
   await Promise.allSettled(
     chunks.map(async (chunk) => {
@@ -158,7 +156,6 @@ async function fetchPairsForAddresses(addresses: string[]): Promise<Map<string, 
         if (pair?.chainId !== "solana") continue;
         const addr = pair?.baseToken?.address;
         if (!addr) continue;
-        // Keep the highest-liquidity pair for each token
         const existing = pairsMap.get(addr);
         if (!existing || (pair.liquidity?.usd ?? 0) > (existing.liquidity?.usd ?? 0)) {
           pairsMap.set(addr, pair);
@@ -171,17 +168,15 @@ async function fetchPairsForAddresses(addresses: string[]): Promise<Map<string, 
 }
 
 async function searchFallbackParser(): Promise<Partial<DexToken>[]> {
-  // Secondary fallback: search endpoint where pairs array comes at the top level
   try {
     const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
       "https://api.dexscreener.com/latest/dex/search?q=solana&order=h6_volume",
       { headers: getRotatedHeaders(), timeout: 10_000 },
     );
-    const pairs = resp.data?.pairs ?? [];
-    return pairs
+    return (resp.data?.pairs ?? [])
       .filter((p) => p?.chainId === "solana")
       .slice(0, 30)
-      .map((p) => parsePairToToken(p?.baseToken?.address ?? "", p, {} as ProfileRaw));
+      .map((p) => buildToken(p?.baseToken?.address ?? "", p, undefined));
   } catch {
     return [];
   }
@@ -189,10 +184,17 @@ async function searchFallbackParser(): Promise<Partial<DexToken>[]> {
 
 async function scanDexScreener(): Promise<Partial<DexToken>[]> {
   try {
-    const profileResp = await axios.get<ProfileRaw[] | unknown>(
+    const profileResp = await axios.get<unknown>(
       "https://api.dexscreener.com/token-profiles/latest/v1",
       { headers: getRotatedHeaders(), timeout: 10_000 },
     );
+
+    // Dump raw response ONCE on startup — confirms actual field names in production logs
+    if (!_rawDumped) {
+      _rawDumped = true;
+      const sample = Array.isArray(profileResp.data) ? (profileResp.data as unknown[]).slice(0, 2) : profileResp.data;
+      console.log("[RAW_PROFILE_DUMP]", JSON.stringify(sample, null, 2));
+    }
 
     if (profileResp.status === 429 || profileResp.status === 403 || profileResp.status === 500) {
       state.dexScreenerRateLimited = true;
@@ -206,47 +208,28 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
 
     if (solanaProfiles.length === 0) {
       const fallback = await searchFallbackParser();
-      if (fallback.length > 0) {
-        state.lastSuccessfulScan = new Date();
-        return fallback;
-      }
+      if (fallback.length > 0) { state.lastSuccessfulScan = new Date(); return fallback; }
       return [];
     }
 
-    // Build tokens using inline pairs[0] if present.
-    // For profiles where pairs is empty/undefined, call the tokens endpoint individually.
-    const tokens: Partial<DexToken>[] = [];
-
-    await Promise.allSettled(
-      solanaProfiles.map(async (profile) => {
-        const addr = profile.tokenAddress ?? "";
-        if (!addr) return;
-
-        let pair: PairDataRaw | undefined;
-
-        if (profile.pairs && profile.pairs.length > 0) {
-          // Use the first pair already embedded in the profile
-          pair = profile.pairs[0];
-        } else {
-          // pairs missing or empty — fetch individually
-          pair = await fetchSingleTokenPair(addr);
-        }
-
-        tokens.push(parsePairToToken(addr, pair, profile));
-      }),
-    );
+    // Batch-fetch pair data for all token addresses
+    const addresses = solanaProfiles.map((p) => p.tokenAddress).filter(Boolean) as string[];
+    const pairsMap = await fetchPairsForAddresses(addresses);
 
     state.lastSuccessfulScan = new Date();
 
-    // Log the first successfully parsed token so we can confirm the parser works
-    const first = tokens.find((t) => t.tokenName && t.tokenName !== t.tokenMint?.slice(0, 8));
+    // Build token list — never discard, always emit even with no pair data
+    const tokens = solanaProfiles.map((profile) => {
+      const addr = profile.tokenAddress ?? "";
+      const pair = pairsMap.get(addr);
+      return buildToken(addr, pair, profile.icon ?? profile.header);
+    });
+
+    // Print first token with real name to confirm parser is working
+    const first = tokens.find((t) => t.tokenName && t.tokenName.length > 8);
     if (first) {
       console.log(
-        `[PARSER_CHECK] First parsed token — name: ${first.tokenName} | symbol: ${first.tokenSymbol} | liq: $${first.liquidityUsd} | vol5m: $${first.volume5m}`,
-      );
-      logger.info(
-        { name: first.tokenName, symbol: first.tokenSymbol, liquidityUsd: first.liquidityUsd, volume5m: first.volume5m },
-        "[PARSER_CHECK] First parsed token",
+        `[PARSER_OK] ${first.tokenName} (${first.tokenSymbol}) — liq: $${first.liquidityUsd?.toFixed(0)} | vol5m: $${first.volume5m?.toFixed(0)}`,
       );
     }
 
@@ -260,10 +243,7 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
     } else {
       logger.warn({ err: err?.message }, "[SCANNER] DEX Screener scan error — trying search fallback");
       const fallback = await searchFallbackParser();
-      if (fallback.length > 0) {
-        state.lastSuccessfulScan = new Date();
-        return fallback;
-      }
+      if (fallback.length > 0) { state.lastSuccessfulScan = new Date(); return fallback; }
     }
     return [];
   }
@@ -335,35 +315,40 @@ function connectPumpFun(): void {
     ws.onmessage = async (event: { data: string }) => {
       try {
         const data = JSON.parse(event.data);
-        if (data?.mint && onToken) {
-          // Convert marketCapSol → USD using env SOL price or default 150
-          const solPriceUsd = parseFloat(process.env["SOL_PRICE_USD"] ?? "") || 150;
-          const marketCapUsd = (parseFloat(String(data.marketCapSol ?? 0)) || 0) * solPriceUsd;
+        if (!data?.mint || !onToken) return;
 
-          // name/symbol: use safe fallbacks
-          const tokenName = (data.name ?? "").trim() || data.mint.slice(0, 8);
-          const tokenSymbol = (data.symbol ?? "").trim() || "?";
+        // WS gives us name/symbol/imageUri immediately — use them as defaults
+        const solPriceUsd = parseFloat(process.env["SOL_PRICE_USD"] ?? "") || 150;
+        const wsMarketCapUsd = (Number(data.marketCapSol ?? 0)) * solPriceUsd;
+        const wsName = (data.name ?? "").trim() || String(data.mint).slice(0, 8);
+        const wsSymbol = (data.symbol ?? "").trim() || "?";
 
-          await onToken({
-            tokenMint: data.mint,
-            tokenSymbol,
-            tokenName,
-            logoUrl: data.imageUri ?? undefined,
-            liquidityUsd: marketCapUsd,
-            priceUsd: 0,
-            volume24h: 0,
-            volume5m: 0,
-            priceChange24h: 0,
-            pairAddress: data.bondingCurveKey ?? "",
-            dexId: "pumpfun",
-            chainId: "solana",
-            createdAt: Date.now(),
-            isBoosted: false,
-            isTrending: false,
-            buyTxns5m: 0,
-            sellTxns5m: 0,
-          });
-        }
+        // Enrich with full DEX Screener pair data for the mint address
+        const pair = await fetchBestPair(data.mint);
+
+        const tokenName = pair?.baseToken?.name?.trim() || wsName;
+        const tokenSymbol = pair?.baseToken?.symbol?.trim() || wsSymbol;
+        const liquidityUsd = pair?.liquidity?.usd ?? wsMarketCapUsd;
+
+        await onToken({
+          tokenMint: data.mint,
+          tokenSymbol,
+          tokenName,
+          logoUrl: data.imageUri ?? undefined,
+          liquidityUsd,
+          priceUsd: Number(pair?.priceUsd ?? 0),
+          volume24h: Number(pair?.volume?.h24 ?? 0),
+          volume5m: Number(pair?.volume?.m5 ?? 0),
+          priceChange24h: Number(pair?.priceChange?.h24 ?? 0),
+          pairAddress: pair?.pairAddress ?? data.bondingCurveKey ?? "",
+          dexId: "pumpfun",
+          chainId: "solana",
+          createdAt: Date.now(),
+          isBoosted: false,
+          isTrending: false,
+          buyTxns5m: pair?.txns?.m5?.buys ?? 0,
+          sellTxns5m: pair?.txns?.m5?.sells ?? 0,
+        });
       } catch {}
     };
 
