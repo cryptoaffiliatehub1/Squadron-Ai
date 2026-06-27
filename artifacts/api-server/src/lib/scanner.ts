@@ -96,9 +96,16 @@ function buildToken(
   const rawSymbol = pair?.baseToken?.symbol?.trim();
   const tokenSymbol = rawSymbol || "?";
 
-  // Liquidity: NaN → 0 but still emit the token so it shows as a card
-  const rawLiq = Number(pair?.liquidity?.usd ?? 0);
-  const liquidityUsd = isFinite(rawLiq) ? rawLiq : 0;
+  // Liquidity: use null when no pair data OR pair has no liquidity field
+  // (pump.fun bonding-curve tokens never have a DEX pair yet — we show N/A, not $0)
+  const rawLiqSrc = pair?.liquidity?.usd;
+  const liquidityUsd: number | undefined =
+    rawLiqSrc !== undefined && rawLiqSrc !== null && isFinite(Number(rawLiqSrc))
+      ? Number(rawLiqSrc)
+      : undefined; // omitted → stored as null in DB → shown as N/A on card
+
+  // Extract priceUsd for risk gate
+  const priceUsd = parseFloat(String(pair?.priceUsd ?? "0")) || 0;
 
   return {
     tokenMint: tokenAddress,
@@ -106,7 +113,7 @@ function buildToken(
     tokenName,
     logoUrl,
     liquidityUsd,
-    priceUsd: Number(pair?.priceUsd ?? 0) || 0,
+    priceUsd,
     volume24h: Number(pair?.volume?.h24 ?? 0),
     volume5m: Number(pair?.volume?.m5 ?? 0),
     priceChange24h: Number(pair?.priceChange?.h24 ?? 0),
@@ -228,8 +235,9 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
     // Print first token with real name to confirm parser is working
     const first = tokens.find((t) => t.tokenName && t.tokenName.length > 8);
     if (first) {
+      const liqStr = first.liquidityUsd != null ? `$${first.liquidityUsd.toFixed(0)}` : "N/A (no pair)";
       console.log(
-        `[PARSER_OK] ${first.tokenName} (${first.tokenSymbol}) — liq: $${first.liquidityUsd?.toFixed(0)} | vol5m: $${first.volume5m?.toFixed(0)}`,
+        `[PARSER_OK] ${first.tokenName} (${first.tokenSymbol}) — liq: ${liqStr} | vol5m: $${(first.volume5m ?? 0).toFixed(0)}`,
       );
     }
 

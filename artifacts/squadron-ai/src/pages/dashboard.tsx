@@ -108,7 +108,7 @@ export default function Dashboard() {
   const { data: pnl }      = useQuery({ queryKey: ["pnl-summary"],    queryFn: () => fetch("/api/trades/pnl").then(r => r.json()) });
   const { data: moonbags } = useQuery({ queryKey: ["moonbags"],       queryFn: () => fetch("/api/moonbags").then(r => r.json()),           refetchInterval: 15000 });
   const { data: readiness }= useQuery({ queryKey: ["readiness"],      queryFn: () => fetch("/api/system/readiness").then(r => r.json()) });
-  const { data: tokens }   = useQuery({ queryKey: ["tokens-recent"],  queryFn: () => fetch("/api/tokens/recent?limit=30").then(r => r.json()), refetchInterval: 8000 });
+  const { data: tokens }   = useQuery({ queryKey: ["tokens-recent"],  queryFn: () => fetch("/api/tokens/recent?limit=20").then(r => r.json()), refetchInterval: 30000 });
   const { data: circuit }  = useQuery({ queryKey: ["circuit"],        queryFn: () => fetch("/api/circuit").then(r => r.json()),           refetchInterval: 5000 });
   const { data: scanner }  = useQuery({ queryKey: ["scanner-status"], queryFn: () => fetch("/api/scanner/status").then(r => r.json()),    refetchInterval: 5000 });
   const { data: weights }  = useQuery({ queryKey: ["weights"],        queryFn: () => fetch("/api/weights").then(r => r.json()) });
@@ -132,7 +132,11 @@ export default function Dashboard() {
   const maxTrade      = (wallet as any)?.maxTradeAmount ?? 0;
   const regime        = (sys as any)?.regime?.regime ?? "CHOP";
   const moonbagList   = (moonbags as any)?.positions ?? [];
-  const tokenList     = ((tokens as any[]) ?? []).slice(0, 8);
+  // Show 5 most-recent tokens detected in the last 10 minutes
+  const TEN_MIN = 10 * 60 * 1000;
+  const tokenList = ((tokens as any[]) ?? [])
+    .filter((t: any) => Date.now() - new Date(t.detectedAt).getTime() < TEN_MIN)
+    .slice(0, 5);
   const scannerSource = (scanner as any)?.activeSource ?? "dexscreener";
   const failoverLog   = (scanner as any)?.failoverLog ?? [];
   const dailyGainPct  = (circuit as any)?.dailyGainPct ?? 0;
@@ -356,26 +360,37 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-1.5">
-                {tokenList.map((t: any) => (
-                  <div key={t.id} className="flex items-center justify-between border-b border-border/20 pb-1.5 last:border-0 last:pb-0">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[7.5px] font-mono ${isPaper ? "text-yellow-500/50" : "text-gains/50"}`}>
-                          {isPaper ? "[SIM]" : "[LIVE]"}
-                        </span>
-                        <span className="text-[10px] font-bold text-white">{t.tokenSymbol}</span>
+                {tokenList.map((t: any) => {
+                  const liq: number | null = t.liquidityUsd;
+                  const fmtLiq = liq === null || liq === undefined
+                    ? <span className="text-losses font-bold">N/A</span>
+                    : <span className={liq >= 15_000 ? "text-gains font-bold" : "text-losses font-bold"}>
+                        ${liq >= 1000 ? `${(liq / 1000).toFixed(1)}k` : liq.toFixed(0)}
+                      </span>;
+                  return (
+                    <div key={t.id} className="flex items-center justify-between border-b border-border/20 pb-1.5 last:border-0 last:pb-0">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[7.5px] font-mono shrink-0 ${isPaper ? "text-yellow-500/50" : "text-gains/50"}`}>
+                            {isPaper ? "[SIM]" : "[LIVE]"}
+                          </span>
+                          <span className="text-[9px] font-bold text-white truncate">{t.tokenName ?? t.tokenSymbol}</span>
+                          <span className="text-[7.5px] font-mono text-muted-foreground shrink-0">{t.tokenSymbol}</span>
+                        </div>
+                        <p className="text-[7.5px] text-muted-foreground pl-0">
+                          Liq: {fmtLiq}
+                        </p>
                       </div>
-                      <p className="text-[7.5px] text-muted-foreground">${Number(t.liquidityUsd ?? 0).toLocaleString()} liq</p>
+                      <span className={`text-[7.5px] px-1.5 py-0.5 rounded border font-bold uppercase shrink-0 ml-2 ${
+                        t.safetyStatus === "good"    ? "text-gains border-gains/30 bg-gains/5"
+                        : t.safetyStatus === "pending" ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/5"
+                        : "text-losses border-losses/30 bg-losses/5"
+                      }`}>
+                        {t.safetyStatus}
+                      </span>
                     </div>
-                    <span className={`text-[7.5px] px-1.5 py-0.5 rounded border font-bold uppercase ${
-                      t.safetyStatus === "good"    ? "text-gains border-gains/30 bg-gains/5"
-                      : t.safetyStatus === "pending" ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/5"
-                      : "text-losses border-losses/30 bg-losses/5"
-                    }`}>
-                      {t.safetyStatus}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

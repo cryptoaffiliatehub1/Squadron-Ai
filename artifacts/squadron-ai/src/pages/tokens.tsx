@@ -91,9 +91,21 @@ function CopyAddress({ address }: { address: string }) {
   );
 }
 
+function LiqDisplay({ liq }: { liq: number | null | undefined }) {
+  const fmtNum = (n: number) => n >= 1_000_000 ? `${(n / 1_000_000).toFixed(2)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
+  if (liq === null || liq === undefined) {
+    return <span className="font-mono font-bold text-losses">N/A</span>;
+  }
+  return (
+    <span className={`font-mono font-bold ${liq >= 15_000 ? "text-gains" : "text-losses"}`}>
+      ${fmtNum(liq)}
+    </span>
+  );
+}
+
 function DetectedCard({ token }: { token: any }) {
-  const liq    = Number(token.liquidityUsd ?? 0);
-  const vol5m  = Number(token.volume5m ?? 0);
+  const liq   = token.liquidityUsd as number | null;
+  const vol5m = Number(token.volume5m ?? 0);
   const fmtNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
   return (
     <div className="bg-card border border-border rounded-xl p-3 shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
@@ -111,9 +123,7 @@ function DetectedCard({ token }: { token: any }) {
           <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-2 text-[8.5px]">
             <div>
               <span className="text-muted-foreground">Liq: </span>
-              <span className={`font-mono font-bold ${liq >= 15_000 ? "text-gains" : "text-losses"}`}>
-                ${fmtNum(liq)}
-              </span>
+              <LiqDisplay liq={liq} />
             </div>
             <div>
               <span className="text-muted-foreground">5m Vol: </span>
@@ -155,8 +165,7 @@ function formatSkipReason(raw: string): { label: string; detail: string } {
 
 function SkippedCard({ token }: { token: any }) {
   const { label, detail } = formatSkipReason(token.reason ?? "");
-  const liq = Number(token.liquidityUsd ?? 0);
-  const fmtNum = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n.toFixed(0);
+  const liq = token.liquidityUsd as number | null;
   return (
     <div className="bg-card border border-border border-l-2 border-l-losses/50 rounded-xl p-3 shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
       <div className="flex items-start gap-3">
@@ -172,12 +181,10 @@ function SkippedCard({ token }: { token: any }) {
               {label}
             </span>
           </div>
-          {liq > 0 && (
-            <p className="text-[8.5px] mt-1.5">
-              <span className="text-muted-foreground">Liq: </span>
-              <span className={`font-mono font-bold ${liq >= 15_000 ? "text-gains" : "text-losses"}`}>${fmtNum(liq)}</span>
-            </p>
-          )}
+          <p className="text-[8.5px] mt-1.5">
+            <span className="text-muted-foreground">Liq: </span>
+            <LiqDisplay liq={liq} />
+          </p>
           <div className="mt-1.5 bg-losses/5 border border-losses/20 rounded-lg px-2 py-1">
             <p className="text-[8px] text-losses/80 leading-relaxed">{detail}</p>
           </div>
@@ -208,14 +215,19 @@ function SkippedList() {
   return <div className="space-y-2">{tokens.map((t: any) => <SkippedCard key={t.id} token={t} />)}</div>;
 }
 
+const TEN_MINUTES_MS = 10 * 60 * 1000;
+
 export default function Tokens() {
   const { data: tokens, isLoading } = useQuery({
     queryKey: ["tokens-recent"],
-    queryFn: () => fetch("/api/tokens/recent?limit=50").then(r => r.json()),
-    refetchInterval: 15000,
+    queryFn: () => fetch("/api/tokens/recent?limit=100").then(r => r.json()),
+    refetchInterval: 30000,
   });
   const [tab, setTab] = useState<"recent" | "skipped">("recent");
-  const tokenList = (tokens as any[]) ?? [];
+  // Only show tokens detected in the last 10 minutes — auto-purge stale entries from display
+  const tokenList = ((tokens as any[]) ?? []).filter(
+    (t: any) => Date.now() - new Date(t.detectedAt).getTime() < TEN_MINUTES_MS
+  );
 
   return (
     <Layout>

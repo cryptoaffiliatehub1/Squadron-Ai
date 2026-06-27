@@ -65,7 +65,8 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     tokenName: token.tokenName ?? token.tokenMint.slice(0, 8),
     logoUrl: token.logoUrl ?? null,
     safetyStatus: "pending",
-    liquidityUsd: String(token.liquidityUsd ?? 0),
+    // liquidityUsd null means no DEX pair yet (pump.fun bonding curve) → shows "N/A" in UI
+    liquidityUsd: token.liquidityUsd != null ? String(token.liquidityUsd) : null,
     volume5m: String(token.volume5m ?? 0),
     mintRevoked: false,
     buyTxns5m: token.buyTxns5m ?? 0,
@@ -95,12 +96,14 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     await db.insert(skippedTokensTable).values({
       tokenMint: token.tokenMint,
       tokenSymbol: token.tokenSymbol ?? "?",
-      tokenName: token.tokenName ?? "Unknown",
+      // Use real name from parser — never fall back to "Unknown"
+      tokenName: token.tokenName ?? token.tokenMint.slice(0, 8),
       logoUrl: token.logoUrl ?? null,
+      // Full reason string with real numbers from risk gate
       reason: riskResult.reasons.join("; "),
       safetyScore: String(riskResult.score),
-      liquidityUsd: String(token.liquidityUsd ?? 0),
-    }).onConflictDoNothing().catch(() => {});
+      liquidityUsd: token.liquidityUsd != null ? String(token.liquidityUsd) : null,
+    }).catch(() => {});
     return;
   }
 
