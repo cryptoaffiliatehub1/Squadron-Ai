@@ -15,7 +15,17 @@ router.get("/tokens/skipped", async (req, res) => {
       .orderBy(desc(skippedTokensTable.detectedAt))
       .limit(isNaN(limit) ? 50 : limit);
 
-    res.json(tokens.map((t) => ({ ...t, detectedAt: t.detectedAt.toISOString() })));
+    res.json(tokens.map((t) => ({
+      ...t,
+      // Ensure numeric fields are numbers, never strings — Fix 1 crash prevention
+      liquidityUsd: t.liquidityUsd !== null && t.liquidityUsd !== undefined
+        ? Number(t.liquidityUsd)
+        : null,
+      safetyScore: t.safetyScore !== null && t.safetyScore !== undefined
+        ? Number(t.safetyScore)
+        : null,
+      detectedAt: t.detectedAt.toISOString(),
+    })));
   } catch (err) {
     logger.error({ err }, "GET /tokens/skipped failed");
     res.status(500).json({ error: "Internal server error" });
@@ -34,12 +44,13 @@ router.get("/tokens/recent", async (req, res) => {
     res.json(
       tokens.map((t) => ({
         ...t,
-        marketCap: t.marketCap !== null ? Number(t.marketCap) : null,
+        marketCap:    t.marketCap    !== null ? Number(t.marketCap)    : null,
         liquidityUsd: t.liquidityUsd !== null ? Number(t.liquidityUsd) : null,
-        mintRevoked: t.mintRevoked ?? null,
-        buyTxns5m: t.buyTxns5m ?? null,
-        sellTxns5m: t.sellTxns5m ?? null,
-        detectedAt: t.detectedAt.toISOString(),
+        volume5m:     t.volume5m     !== null ? Number(t.volume5m)     : null,
+        mintRevoked:  t.mintRevoked  ?? null,
+        buyTxns5m:    t.buyTxns5m   ?? null,
+        sellTxns5m:   t.sellTxns5m  ?? null,
+        detectedAt:   t.detectedAt.toISOString(),
       })),
     );
   } catch (err) {

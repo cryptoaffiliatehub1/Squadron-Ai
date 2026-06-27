@@ -127,9 +127,10 @@ export default function Dashboard() {
   const systemAtRisk  = (weights as any)?.systemAtRisk;
   const dailyPnl      = (pnl as any)?.dailyPnlUsd ?? 0;
   const dailyPnlPct   = (pnl as any)?.dailyPnlPct ?? 0;
-  const solBalance    = (wallet as any)?.solBalance ?? 0;
-  const usdBalance    = (wallet as any)?.usdValue ?? 0;
-  const maxTrade      = (wallet as any)?.maxTradeAmount ?? 0;
+  // Fix 1: always coerce to number — never call toFixed on a raw API value
+  const solBalance    = Number((wallet as any)?.solBalance   ?? 0) || 0;
+  const usdBalance    = Number((wallet as any)?.usdValue     ?? 0) || 0;
+  const maxTrade      = Number((wallet as any)?.maxTradeAmount ?? 0) || 0;
   const regime        = (sys as any)?.regime?.regime ?? "CHOP";
   const moonbagList   = (moonbags as any)?.positions ?? [];
   // Show 5 most-recent tokens detected in the last 10 minutes
@@ -139,7 +140,7 @@ export default function Dashboard() {
     .slice(0, 5);
   const scannerSource = (scanner as any)?.activeSource ?? "dexscreener";
   const failoverLog   = (scanner as any)?.failoverLog ?? [];
-  const dailyGainPct  = (circuit as any)?.dailyGainPct ?? 0;
+  const dailyGainPct  = Number((circuit as any)?.dailyGainPct ?? 0) || 0;
   const drawdownPct   = Math.abs(Math.min(0, dailyGainPct));
   const gainPct       = Math.max(0, dailyGainPct);
   const strikes       = (circuit as any)?.consecutiveLosses ?? 0;
@@ -416,8 +417,8 @@ export default function Dashboard() {
                       <p className="text-[7.5px] text-muted-foreground">Cost: $0 (recovered)</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] text-gains font-black font-mono">{m.currentMultiplier?.toFixed(2)}×</p>
-                      <p className="text-[7.5px] text-muted-foreground">{m.currentValueSol?.toFixed(4)} SOL</p>
+                      <p className="text-[10px] text-gains font-black font-mono">{(Number(m.currentMultiplier ?? 0) || 0).toFixed(2)}×</p>
+                      <p className="text-[7.5px] text-muted-foreground">{(Number(m.currentValueSol ?? 0) || 0).toFixed(4)} SOL</p>
                     </div>
                   </div>
                 ))}
