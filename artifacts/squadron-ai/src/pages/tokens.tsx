@@ -150,16 +150,47 @@ function DetectedCard({ token }: { token: any }) {
 }
 
 function formatSkipReason(raw: string): { label: string; detail: string } {
-  if (!raw) return { label: "FILTERED", detail: raw };
-  if (/liquidity/i.test(raw))              { const m = raw.match(/\$([\d,]+)/); return { label: "LIQUIDITY",    detail: `$${m?.[1] ?? "?"} — below $15k minimum` }; }
-  if (/rugcheck/i.test(raw))              return { label: "RUGCHECK",    detail: raw.replace(/^rugcheck:\s*/i, "").split(";")[0] ?? raw };
-  if (/holder/i.test(raw))               { const m = raw.match(/([\d.]+)%/); return { label: "HOLDER CONC",   detail: `${m?.[1] ?? "?"}% concentration — above 20% limit` }; }
-  if (/ghost volume|wash trade/i.test(raw)) return { label: "WASH TRADE",   detail: "High-concentration wallet volume" };
-  if (/freeze/i.test(raw))               return { label: "FREEZE AUTH",  detail: "Freeze authority enabled" };
-  if (/supply/i.test(raw))               { const m = raw.match(/([\d.]+)%/); return { label: "SUPPLY GAP",    detail: `${m?.[1] ?? "?"}% supply gap — above 20% limit` }; }
-  if (/stale|timestamp/i.test(raw))      return { label: "STALE DATA",   detail: "Price timestamp stale" };
-  if (/volume|flat|momentum/i.test(raw)) return { label: "NO MOMENTUM",  detail: "Volume flat or declining" };
-  if (/birdeye/i.test(raw))              return { label: "SECURITY",     detail: raw.replace(/^birdeye:\s*/i, "") };
+  if (!raw) return { label: "FILTERED", detail: "No reason recorded" };
+  // Fix 5: No DEX pair / liquidity unavailable
+  if (/no dex pair|liquidity unavailable/i.test(raw))
+    return { label: "NO PAIR", detail: "Token still on bonding curve — no DEX listing yet" };
+  // Fix 3: Activity filter
+  if (/insufficient buy activity/i.test(raw)) {
+    const m = raw.match(/(\d+)b/i);
+    return { label: "LOW ACTIVITY", detail: `${m?.[1] ?? "0"} buys in 5m — below 5 minimum` };
+  }
+  // Fix 8: Risk gate timeout
+  if (/risk gate timeout/i.test(raw))
+    return { label: "TIMEOUT", detail: "Risk gate did not respond within 15 seconds" };
+  // Fix 5: Liquidity too low — show real number, never "$0"
+  if (/liquidity too low|liquidity/i.test(raw)) {
+    const m = raw.match(/\$([\d,]+)/);
+    const amt = m?.[1];
+    return {
+      label:  "LIQUIDITY",
+      detail: amt ? `$${amt} — below $15,000 minimum` : "Liquidity below $15,000 minimum",
+    };
+  }
+  if (/rugcheck/i.test(raw))
+    return { label: "RUGCHECK",   detail: raw.replace(/^rugcheck:\s*/i, "").split(";")[0] ?? raw };
+  if (/holder/i.test(raw)) {
+    const m = raw.match(/([\d.]+)%/);
+    return { label: "HOLDER CONC", detail: `${m?.[1] ?? "?"}% concentration — above 20% limit` };
+  }
+  if (/ghost volume|wash trade/i.test(raw))
+    return { label: "WASH TRADE",  detail: "High-concentration wallet volume" };
+  if (/freeze/i.test(raw))
+    return { label: "FREEZE AUTH", detail: "Freeze authority enabled" };
+  if (/supply/i.test(raw)) {
+    const m = raw.match(/([\d.]+)%/);
+    return { label: "SUPPLY GAP",  detail: `${m?.[1] ?? "?"}% supply gap — above 20% limit` };
+  }
+  if (/stale|timestamp/i.test(raw))
+    return { label: "STALE DATA",  detail: "Price timestamp stale" };
+  if (/volume|flat|momentum/i.test(raw))
+    return { label: "NO MOMENTUM", detail: "Volume flat or declining" };
+  if (/birdeye/i.test(raw))
+    return { label: "SECURITY",    detail: raw.replace(/^birdeye:\s*/i, "") };
   return { label: "FILTERED", detail: raw };
 }
 

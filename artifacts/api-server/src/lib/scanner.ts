@@ -94,7 +94,8 @@ function buildToken(
   const tokenName = rawName || tokenAddress.slice(0, 8);
 
   const rawSymbol = pair?.baseToken?.symbol?.trim();
-  const tokenSymbol = rawSymbol || "?";
+  // Fix 7: Never emit "?" — use first 6 chars of mint as fallback
+  const tokenSymbol = rawSymbol || tokenAddress.slice(0, 6);
 
   // Liquidity: use null when no pair data OR pair has no liquidity field
   // (pump.fun bonding-curve tokens never have a DEX pair yet — we show N/A, not $0)
@@ -329,7 +330,8 @@ function connectPumpFun(): void {
         const solPriceUsd = parseFloat(process.env["SOL_PRICE_USD"] ?? "") || 150;
         const wsMarketCapUsd = (Number(data.marketCapSol ?? 0)) * solPriceUsd;
         const wsName = (data.name ?? "").trim() || String(data.mint).slice(0, 8);
-        const wsSymbol = (data.symbol ?? "").trim() || "?";
+        // Fix 7: Never emit "?" — fall back to first 6 chars of mint
+        const wsSymbol = (data.symbol ?? "").trim() || data.mint.slice(0, 6);
 
         // Enrich with full DEX Screener pair data for the mint address
         const pair = await fetchBestPair(data.mint);
