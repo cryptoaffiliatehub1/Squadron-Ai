@@ -9,6 +9,8 @@ export interface PaperTrade {
   tokenName: string;
   type: "buy" | "sell";
   amountSol: number;
+  positionSizeUsd: number;   // Fix 9: USD size ($10 MOON / $20 SAFE / $5 UNVERIFIED)
+  tier: string;              // Fix 9: MOON / SAFE
   entryPrice: number;
   exitPrice: number | null;
   pnlSol: number | null;
@@ -20,6 +22,7 @@ export interface PaperTrade {
   regime: string;
   timestamp: string;
   exitTimestamp: string | null;
+  relaxedMode?: boolean;     // Fix 9: true when executed under SIM-RELAXED thresholds
 }
 
 export interface DailyReport {
@@ -33,7 +36,6 @@ export interface DailyReport {
   expectancy: number;
   topFailureReason: string;
   totalPnlSol: number;
-  // Biggest trades
   biggestWin: { tokenSymbol: string; multiplier: number; pnlSol: number } | null;
   biggestLoss: { tokenSymbol: string; pnlSol: number; reason: string } | null;
   isPaperMode: boolean;
@@ -64,10 +66,21 @@ function writeJson(file: string, data: unknown): void {
 }
 
 export function isPaperMode(): boolean {
-  // Delegate to tradingMode — env var is no longer source of truth
   try {
     const { isPaperMode: tm } = require("./tradingMode") as { isPaperMode: () => boolean };
     return tm();
+  } catch {
+    return true;
+  }
+}
+
+// Fix 9: returns true if paper mode is active AND no trades have been recorded in the last N minutes
+export function noRecentPaperTrades(windowMinutes = 30): boolean {
+  try {
+    const trades = readJson<PaperTrade[]>(PAPER_TRADES_FILE, []);
+    const cutoff = Date.now() - windowMinutes * 60_000;
+    const recent = trades.filter((t) => new Date(t.timestamp).getTime() > cutoff);
+    return recent.length === 0;
   } catch {
     return true;
   }
@@ -78,9 +91,10 @@ export function recordPaperTrade(trade: PaperTrade): void {
   const trades = readJson<PaperTrade[]>(PAPER_TRADES_FILE, []);
   trades.push(trade);
   writeJson(PAPER_TRADES_FILE, trades);
+  const tag = trade.relaxedMode ? "[SIM-RELAXED]" : "[PAPER_TRADE]";
   logger.info(
-    { id: trade.id, symbol: trade.tokenSymbol, type: trade.type, amountSol: trade.amountSol },
-    `[PAPER_TRADE] ${trade.type.toUpperCase()} ${trade.tokenSymbol} — ${trade.amountSol.toFixed(4)} SOL`,
+    { id: trade.id, symbol: trade.tokenSymbol, type: trade.type, amountSol: trade.amountSol, positionSizeUsd: trade.positionSizeUsd },
+    `${tag} ${trade.type.toUpperCase()} ${trade.tokenSymbol} — ${trade.amountSol.toFixed(4)} SOL ($${trade.positionSizeUsd})`,
   );
 }
 
@@ -118,7 +132,6 @@ export function generateDailyReport(): DailyReport {
     Object.entries(failReasons).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "none";
   const totalPnlSol = sells.reduce((s, t) => s + (t.pnlSol ?? 0), 0);
 
-  // Biggest win/loss
   let biggestWin: DailyReport["biggestWin"] = null;
   let biggestLoss: DailyReport["biggestLoss"] = null;
 

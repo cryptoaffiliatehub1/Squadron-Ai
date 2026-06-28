@@ -35,6 +35,7 @@ export type TokenCallback = (token: Partial<DexToken>) => Promise<void>;
 let onToken: TokenCallback | null = null;
 let scanInterval: ReturnType<typeof setInterval> | null = null;
 let probeInterval: ReturnType<typeof setInterval> | null = null;
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;  // Fix 1
 let dailyResetTimeout: ReturnType<typeof setTimeout> | null = null;
 let pumpFunWs: unknown = null;
 
@@ -55,7 +56,7 @@ function failover(to: ScannerSource, reason: string): void {
 // GET /latest/dex/tokens/{addr}  →  { schemaVersion, pairs: [ ... ] }
 //   pairs[0]: { chainId, dexId, pairAddress, baseToken: {address,name,symbol},
 //               priceUsd, liquidity: {usd}, volume: {h24,h6,h1,m5},
-//               txns: {m5:{buys,sells}}, priceChange: {h24}, pairCreatedAt }
+//               txns: {m5:{buys,sells}}, priceChange: {h24}, pairCreatedAt, fdv }
 //   *** NO info field on pairs — logo comes from the profile object only ***
 
 // Guard so the raw dump fires only once per process lifetime
@@ -79,6 +80,7 @@ interface PairDataRaw {
   priceChange?: { h24?: number };
   txns?: { m5?: { buys?: number; sells?: number } };
   pairCreatedAt?: number;
+  fdv?: number;   // Fix 4: fully diluted market cap
 }
 
 function buildToken(
@@ -86,27 +88,27 @@ function buildToken(
   pair: PairDataRaw | undefined,
   iconUrl: string | undefined,
 ): Partial<DexToken> {
-  // Logo comes from the profile icon/header — pairs have no info field
   const logoUrl = iconUrl || undefined;
 
-  // Name/symbol come exclusively from pair.baseToken — never from the profile
   const rawName = pair?.baseToken?.name?.trim();
   const tokenName = rawName || tokenAddress.slice(0, 8);
 
   const rawSymbol = pair?.baseToken?.symbol?.trim();
-  // Fix 7: Never emit "?" — use first 6 chars of mint as fallback
   const tokenSymbol = rawSymbol || tokenAddress.slice(0, 6);
 
-  // Liquidity: use null when no pair data OR pair has no liquidity field
-  // (pump.fun bonding-curve tokens never have a DEX pair yet — we show N/A, not $0)
   const rawLiqSrc = pair?.liquidity?.usd;
   const liquidityUsd: number | undefined =
     rawLiqSrc !== undefined && rawLiqSrc !== null && isFinite(Number(rawLiqSrc))
       ? Number(rawLiqSrc)
-      : undefined; // omitted → stored as null in DB → shown as N/A on card
+      : undefined;
 
-  // Extract priceUsd for risk gate
   const priceUsd = parseFloat(String(pair?.priceUsd ?? "0")) || 0;
+
+  // Fix 4: extract fdv as marketCap
+  const marketCap: number | undefined =
+    pair?.fdv != null && isFinite(Number(pair.fdv)) && Number(pair.fdv) > 0
+      ? Number(pair.fdv)
+      : undefined;
 
   return {
     tokenMint: tokenAddress,
@@ -126,10 +128,10 @@ function buildToken(
     isTrending: true,
     buyTxns5m: pair?.txns?.m5?.buys ?? 0,
     sellTxns5m: pair?.txns?.m5?.sells ?? 0,
+    marketCap,
   };
 }
 
-// Fetch the best (highest-liquidity) Solana pair for a token address
 async function fetchBestPair(tokenAddress: string): Promise<PairDataRaw | undefined> {
   try {
     const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
@@ -146,7 +148,6 @@ async function fetchBestPair(tokenAddress: string): Promise<PairDataRaw | undefi
   }
 }
 
-// Batch-fetch pairs for up to 30 addresses at a time
 async function fetchPairsForAddresses(addresses: string[]): Promise<Map<string, PairDataRaw>> {
   const pairsMap = new Map<string, PairDataRaw>();
   if (addresses.length === 0) return pairsMap;
@@ -197,7 +198,6 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
       { headers: getRotatedHeaders(), timeout: 10_000 },
     );
 
-    // Dump raw response ONCE on startup — confirms actual field names in production logs
     if (!_rawDumped) {
       _rawDumped = true;
       const sample = Array.isArray(profileResp.data) ? (profileResp.data as unknown[]).slice(0, 2) : profileResp.data;
@@ -220,20 +220,17 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
       return [];
     }
 
-    // Batch-fetch pair data for all token addresses
     const addresses = solanaProfiles.map((p) => p.tokenAddress).filter(Boolean) as string[];
     const pairsMap = await fetchPairsForAddresses(addresses);
 
     state.lastSuccessfulScan = new Date();
 
-    // Build token list — never discard, always emit even with no pair data
     const tokens = solanaProfiles.map((profile) => {
       const addr = profile.tokenAddress ?? "";
       const pair = pairsMap.get(addr);
       return buildToken(addr, pair, profile.icon ?? profile.header);
     });
 
-    // Print first token with real name to confirm parser is working
     const first = tokens.find((t) => t.tokenName && t.tokenName.length > 8);
     if (first) {
       const liqStr = first.liquidityUsd != null ? `$${first.liquidityUsd.toFixed(0)}` : "N/A (no pair)";
@@ -257,7 +254,6 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
     return [];
   }
 }
-// ── End DEX Screener parser ───────────────────────────────────────────────────
 
 async function scanBirdeye(): Promise<Partial<DexToken>[]> {
   const key = process.env["BIRDEYE_API_KEY"];
@@ -287,6 +283,7 @@ async function scanBirdeye(): Promise<Partial<DexToken>[]> {
       isTrending: false,
       buyTxns5m: 0,
       sellTxns5m: 0,
+      marketCap: t.mc ?? undefined,   // Fix 4: Birdeye market cap field
     }));
   } catch (err) {
     logger.warn({ err }, "[SCANNER] Birdeye scan failed");
@@ -326,19 +323,17 @@ function connectPumpFun(): void {
         const data = JSON.parse(event.data);
         if (!data?.mint || !onToken) return;
 
-        // WS gives us name/symbol/imageUri immediately — use them as defaults
         const solPriceUsd = parseFloat(process.env["SOL_PRICE_USD"] ?? "") || 150;
         const wsMarketCapUsd = (Number(data.marketCapSol ?? 0)) * solPriceUsd;
         const wsName = (data.name ?? "").trim() || String(data.mint).slice(0, 8);
-        // Fix 7: Never emit "?" — fall back to first 6 chars of mint
         const wsSymbol = (data.symbol ?? "").trim() || data.mint.slice(0, 6);
 
-        // Enrich with full DEX Screener pair data for the mint address
         const pair = await fetchBestPair(data.mint);
 
         const tokenName = pair?.baseToken?.name?.trim() || wsName;
         const tokenSymbol = pair?.baseToken?.symbol?.trim() || wsSymbol;
         const liquidityUsd = pair?.liquidity?.usd ?? wsMarketCapUsd;
+        const marketCap = pair?.fdv ?? (wsMarketCapUsd > 0 ? wsMarketCapUsd : undefined);
 
         await onToken({
           tokenMint: data.mint,
@@ -358,6 +353,7 @@ function connectPumpFun(): void {
           isTrending: false,
           buyTxns5m: pair?.txns?.m5?.buys ?? 0,
           sellTxns5m: pair?.txns?.m5?.sells ?? 0,
+          marketCap,
         });
       } catch {}
     };
@@ -451,6 +447,18 @@ export function startTripleRadarScanner(callback: TokenCallback): void {
     8_000,
   );
 
+  // Fix 1: heartbeat — restart scan if no tokens received in 90s
+  const HEARTBEAT_MS = 90_000;
+  heartbeatInterval = setInterval(() => {
+    const lastScan = state.lastSuccessfulScan;
+    const stale = !lastScan || Date.now() - lastScan.getTime() > HEARTBEAT_MS;
+    if (stale) {
+      console.log("SCANNER RESTARTED — no tokens received in 90s");
+      runScanCycle().catch((e) => logger.error({ e }, "Scanner: heartbeat restart failed"));
+    }
+  }, HEARTBEAT_MS);
+  console.log("HEARTBEAT ACTIVE — checking every 90s");
+
   probeInterval = setInterval(async () => {
     if (state.activeSource !== "dexscreener") {
       const ok = await probeDexScreener();
@@ -469,6 +477,7 @@ export function startTripleRadarScanner(callback: TokenCallback): void {
 export function stopTripleRadarScanner(): void {
   if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
   if (probeInterval) { clearInterval(probeInterval); probeInterval = null; }
+  if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }  // Fix 1
   if (dailyResetTimeout) { clearTimeout(dailyResetTimeout); dailyResetTimeout = null; }
   setScannerOnline(false);
   logger.info("[SCANNER] Triple-radar scanner stopped");

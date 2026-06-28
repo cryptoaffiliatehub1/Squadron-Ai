@@ -29,13 +29,13 @@ export default function Simulation() {
   const { data: report, isLoading: reportLoading } = useQuery({
     queryKey: ["daily-report"],
     queryFn: () => fetch("/api/paper/report").then(r => r.json()),
-    refetchInterval: 30000,
+    refetchInterval: 8_000,   // Fix 9: match scanner cycle
   });
 
   const { data: trades, isLoading: tradesLoading } = useQuery({
     queryKey: ["paper-trades"],
     queryFn: () => fetch("/api/paper/trades").then(r => r.json()),
-    refetchInterval: 30000,
+    refetchInterval: 8_000,   // Fix 9: match scanner cycle
   });
 
   const paperTrades = (trades as any[]) ?? [];

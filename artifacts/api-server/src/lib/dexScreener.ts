@@ -22,6 +22,7 @@ export interface DexToken {
   isTrending?: boolean;
   buyTxns5m: number;
   sellTxns5m: number;
+  marketCap?: number;   // Fix 4: fdv from DEX Screener pairs response
 }
 
 export interface ScannerFilter {
@@ -74,6 +75,7 @@ interface PairRaw {
   chainId: string;
   pairCreatedAt?: number;
   boosts?: { active?: number };
+  fdv?: number;   // Fix 4: fully diluted market cap
   txns?: {
     m5?: { buys?: number; sells?: number };
     h1?: { buys?: number; sells?: number };
@@ -100,6 +102,7 @@ function pairToToken(p: PairRaw, boostedMints: Set<string>, isTrending: boolean)
     isTrending,
     buyTxns5m: p.txns?.m5?.buys ?? 0,
     sellTxns5m: p.txns?.m5?.sells ?? 0,
+    marketCap: p.fdv ?? undefined,   // Fix 4
   };
 }
 

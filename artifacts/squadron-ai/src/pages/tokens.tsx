@@ -59,6 +59,30 @@ function StatusBadge({ status }: { status?: string }) {
   );
 }
 
+// Fix 3: specific failure label badge — replaces generic SKIP for detected tokens
+function FailureBadge({ label, status }: { label?: string | null; status?: string }) {
+  if (!label) return <StatusBadge status={status} />;
+  const colorMap: Record<string, string> = {
+    "RUGCHECK FAIL": "text-losses border-losses/40 bg-losses/8",
+    "HIGH SELLS":    "text-losses border-losses/40 bg-losses/8",
+    "FREEZE AUTH":   "text-losses border-losses/40 bg-losses/8",
+    "LOW VOLUME":    "text-orange-400 border-orange-400/40 bg-orange-400/8",
+    "LOW BUYS":      "text-orange-400 border-orange-400/40 bg-orange-400/8",
+    "HOLDER CONC":   "text-yellow-400 border-yellow-400/40 bg-yellow-400/8",
+    "SUPPLY GAP":    "text-yellow-400 border-yellow-400/40 bg-yellow-400/8",
+    "UNVERIFIED":    "text-blue-400 border-blue-400/40 bg-blue-400/8",
+    "FILTERED":      "text-losses border-losses/40 bg-losses/8",
+    "TIMEOUT":       "text-orange-400 border-orange-400/40 bg-orange-400/8",
+    "SECURITY":      "text-losses border-losses/40 bg-losses/8",
+  };
+  const cls = colorMap[label] ?? "text-muted-foreground border-border bg-transparent";
+  return (
+    <span className={`text-[7.5px] px-1.5 py-0.5 rounded-lg border font-bold uppercase tracking-wide shrink-0 ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 function ScoreBar({ score }: { score?: number | null }) {
   const n = safeNum(score);
   if (n === null) return null;
@@ -155,7 +179,7 @@ function DetectedCard({ token }: { token: any }) {
               <CopyAddress address={token.tokenMint} />
             </div>
             <div className="flex flex-col items-end gap-1">
-              <StatusBadge status={token.safetyStatus} />
+              <FailureBadge label={token.failureLabel} status={token.safetyStatus} />
               <TierBadge liq={token.liquidityUsd} />
             </div>
           </div>
@@ -163,6 +187,14 @@ function DetectedCard({ token }: { token: any }) {
             <div>
               <span className="text-muted-foreground">Liq: </span>
               <LiqDisplay liq={token.liquidityUsd} />
+            </div>
+            {/* Fix 4: market cap from fdv */}
+            <div>
+              <span className="text-muted-foreground">MCap: </span>
+              {token.marketCap != null
+                ? <span className="font-mono font-bold text-primary">${fmtUsd(token.marketCap)}</span>
+                : <span className="text-muted-foreground/40 font-mono">—</span>
+              }
             </div>
             <div>
               <span className="text-muted-foreground">5m Vol: </span>
@@ -205,13 +237,14 @@ function formatSkipReason(raw: string): { label: string; detail: string } {
   }
   if (/liquidity too high/i.test(raw))
     return { label: "TOO LARGE",    detail: "Above $500k — low meme profit potential" };
-  if (/liquidity too low|below \$15k/i.test(raw)) {
-    const m = raw.match(/\$([\d,]+)/);
-    return { label: "LIQUIDITY",    detail: m ? `$${m[1]} — below $15,000 minimum` : "Liquidity below $15,000 minimum" };
+  if (/liquidity too low|below \$15k|below \$10k/i.test(raw)) {
+    // Fix 6: match the parenthetical actual amount e.g. ($14,100), not the threshold "$15k"
+    const m = raw.match(/\(\$([\d,]+)\)/);
+    return { label: "LIQUIDITY",    detail: m ? `$${m[1]} — below minimum` : "Liquidity below minimum" };
   }
   if (/liquidity/i.test(raw)) {
-    const m = raw.match(/\$([\d,]+)/);
-    return { label: "LIQUIDITY",    detail: m ? `$${m[1]} — below $15,000 minimum` : "Liquidity below $15,000 minimum" };
+    const m = raw.match(/\(\$([\d,]+)\)/);
+    return { label: "LIQUIDITY",    detail: m ? `$${m[1]} — below minimum` : "Liquidity below minimum" };
   }
   if (/rugcheck/i.test(raw))
     return { label: "RUGCHECK",     detail: raw.replace(/^rugcheck:\s*/i, "").split(";")[0] ?? raw };
@@ -263,10 +296,19 @@ function SkippedCard({ token }: { token: any }) {
               {label}
             </span>
           </div>
-          <p className="text-[8.5px] mt-1.5">
-            <span className="text-muted-foreground">Liq: </span>
-            <LiqDisplay liq={token.liquidityUsd} />
-          </p>
+          <div className="flex gap-3 text-[8.5px] mt-1.5">
+            <p>
+              <span className="text-muted-foreground">Liq: </span>
+              <LiqDisplay liq={token.liquidityUsd} />
+            </p>
+            {/* Fix 4: market cap on skipped cards */}
+            {token.marketCap != null && (
+              <p>
+                <span className="text-muted-foreground">MCap: </span>
+                <span className="font-mono font-bold text-primary">${fmtUsd(token.marketCap)}</span>
+              </p>
+            )}
+          </div>
           <div className="mt-1.5 bg-losses/5 border border-losses/20 rounded-lg px-2 py-1">
             <p className="text-[8px] text-losses/80 leading-relaxed">{detail}</p>
           </div>

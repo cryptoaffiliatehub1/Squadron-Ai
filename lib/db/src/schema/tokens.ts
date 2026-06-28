@@ -12,6 +12,7 @@ export const skippedTokensTable = pgTable("skipped_tokens", {
   reason: text("reason").notNull(),
   safetyScore: text("safety_score"),
   liquidityUsd: numeric("liquidity_usd", { precision: 20, scale: 2 }),
+  marketCap: numeric("market_cap", { precision: 20, scale: 2 }),    // Fix 4
   detectedAt: timestamp("detected_at").notNull().defaultNow(),
 });
 
@@ -22,6 +23,7 @@ export const detectedTokensTable = pgTable("detected_tokens", {
   tokenSymbol: text("token_symbol").notNull(),
   logoUrl: text("logo_url"),
   safetyStatus: safetyStatusEnum("safety_status").notNull().default("pending"),
+  failureLabel: text("failure_label"),                               // Fix 3: specific badge
   marketCap: numeric("market_cap", { precision: 20, scale: 2 }),
   liquidityUsd: numeric("liquidity_usd", { precision: 20, scale: 2 }),
   volume5m: numeric("volume_5m", { precision: 20, scale: 2 }),

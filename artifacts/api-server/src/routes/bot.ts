@@ -17,8 +17,14 @@ router.get("/bot/status", (_req, res) => {
   const state = getBotState();
   const wallet = getWalletState();
   const circuit = getCircuitState();
+  const scanner = getScannerState();
+
+  // Fix 8: scannerOnline = scanner has had at least one successful scan
+  const scannerOnline = scanner.lastSuccessfulScan !== null;
+
   res.json({
     isRunning: state.isRunning,
+    scannerOnline,                                    // Fix 8: true when triple-radar is scanning
     capitalRulePct: 20,
     safetyFilter: "Good",
     tradesExecutedToday: state.tradesExecutedToday,
@@ -30,6 +36,7 @@ router.get("/bot/status", (_req, res) => {
     circuitState: circuit.state,
     conservativeMode: circuit.conservativeMode,
     dailyGainPct: circuit.dailyGainPct,
+    network: "mainnet",
   });
 });
 
@@ -46,8 +53,10 @@ router.post("/bot/toggle", (req, res) => {
   }
 
   const state = getBotState();
+  const scanner = getScannerState();
   res.json({
     isRunning: state.isRunning,
+    scannerOnline: scanner.lastSuccessfulScan !== null,
     tradesExecutedToday: state.tradesExecutedToday,
     lastActivity: state.lastActivity ? state.lastActivity.toISOString() : null,
   });

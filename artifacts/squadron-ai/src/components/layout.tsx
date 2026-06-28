@@ -60,7 +60,7 @@ function LiveModeConfirmModal({ onConfirm, onCancel }: { onConfirm: () => void; 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
   const { isPaper, isLive, setMode, isSwitching } = useTradingMode();
-  const { isRunning, toggleBot, isPending: botPending } = useBot();
+  const { isRunning, scannerOnline, toggleBot, isPending: botPending } = useBot();
   const { isMainnet } = useNetwork();
   const { toast } = useToast();
   const [showLiveConfirm, setShowLiveConfirm] = useState(false);
@@ -148,13 +148,14 @@ export function Layout({ children }: LayoutProps) {
                 disabled={botPending || botLocked}
                 title={botLocked ? `Locked: ${circuitState}` : (isRunning ? "Stop scanner" : "Start scanner")}
                 className={`flex items-center gap-1.5 h-7 px-2.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider transition-all select-none
-                  ${isRunning
+                  ${(isRunning || scannerOnline)
                     ? "bg-gains/10 border-gains/40 text-gains hover:bg-gains/20"
                     : "bg-muted/30 border-border text-muted-foreground hover:border-primary/30 hover:text-primary"
                   }
                   ${botLocked ? "opacity-40 cursor-not-allowed" : "cursor-pointer active:scale-95"}`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${isRunning ? "bg-gains pulse-indicator" : "bg-muted-foreground/50"}`} />
+                {/* Fix 8: green when scanner is online OR trading bot is running */}
+                <span className={`w-1.5 h-1.5 rounded-full ${(isRunning || scannerOnline) ? "bg-gains pulse-indicator" : "bg-muted-foreground/50"}`} />
                 BOT
               </button>
 

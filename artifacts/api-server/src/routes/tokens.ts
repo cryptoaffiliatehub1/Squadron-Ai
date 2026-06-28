@@ -17,9 +17,11 @@ router.get("/tokens/skipped", async (req, res) => {
 
     res.json(tokens.map((t) => ({
       ...t,
-      // Ensure numeric fields are numbers, never strings — Fix 1 crash prevention
       liquidityUsd: t.liquidityUsd !== null && t.liquidityUsd !== undefined
         ? Number(t.liquidityUsd)
+        : null,
+      marketCap: t.marketCap !== null && t.marketCap !== undefined   // Fix 4
+        ? Number(t.marketCap)
         : null,
       safetyScore: t.safetyScore !== null && t.safetyScore !== undefined
         ? Number(t.safetyScore)
@@ -44,7 +46,8 @@ router.get("/tokens/recent", async (req, res) => {
     res.json(
       tokens.map((t) => ({
         ...t,
-        marketCap:    t.marketCap    !== null ? Number(t.marketCap)    : null,
+        failureLabel: t.failureLabel ?? null,          // Fix 3: specific badge
+        marketCap:    t.marketCap    !== null ? Number(t.marketCap)    : null,  // Fix 4
         liquidityUsd: t.liquidityUsd !== null ? Number(t.liquidityUsd) : null,
         volume5m:     t.volume5m     !== null ? Number(t.volume5m)     : null,
         mintRevoked:  t.mintRevoked  ?? null,

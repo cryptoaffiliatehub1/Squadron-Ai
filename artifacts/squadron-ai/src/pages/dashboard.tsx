@@ -108,7 +108,7 @@ export default function Dashboard() {
   const { data: pnl }      = useQuery({ queryKey: ["pnl-summary"],    queryFn: () => fetch("/api/trades/pnl").then(r => r.json()) });
   const { data: moonbags } = useQuery({ queryKey: ["moonbags"],       queryFn: () => fetch("/api/moonbags").then(r => r.json()),           refetchInterval: 15000 });
   const { data: readiness }= useQuery({ queryKey: ["readiness"],      queryFn: () => fetch("/api/system/readiness").then(r => r.json()) });
-  const { data: tokens }   = useQuery({ queryKey: ["tokens-recent"],  queryFn: () => fetch("/api/tokens/recent?limit=20").then(r => r.json()), refetchInterval: 30000 });
+  const { data: tokens }   = useQuery({ queryKey: ["tokens-recent"],  queryFn: () => fetch("/api/tokens/recent?limit=50").then(r => r.json()), refetchInterval: 8_000 });
   const { data: circuit }  = useQuery({ queryKey: ["circuit"],        queryFn: () => fetch("/api/circuit").then(r => r.json()),           refetchInterval: 5000 });
   const { data: scanner }  = useQuery({ queryKey: ["scanner-status"], queryFn: () => fetch("/api/scanner/status").then(r => r.json()),    refetchInterval: 5000 });
   const { data: weights }  = useQuery({ queryKey: ["weights"],        queryFn: () => fetch("/api/weights").then(r => r.json()) });
@@ -133,11 +133,17 @@ export default function Dashboard() {
   const maxTrade      = Number((wallet as any)?.maxTradeAmount ?? 0) || 0;
   const regime        = (sys as any)?.regime?.regime ?? "CHOP";
   const moonbagList   = (moonbags as any)?.positions ?? [];
-  // Show 5 most-recent tokens detected in the last 10 minutes
+  // Fix 5: dedup by tokenName, keep highest liquidityUsd, show 5 most recent
   const TEN_MIN = 10 * 60 * 1000;
-  const tokenList = ((tokens as any[]) ?? [])
-    .filter((t: any) => Date.now() - new Date(t.detectedAt).getTime() < TEN_MIN)
-    .slice(0, 5);
+  const _rawTokens = ((tokens as any[]) ?? [])
+    .filter((t: any) => Date.now() - new Date(t.detectedAt).getTime() < TEN_MIN);
+  const _nameMap = new Map<string, any>();
+  for (const t of _rawTokens) {
+    const key = (t.tokenName ?? t.tokenSymbol ?? "").toLowerCase().trim();
+    const ex = _nameMap.get(key);
+    if (!ex || Number(t.liquidityUsd ?? 0) > Number(ex.liquidityUsd ?? 0)) _nameMap.set(key, t);
+  }
+  const tokenList = [..._nameMap.values()].slice(0, 5);
   const scannerSource = (scanner as any)?.activeSource ?? "dexscreener";
   const failoverLog   = (scanner as any)?.failoverLog ?? [];
   const dailyGainPct  = Number((circuit as any)?.dailyGainPct ?? 0) || 0;
@@ -382,12 +388,19 @@ export default function Dashboard() {
                           Liq: {fmtLiq}
                         </p>
                       </div>
+                      {/* Fix 3: show specific failure label if set, else status */}
                       <span className={`text-[7.5px] px-1.5 py-0.5 rounded border font-bold uppercase shrink-0 ml-2 ${
-                        t.safetyStatus === "good"    ? "text-gains border-gains/30 bg-gains/5"
-                        : t.safetyStatus === "pending" ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/5"
+                        t.safetyStatus === "good"           ? "text-gains border-gains/30 bg-gains/5"
+                        : t.safetyStatus === "pending"      ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/5"
+                        : t.failureLabel === "UNVERIFIED"   ? "text-blue-400 border-blue-400/30 bg-blue-400/5"
+                        : t.failureLabel === "HIGH SELLS"   ? "text-losses border-losses/30 bg-losses/5"
+                        : t.failureLabel === "LOW VOLUME"   ? "text-orange-400 border-orange-400/30 bg-orange-400/5"
+                        : t.failureLabel === "HOLDER CONC"  ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/5"
+                        : t.failureLabel === "SUPPLY GAP"   ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/5"
+                        : t.failureLabel === "FREEZE AUTH"  ? "text-losses border-losses/30 bg-losses/5"
                         : "text-losses border-losses/30 bg-losses/5"
                       }`}>
-                        {t.safetyStatus}
+                        {t.failureLabel ?? t.safetyStatus}
                       </span>
                     </div>
                   );

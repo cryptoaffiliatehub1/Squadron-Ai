@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface BotStatus {
   isRunning: boolean;
+  scannerOnline: boolean;   // Fix 8: true when triple-radar scanner has at least one successful scan
   conservativeMode: boolean;
   tradesExecutedToday: number;
   network?: string;
@@ -10,6 +11,7 @@ interface BotStatus {
 
 interface BotContextValue {
   isRunning: boolean;
+  scannerOnline: boolean;   // Fix 8
   botData: BotStatus | null;
   network: string;
   toggleBot: (running: boolean) => void;
@@ -19,6 +21,7 @@ interface BotContextValue {
 
 const BotContext = createContext<BotContextValue>({
   isRunning: false,
+  scannerOnline: false,
   botData: null,
   network: "mainnet",
   toggleBot: () => {},
@@ -50,6 +53,7 @@ export function BotProvider({ children }: { children: ReactNode }) {
     <BotContext.Provider
       value={{
         isRunning: data?.isRunning ?? false,
+        scannerOnline: data?.scannerOnline ?? false,   // Fix 8
         botData: data ?? null,
         network: (data as any)?.network ?? "mainnet",
         toggleBot: (running) => mutation.mutate(running),
