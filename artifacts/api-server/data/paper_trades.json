@@ -242,5 +242,42 @@
     "stopLoss": 0.000058632,
     "exitMultiplier": null,
     "moonbagAmountUsd": null
+  },
+  {
+    "id": "pt_1783448469036_B8gLwBsD",
+    "tokenMint": "B8gLwBsDsNGfFXfjJqM8rhMnt6xosC2vBqG4wSgspump",
+    "tokenSymbol": "Pauly",
+    "tokenName": "Pauly",
+    "type": "buy",
+    "amountSol": 0.06666666666666667,
+    "positionSizeUsd": 10,
+    "tier": "MOON",
+    "entryPrice": 0.00006796,
+    "exitPrice": null,
+    "pnlSol": null,
+    "pnlUsd": null,
+    "filtersPassedCount": 9,
+    "filtersFailedCount": 0,
+    "filterDetails": {
+      "liquidity": true,
+      "volume": true,
+      "sellPressure": true,
+      "rugcheck": "VERIFIED (score: 16171)",
+      "birdeye": true,
+      "supplyAudit": true,
+      "washTrade": true,
+      "volumeMomentum": true,
+      "lpBurn": true
+    },
+    "probabilityScore": 100,
+    "regime": "CHOP",
+    "timestamp": "2026-07-07T18:21:09.036Z",
+    "exitTimestamp": null,
+    "relaxedMode": false,
+    "status": "OPEN",
+    "targetPrice": 0.0001699,
+    "stopLoss": 0.000047572000000000005,
+    "exitMultiplier": null,
+    "moonbagAmountUsd": null
   }
 ]
