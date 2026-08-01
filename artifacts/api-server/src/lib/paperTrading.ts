@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import axios from "axios";
 import { logger } from "./logger";
+import { startMoonbagMonitor, stopMoonbagMonitor } from "./moonbagVault";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,17 @@ export interface PaperTrade {
   timestamp: string;
   exitTimestamp: string | null;
   relaxedMode?: boolean;
+  // C1: extra signal fields captured at entry
+  sniperRiskPct?: number;
+  walletAgeDays?: number;
+  volumeConsistencyScore?: number;
+  holderGrowthPattern?: string | null;
+  entryLiquidity?: number;
+  entryMarketCap?: number;
+  entryVolume5m?: number;
+  entryBuys5m?: number;
+  entrySells5m?: number;
+  entryRegime?: string;
 }
 
 export interface DailyReport {
@@ -303,11 +315,14 @@ export function startExitEngine(): void {
   exitEngineInterval = setInterval(() => {
     runExitCheck().catch((e) => logger.warn({ e }, "[EXIT_ENGINE] Price check error"));
   }, 60_000);
+  // C1: start context-aware moonbag monitor alongside exit engine
+  startMoonbagMonitor();
   console.log("EXIT ENGINE ACTIVE — checking prices every 60s");
 }
 
 export function stopExitEngine(): void {
   if (exitEngineInterval) { clearInterval(exitEngineInterval); exitEngineInterval = null; }
+  stopMoonbagMonitor();
 }
 
 // ── Fix 8: Moonbag with live price ───────────────────────────────────────────

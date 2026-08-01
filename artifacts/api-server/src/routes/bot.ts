@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { startBot, stopBot, getBotState, getFullSystemState } from "../lib/bot";
+import { startBot, stopBot, getBotState, getFullSystemState, restartScanner } from "../lib/bot";
 import { getReadinessReport } from "../lib/systemReadiness";
 import { getCircuitState, resetFortress, humanOverride, engageFortress } from "../lib/circuitBreaker";
 import { getMoonbags, getTotalMoonbagValueSol } from "../lib/moonbagVault";
@@ -114,6 +114,20 @@ router.get("/watchdog/status", (_req, res) => {
 
 router.get("/weights", (_req, res) => {
   res.json({ weights: getWeights(), systemAtRisk: isSystemAtRisk() });
+});
+
+// C1: POST /api/bot/restart — re-initialises scanner without stopping the bot
+router.post("/bot/restart", (_req, res) => {
+  logger.info("BOT RESTART requested via API — restarting scanner");
+  restartScanner();
+  const state = getBotState();
+  const scanner = getScannerState();
+  res.json({
+    success: true,
+    message: "Scanner restart initiated — AUTO-RESTART sequence active",
+    isRunning: state.isRunning,
+    scannerOnline: scanner.lastSuccessfulScan !== null,
+  });
 });
 
 export default router;

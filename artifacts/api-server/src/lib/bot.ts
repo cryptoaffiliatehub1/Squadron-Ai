@@ -44,19 +44,19 @@ function isLikelyRug(reasons: string[]): boolean {
   return RUG_SIGNALS.some((s) => combined.includes(s));
 }
 
-// ── Fix 9: relaxed sim mode — no trades in 30 min + paper mode ─────────────
+// ── Relaxed sim mode — no trades in 30 min + paper mode ─────────────────────
 function isRelaxedSimMode(): boolean {
   if (!isPaperMode()) return false;
   return noRecentPaperTrades(30);
 }
 
-// ── Fix 4: Narrative spam keywords ─────────────────────────────────────────
+// ── Narrative spam keywords ──────────────────────────────────────────────────
 const SPAM_KEYWORDS = [
   "banana", "pup", "cat", "dog", "pepe", "trump", "elon", "moon", "inu",
   "frog", "bear", "bull", "wojak", "chad", "shib", "doge", "bonk", "wif",
 ];
 
-// ── Stale record cleanup ───────────────────────────────────────────────────
+// ── Stale record cleanup ─────────────────────────────────────────────────────
 async function cleanStaleRecords(): Promise<void> {
   const cutoff = new Date(Date.now() - 10 * 60 * 1000);
   try {
@@ -82,13 +82,12 @@ async function cleanStaleRecords(): Promise<void> {
 
     console.log(`STALE RECORDS CLEARED — ${deletedDetected.length} detected + ${deletedStaleSkipped.length} stale skipped deleted`);
     console.log(`SKIPPED TAB FIXED — ${deletedBadSkipped.length} Unknown/bad-name records deleted`);
-    console.log("QUALITY FILTER ACTIVE — min liquidity $15,000 | min buys 5");
   } catch (err) {
     logger.warn({ err }, "cleanStaleRecords: DB cleanup error");
   }
 }
 
-// ── Dedup detected tokens by tokenMint keeping highest liquidity ─────────
+// ── Dedup detected tokens ─────────────────────────────────────────────────────
 async function deduplicatePairs(): Promise<void> {
   try {
     const result = await db.execute(sql`
@@ -106,14 +105,14 @@ async function deduplicatePairs(): Promise<void> {
   }
 }
 
-// ── Core token discovery handler ───────────────────────────────────────────
+// ── Core token discovery handler ──────────────────────────────────────────────
 async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void> {
   if (!rawToken.tokenMint || seenMints.has(rawToken.tokenMint)) return;
   seenMints.add(rawToken.tokenMint);
 
   const mint = rawToken.tokenMint;
+  const isBonding = rawToken.source === "BONDING";
 
-  // Always resolve symbol and name — never store "?" or "Unknown"
   const tokenSymbol =
     rawToken.tokenSymbol?.trim() && rawToken.tokenSymbol !== "?"
       ? rawToken.tokenSymbol.trim()
@@ -131,12 +130,10 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
   const buyTxns5m    = rawToken.buyTxns5m  ?? 0;
   const sellTxns5m   = rawToken.sellTxns5m ?? 0;
   const volume5m     = rawToken.volume5m   ?? 0;
-
-  // Fix 4: market cap from fdv field
   const marketCap    = rawToken.marketCap != null ? String(rawToken.marketCap) : null;
 
-  // ── Pre-filter 1: Null/zero liquidity → Skipped ─────────────────────────
-  if (!liquidityUsd || liquidityUsd <= 0) {
+  // ── Pre-filter 1: Null/zero liquidity → Skipped (skip for BONDING) ────────
+  if (!isBonding && (!liquidityUsd || liquidityUsd <= 0)) {
     await db.insert(skippedTokensTable).values({
       tokenMint: mint, tokenSymbol, tokenName, logoUrl,
       reason:    "No DEX pair yet — liquidity unavailable",
@@ -145,43 +142,50 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     return;
   }
 
-  // ── Fix 9: Relaxed sim mode thresholds ──────────────────────────────────
+  // ── Relaxed sim mode thresholds ──────────────────────────────────────────
   const relaxed = isRelaxedSimMode();
   const minLiq  = relaxed ? 10_000 : 15_000;
-  const minBuys = relaxed ? 3     : 5;
 
-  // ── Tier system — enforce liquidity window ────────────────────────────────
-  if (liquidityUsd < minLiq) {
-    // Fix 6: include the actual detected liquidity, not the threshold
-    const actualLiq = `$${Math.round(liquidityUsd).toLocaleString()}`;
-    await db.insert(skippedTokensTable).values({
-      tokenMint: mint, tokenSymbol, tokenName, logoUrl,
-      reason:    `Liquidity too low — below $${(minLiq / 1000).toFixed(0)}k minimum (${actualLiq})`,
-      safetyScore: "0", liquidityUsd: String(liquidityUsd), marketCap,
-    }).catch(() => {});
-    return;
+  // ── C1: Two-tier buy threshold ───────────────────────────────────────────
+  // Below $500k market cap: require 5 buys; above $500k: require 3 buys
+  const mcapNum = rawToken.marketCap != null ? Number(rawToken.marketCap) : 0;
+  const tierMinBuys = mcapNum >= 500_000 ? 3 : 5;
+  const minBuys = relaxed ? Math.min(tierMinBuys, 3) : tierMinBuys;
+
+  // ── Tier system — enforce liquidity window (skip for BONDING) ─────────────
+  if (!isBonding) {
+    const liq = liquidityUsd ?? 0;
+    if (liq < minLiq) {
+      const actualLiq = `$${Math.round(liq).toLocaleString()}`;
+      await db.insert(skippedTokensTable).values({
+        tokenMint: mint, tokenSymbol, tokenName, logoUrl,
+        reason:    `Liquidity too low — below $${(minLiq / 1000).toFixed(0)}k minimum (${actualLiq})`,
+        safetyScore: "0", liquidityUsd: String(liq), marketCap,
+      }).catch(() => {});
+      return;
+    }
+
+    if (liq > 500_000) {
+      await db.insert(skippedTokensTable).values({
+        tokenMint: mint, tokenSymbol, tokenName, logoUrl,
+        reason:    "Liquidity too high — low profit potential for meme trading",
+        safetyScore: "0", liquidityUsd: String(liq), marketCap,
+      }).catch(() => {});
+      return;
+    }
   }
 
-  if (liquidityUsd > 500_000) {
-    await db.insert(skippedTokensTable).values({
-      tokenMint: mint, tokenSymbol, tokenName, logoUrl,
-      reason:    "Liquidity too high — low profit potential for meme trading",
-      safetyScore: "0", liquidityUsd: String(liquidityUsd), marketCap,
-    }).catch(() => {});
-    return;
-  }
-
-  // ── Pre-filter 2: Activity gate ──────────────────────────────────────────
-  if (buyTxns5m < minBuys) {
+  // ── Pre-filter 2: Activity gate (skip for BONDING) ────────────────────────
+  if (!isBonding && buyTxns5m < minBuys) {
     await db.insert(skippedTokensTable).values({
       tokenMint: mint, tokenSymbol, tokenName, logoUrl,
       reason:    `Insufficient buy activity — ${buyTxns5m}b in 5m below ${minBuys} minimum${relaxed ? " (relaxed)" : ""}`,
-      safetyScore: "0", liquidityUsd: String(liquidityUsd), marketCap,
+      safetyScore: "0", liquidityUsd: String(liquidityUsd ?? 0), marketCap,
     }).catch(() => {});
     return;
   }
 
-  // ── Fix 4: Narrative spam filter ─────────────────────────────────────────
+  // ── Narrative spam filter ─────────────────────────────────────────────────
   const nameLower = tokenName.toLowerCase();
   const matchedKeyword = SPAM_KEYWORDS.find((kw) => nameLower.includes(kw));
 
@@ -202,7 +206,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
         await db.insert(skippedTokensTable).values({
           tokenMint: mint, tokenSymbol, tokenName, logoUrl,
           reason:    `Narrative duplicate — top 2 by liquidity already detected (${matchedKeyword})`,
-          safetyScore: "0", liquidityUsd: String(liquidityUsd), marketCap,
+          safetyScore: "0", liquidityUsd: String(liquidityUsd ?? 0), marketCap,
         }).catch(() => {});
         logger.info({ mint, keyword: matchedKeyword }, "[SPAM_FILTER] Narrative duplicate skipped");
         return;
@@ -212,11 +216,11 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     }
   }
 
-  // ── All pre-filters passed — save to Detected as pending ────────────────
+  // ── Save to Detected as pending ───────────────────────────────────────────
   await db.insert(detectedTokensTable).values({
     tokenMint: mint, tokenSymbol, tokenName, logoUrl,
     safetyStatus: "pending",
-    liquidityUsd: String(liquidityUsd),
+    liquidityUsd: String(liquidityUsd ?? 0),
     volume5m:     String(volume5m),
     marketCap,
     mintRevoked:  false,
@@ -224,13 +228,13 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     sellTxns5m,
   }).catch(() => {});
 
-  logger.info({ mint, symbol: tokenSymbol, liq: liquidityUsd, buys: buyTxns5m }, "[SCANNING] Token queued for risk gate");
+  logger.info({ mint, symbol: tokenSymbol, liq: liquidityUsd, buys: buyTxns5m, bonding: isBonding }, "[SCANNING] Token queued for risk gate");
 
-  // ── Risk gate — runs on every token, 15 s hard timeout ──────────────────
+  // ── Risk gate ─────────────────────────────────────────────────────────────
   const token: DexToken = {
     ...(rawToken as DexToken),
     tokenMint: mint, tokenSymbol, tokenName,
-    liquidityUsd, buyTxns5m, sellTxns5m, volume5m,
+    liquidityUsd: liquidityUsd ?? 0, buyTxns5m, sellTxns5m, volume5m,
   };
 
   let riskResult: Awaited<ReturnType<typeof runRiskGate>> | null = null;
@@ -251,7 +255,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     await db.insert(skippedTokensTable).values({
       tokenMint: mint, tokenSymbol, tokenName, logoUrl,
       reason:       "Risk gate timeout — no response within 15 seconds",
-      safetyScore:  "0", liquidityUsd: String(liquidityUsd), marketCap,
+      safetyScore:  "0", liquidityUsd: String(liquidityUsd ?? 0), marketCap,
     }).catch(() => {});
     logger.warn({ mint }, "[RISK_GATE] Timeout — token moved to skipped");
     return;
@@ -261,7 +265,6 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     logger.info({ mint, reasons: riskResult.reasons }, "[AUDIT_FAIL] Token failed risk gate");
     recordSkippedToken(isLikelyRug(riskResult.reasons));
 
-    // Fix 3: store specific failure label in detectedTokensTable
     await db.update(detectedTokensTable)
       .set({ safetyStatus: "risky", failureLabel: riskResult.failureLabel ?? "FILTERED" })
       .where(eq(detectedTokensTable.tokenMint, mint))
@@ -271,17 +274,16 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       tokenMint: mint, tokenSymbol, tokenName, logoUrl,
       reason:      riskResult.reasons.join("; "),
       safetyScore: String(riskResult.score),
-      liquidityUsd: String(liquidityUsd),
+      liquidityUsd: String(liquidityUsd ?? 0),
       marketCap,
     }).catch(() => {});
     return;
   }
 
-  // ── Risk gate passed ─────────────────────────────────────────────────────
+  // ── Risk gate passed ──────────────────────────────────────────────────────
   logger.info({ mint }, "[AUDIT_PASS] Risk gate passed");
   const probabilityScore = calculateProbabilityScore(token, riskResult);
 
-  // Fix 3: store failureLabel even on pass (UNVERIFIED badge for 404 tokens that still pass)
   await db.update(detectedTokensTable)
     .set({
       safetyStatus: "good",
@@ -291,19 +293,22 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     .where(eq(detectedTokensTable.tokenMint, mint))
     .catch(() => {});
 
-  // ── Fix 9: Paper trade execution — active regardless of bot toggle ───────
+  // ── Paper trade execution ─────────────────────────────────────────────────
   if (isPaperMode()) {
-    const tier = liquidityUsd >= 100_000 ? "SAFE" : "MOON";
-    // $10 = 10% of $100 MOON, $20 = 20% of $100 SAFE, $5 for UNVERIFIED (5% cap)
-    let positionSizeUsd = tier === "SAFE" ? 20 : 10;
+    const liq = liquidityUsd ?? 0;
+    const tier = isBonding ? "BONDING" : liq >= 100_000 ? "SAFE" : "MOON";
+    let positionSizeUsd = tier === "SAFE" ? 20 : tier === "BONDING" ? 2 : 10;
     if (riskResult.unverified) positionSizeUsd = 5;
     const positionSizeSol = positionSizeUsd / 150;
+
+    const extraSig = riskResult.extraSignals;
 
     const pt: PaperTrade = {
       id: `pt_${Date.now()}_${mint.slice(0, 8)}`,
       tokenMint: mint,
       tokenSymbol,
       tokenName,
+      logoUrl: logoUrl ?? undefined,
       type: "buy",
       amountSol: positionSizeSol,
       positionSizeUsd,
@@ -320,17 +325,27 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       timestamp: new Date().toISOString(),
       exitTimestamp: null,
       relaxedMode: relaxed,
+      sniperRiskPct: extraSig?.sniperRiskPct ?? 0,
+      walletAgeDays: extraSig?.walletAgeScore ?? 0,
+      volumeConsistencyScore: extraSig?.volumeConsistencyScore ?? 0,
+      holderGrowthPattern: extraSig?.holderGrowthLabel ?? null,
+      entryLiquidity: liquidityUsd ?? 0,
+      entryMarketCap: mcapNum,
+      entryVolume5m: volume5m,
+      entryBuys5m: buyTxns5m,
+      entrySells5m: sellTxns5m,
+      entryRegime: getRegime().regime,
     };
 
     recordPaperTrade(pt);
     state.tradesExecutedToday++;
     console.log(
-      `PAPER TRADE EXECUTED — ${tokenName} — ${token.priceUsd} — $${positionSizeUsd}`,
+      `PAPER TRADE EXECUTED — ${tokenName} — ${token.priceUsd} — $${positionSizeUsd}${isBonding ? " [BONDING]" : ""}${relaxed ? " [SIM-RELAXED]" : ""}`,
     );
-    return; // never execute real trade in paper mode
+    return;
   }
 
-  // ── Trading path — only when bot is active (live mode) ───────────────────
+  // ── Trading path — live mode ───────────────────────────────────────────────
   if (!state.isRunning) return;
   if (!canTrade() || isHibernating()) return;
   if (!canOpenNewPosition()) {
@@ -343,7 +358,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
   const sentiment = await analyzeTokenSentiment(
     tokenSymbol, tokenName,
     {
-      liquidityUsd,
+      liquidityUsd: liquidityUsd ?? 0,
       volume24h:             token.volume24h,
       priceChangePercent24h: token.priceChange24h,
       holderCount:  0, topHolderPct: 0,
@@ -398,6 +413,15 @@ export function stopBot(): void {
   logger.info("Trading bot stopped — scanner remains active for radar display");
 }
 
+export function restartScanner(): void {
+  console.log("AUTO-RESTART — restarting triple-radar scanner");
+  stopTripleRadarScanner();
+  setTimeout(() => {
+    startTripleRadarScanner(handleDiscoveredToken);
+    console.log("AUTO-RESTART — scanner restarted successfully");
+  }, 1500);
+}
+
 export async function initializeOrchestrator(): Promise<void> {
   loadTradingMode();
   logReadinessReport();
@@ -413,21 +437,34 @@ export async function initializeOrchestrator(): Promise<void> {
     startBot();
   });
 
+  // ── C1: Secondary watchdog — every 120s check if scanner IDLE, auto-restart ──
+  setInterval(() => {
+    const scannerState = getScannerState();
+    const isIdle = !scannerState.lastSuccessfulScan ||
+      Date.now() - new Date(scannerState.lastSuccessfulScan).getTime() > 120_000;
+    if (isIdle) {
+      console.log("AUTO-RESTART — secondary watchdog detected scanner IDLE, restarting scanner");
+      restartScanner();
+    } else {
+      logger.debug("[SECONDARY_WATCHDOG] Scanner active — last scan within 120s");
+    }
+  }, 120_000);
+  console.log("SECONDARY WATCHDOG ACTIVE — checking scanner every 120s");
+
   setInterval(() => cleanStaleRecords().catch(() => {}), 10 * 60 * 1000);
 
-  console.log("CRASH FIX COMPLETE");
-  console.log("RADAR LIVE COMPLETE");
-  console.log("TIER SYSTEM ACTIVE — Tier 1: $15k–$100k (MOON) | Tier 2: $100k–$500k (SAFE)");
-  console.log("SPAM FILTER ACTIVE — narrative dedup enabled");
-  console.log("SKIPPED TAB FIXED");
-  console.log("SPECIFIC BADGES ACTIVE — 7 failure types: RUGCHECK FAIL | HIGH SELLS | LOW VOLUME | LOW BUYS | HOLDER CONC | SUPPLY GAP | FREEZE AUTH | UNVERIFIED");
-  console.log("MARKET CAP DISPLAY ACTIVE — fdv field extracted from DEX Screener pairs");
-  console.log("DASHBOARD DEDUP ACTIVE — grouping by tokenName keeping highest liquidityUsd");
-  console.log("LIQUIDITY AMOUNT FIX ACTIVE — actual detected liquidity shown in skip reason");
-  console.log("RUGCHECK SPECIFIC REASON ACTIVE — r.name | r.description fallback");
-  console.log("BOT TOGGLE SYNC ACTIVE — scanner online status reported in /bot/status");
-  console.log("PAPER TRADE ENGINE ACTIVE — simulated balance $100 USD — relaxed mode after 30min no trades");
-  console.log("ALL FIXES COMPLETE");
+  console.log("COMMAND 1 ACTIVE");
+  console.log("BONDING CURVE FIX ACTIVE — source=BONDING skips liquidity/pair/buyers checks");
+  console.log("TWO-TIER BUY THRESHOLD ACTIVE — <$500k: 5 buys | >$500k: 3 buys");
+  console.log("BITQUERY NOT CONFIGURED — neutral score logged when key missing");
+  console.log("LATE ENTRY SELL PRESSURE FILTER ACTIVE — 1.5:1 ratio blocks");
+  console.log("DEAD TOKEN FILTER ACTIVE — -50% 24h price drop blocks");
+  console.log("SNIPER ACCUMULATION CHECK ACTIVE — >25% blocks, >15% -20pts");
+  console.log("WALLET SEEDING DETECTION ACTIVE — >5 gas wallets blocks");
+  console.log("WALLET AGE QUALITY SCORE ACTIVE — VETERAN/FRESH/NEW labels");
+  console.log("VOLUME CONSISTENCY SCORE ACTIVE — CONSISTENT/SPIKE labels");
+  console.log("HOLDER GROWTH PATTERN ACTIVE — ORGANIC/ARTIFICIAL labels");
+  console.log("CONTEXT-AWARE MOONBAG PROTECTION ACTIVE — 3-tier system");
   logger.info("Squadron AI orchestrator initialized");
 }
 

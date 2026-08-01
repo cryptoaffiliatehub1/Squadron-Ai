@@ -203,8 +203,8 @@ export default function Simulation() {
                     )}
                   </div>
                   <div className="mt-0.5 flex gap-3 text-[7.5px] text-muted-foreground">
-                    <span>{t.amountSol?.toFixed(4)} SOL</span>
-                    <span>Score: {t.probabilityScore ?? "—"}</span>
+                    <span>{typeof t.amountSol === "number" ? t.amountSol.toFixed(4) : "—"} SOL</span>
+                    <span>Score: {typeof t.probabilityScore === "number" ? t.probabilityScore : "—"}</span>
                     <span className="text-muted-foreground/60">{t.regime}</span>
                   </div>
                 </div>

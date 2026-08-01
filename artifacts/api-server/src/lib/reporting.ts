@@ -12,7 +12,8 @@ import { getSessionStats, saveDailySnapshot, getDailySnapshots, getMonthSnapshot
 import { getCircuitState } from "./circuitBreaker";
 import cron from "node-cron";
 
-const REPORT_EMAIL = process.env["REPORT_EMAIL"] ?? "solex674@gmail.com";
+// C1: fallback to SMTP_USER so reports reach the configured mailbox — never a hardcoded address
+const REPORT_EMAIL = process.env["REPORT_EMAIL"] ?? process.env["SMTP_USER"] ?? "";
 const WHATSAPP_1 = process.env["WHATSAPP_NUMBER_1"] ?? "+2349078886030";
 const WHATSAPP_2 = process.env["WHATSAPP_NUMBER_2"] ?? "+2347026125080";
 const DATA_DIR = path.resolve(process.cwd(), "data");

@@ -23,12 +23,18 @@ export default function Portfolio() {
     refetchInterval: 15000,
   });
 
+  // C1: safeNum — guard against non-numeric values leaking into .toFixed() calls
+  const safeNum = (v: unknown, fallback = 0): number => {
+    const n = typeof v === "number" ? v : Number(v ?? fallback);
+    return isFinite(n) ? n : fallback;
+  };
+
   const tokens       = (portfolio as any[]) ?? [];
-  const solBalance   = (wallet as any)?.solBalance ?? 0;
-  const usdBalance   = (wallet as any)?.usdValue ?? 0;
+  const solBalance   = safeNum((wallet as any)?.solBalance);
+  const usdBalance   = safeNum((wallet as any)?.usdValue);
   const moonbagList  = (moonbags as any)?.positions ?? [];
-  const vaultSol     = (moonbags as any)?.totalValueSol ?? 0;
-  const totalUsd     = tokens.reduce((sum: number, t: any) => sum + (t.usdValue ?? 0), 0);
+  const vaultSol     = safeNum((moonbags as any)?.totalValueSol);
+  const totalUsd     = tokens.reduce((sum: number, t: any) => sum + safeNum(t.usdValue), 0);
 
   const panelCls = "bg-card border border-border rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.25)]";
   const labelCls = "text-[7.5px] text-muted-foreground uppercase tracking-[0.2em] font-bold";
@@ -102,8 +108,8 @@ export default function Portfolio() {
                     <p className="text-[7.5px] text-muted-foreground">Cost: <span className="text-gains">$0</span> (recovered)</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-gains font-black font-mono">{m.currentMultiplier?.toFixed(2)}×</p>
-                    <p className="text-[7.5px] text-muted-foreground font-mono">{m.currentValueSol?.toFixed(4)} SOL</p>
+                    <p className="text-[10px] text-gains font-black font-mono">{safeNum(m.currentMultiplier, 1).toFixed(2)}×</p>
+                    <p className="text-[7.5px] text-muted-foreground font-mono">{safeNum(m.currentValueSol).toFixed(4)} SOL</p>
                   </div>
                 </div>
               ))}
@@ -131,7 +137,9 @@ export default function Portfolio() {
           ) : (
             <div className="space-y-2">
               {tokens.map((token: any, i: number) => {
-                const change = token.priceChange24h ?? 0;
+                // C1: safeNum guards prevent crash when priceChange24h/usdValue are non-numeric
+                const change = safeNum(token.priceChange24h);
+                const usdVal = safeNum(token.usdValue);
                 return (
                   <div key={i} className={`${panelCls} p-3`}>
                     <div className="flex items-center justify-between">
@@ -140,7 +148,7 @@ export default function Portfolio() {
                         <p className="text-[8.5px] text-muted-foreground font-mono">{token.balance?.toLocaleString()}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-mono text-sm font-bold">${(token.usdValue ?? 0).toFixed(2)}</p>
+                        <p className="font-mono text-sm font-bold">${usdVal.toFixed(2)}</p>
                         <div className={`flex items-center justify-end gap-0.5 text-[8.5px] font-bold ${change >= 0 ? "text-gains" : "text-losses"}`}>
                           {change >= 0 ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
                           {change >= 0 ? "+" : ""}{change.toFixed(1)}%

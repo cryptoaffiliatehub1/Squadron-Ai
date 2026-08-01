@@ -1,6 +1,7 @@
 {
-  "date": "2026-05-11",
-  "totalTrades": 0,
+  "date": "2026-07-07",
+  "totalTrades": 23,
+  "openTrades": 23,
   "wins": 0,
   "losses": 0,
   "winRate": 0,
@@ -9,5 +10,9 @@
   "expectancy": 0,
   "topFailureReason": "none",
   "totalPnlSol": 0,
-  "isPaperMode": false
+  "totalPnlUsd": 0,
+  "simBalanceUsd": -160,
+  "biggestWin": null,
+  "biggestLoss": null,
+  "isPaperMode": true
 }

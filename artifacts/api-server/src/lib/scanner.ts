@@ -35,7 +35,7 @@ export type TokenCallback = (token: Partial<DexToken>) => Promise<void>;
 let onToken: TokenCallback | null = null;
 let scanInterval: ReturnType<typeof setInterval> | null = null;
 let probeInterval: ReturnType<typeof setInterval> | null = null;
-let heartbeatInterval: ReturnType<typeof setInterval> | null = null;  // Fix 1
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 let dailyResetTimeout: ReturnType<typeof setTimeout> | null = null;
 let pumpFunWs: unknown = null;
 
@@ -47,26 +47,15 @@ function failover(to: ScannerSource, reason: string): void {
 }
 
 // ── DEX Screener parser ──────────────────────────────────────────────────────
-// CONFIRMED real API shapes (verified by live curl):
-//
-// GET /token-profiles/latest/v1  →  array of:
-//   { chainId, tokenAddress, icon, header, openGraph, links, cto, updatedAt }
-//   *** NO pairs, NO name, NO symbol inside the profile object ***
-//
-// GET /latest/dex/tokens/{addr}  →  { schemaVersion, pairs: [ ... ] }
-//   pairs[0]: { chainId, dexId, pairAddress, baseToken: {address,name,symbol},
-//               priceUsd, liquidity: {usd}, volume: {h24,h6,h1,m5},
-//               txns: {m5:{buys,sells}}, priceChange: {h24}, pairCreatedAt, fdv }
-//   *** NO info field on pairs — logo comes from the profile object only ***
 
-// Guard so the raw dump fires only once per process lifetime
 let _rawDumped = false;
 
 interface ProfileRaw {
   chainId: string;
   tokenAddress: string;
-  icon?: string;    // token logo URL  ← this is the logo source
-  header?: string;  // banner image URL (fallback logo)
+  icon?: string;
+  header?: string;
+  links?: Array<{ type: string; url: string }>;
 }
 
 interface PairDataRaw {
@@ -76,23 +65,35 @@ interface PairDataRaw {
   baseToken?: { address?: string; name?: string; symbol?: string };
   priceUsd?: string | number;
   liquidity?: { usd?: number };
-  volume?: { h24?: number; m5?: number };
+  volume?: { h24?: number; m5?: number; h1?: number; h6?: number };
   priceChange?: { h24?: number };
   txns?: { m5?: { buys?: number; sells?: number } };
   pairCreatedAt?: number;
-  fdv?: number;   // Fix 4: fully diluted market cap
+  fdv?: number;
+  info?: {
+    socials?: Array<{ type: string; url: string }>;
+    websites?: Array<{ label: string; url: string }>;
+  };
+}
+
+function extractSocials(profile: ProfileRaw, pair: PairDataRaw | undefined): DexToken["socialLinks"] {
+  const socials = pair?.info?.socials ?? profile.links ?? [];
+  const twitter = (socials as any[]).find((s: any) => s.type === "twitter")?.url;
+  const telegram = (socials as any[]).find((s: any) => s.type === "telegram")?.url;
+  const website = pair?.info?.websites?.[0]?.url;
+  if (!twitter && !telegram && !website) return undefined;
+  return { twitter, telegram, website };
 }
 
 function buildToken(
   tokenAddress: string,
   pair: PairDataRaw | undefined,
   iconUrl: string | undefined,
+  profile?: ProfileRaw,
 ): Partial<DexToken> {
   const logoUrl = iconUrl || undefined;
-
   const rawName = pair?.baseToken?.name?.trim();
   const tokenName = rawName || tokenAddress.slice(0, 8);
-
   const rawSymbol = pair?.baseToken?.symbol?.trim();
   const tokenSymbol = rawSymbol || tokenAddress.slice(0, 6);
 
@@ -103,8 +104,6 @@ function buildToken(
       : undefined;
 
   const priceUsd = parseFloat(String(pair?.priceUsd ?? "0")) || 0;
-
-  // Fix 4: extract fdv as marketCap
   const marketCap: number | undefined =
     pair?.fdv != null && isFinite(Number(pair.fdv)) && Number(pair.fdv) > 0
       ? Number(pair.fdv)
@@ -118,6 +117,8 @@ function buildToken(
     liquidityUsd,
     priceUsd,
     volume24h: Number(pair?.volume?.h24 ?? 0),
+    volume1h: pair?.volume?.h1 !== undefined ? Number(pair.volume.h1) : undefined,
+    volume6h: pair?.volume?.h6 !== undefined ? Number(pair.volume.h6) : undefined,
     volume5m: Number(pair?.volume?.m5 ?? 0),
     priceChange24h: Number(pair?.priceChange?.h24 ?? 0),
     pairAddress: pair?.pairAddress ?? "",
@@ -129,6 +130,8 @@ function buildToken(
     buyTxns5m: pair?.txns?.m5?.buys ?? 0,
     sellTxns5m: pair?.txns?.m5?.sells ?? 0,
     marketCap,
+    source: "DEX",
+    socialLinks: profile ? extractSocials(profile, pair) : undefined,
   };
 }
 
@@ -228,7 +231,7 @@ async function scanDexScreener(): Promise<Partial<DexToken>[]> {
     const tokens = solanaProfiles.map((profile) => {
       const addr = profile.tokenAddress ?? "";
       const pair = pairsMap.get(addr);
-      return buildToken(addr, pair, profile.icon ?? profile.header);
+      return buildToken(addr, pair, profile.icon ?? profile.header, profile);
     });
 
     const first = tokens.find((t) => t.tokenName && t.tokenName.length > 8);
@@ -283,7 +286,8 @@ async function scanBirdeye(): Promise<Partial<DexToken>[]> {
       isTrending: false,
       buyTxns5m: 0,
       sellTxns5m: 0,
-      marketCap: t.mc ?? undefined,   // Fix 4: Birdeye market cap field
+      marketCap: t.mc ?? undefined,
+      source: "DEX" as const,
     }));
   } catch (err) {
     logger.warn({ err }, "[SCANNER] Birdeye scan failed");
@@ -328,12 +332,18 @@ function connectPumpFun(): void {
         const wsName = (data.name ?? "").trim() || String(data.mint).slice(0, 8);
         const wsSymbol = (data.symbol ?? "").trim() || data.mint.slice(0, 6);
 
+        // For bonding curve tokens, try to fetch pair data but allow null
         const pair = await fetchBestPair(data.mint);
 
         const tokenName = pair?.baseToken?.name?.trim() || wsName;
         const tokenSymbol = pair?.baseToken?.symbol?.trim() || wsSymbol;
-        const liquidityUsd = pair?.liquidity?.usd ?? wsMarketCapUsd;
+
+        // C1: For bonding curve tokens, use market cap as proxy for liquidity if no pair
+        const hasPair = pair && (pair.liquidity?.usd ?? 0) > 0;
+        const liquidityUsd = hasPair ? (pair.liquidity?.usd ?? 0) : (wsMarketCapUsd > 0 ? wsMarketCapUsd * 0.1 : 0);
         const marketCap = pair?.fdv ?? (wsMarketCapUsd > 0 ? wsMarketCapUsd : undefined);
+
+        state.lastSuccessfulScan = new Date();
 
         await onToken({
           tokenMint: data.mint,
@@ -343,6 +353,8 @@ function connectPumpFun(): void {
           liquidityUsd,
           priceUsd: Number(pair?.priceUsd ?? 0),
           volume24h: Number(pair?.volume?.h24 ?? 0),
+          volume1h: pair?.volume?.h1 ? Number(pair.volume.h1) : undefined,
+          volume6h: pair?.volume?.h6 ? Number(pair.volume.h6) : undefined,
           volume5m: Number(pair?.volume?.m5 ?? 0),
           priceChange24h: Number(pair?.priceChange?.h24 ?? 0),
           pairAddress: pair?.pairAddress ?? data.bondingCurveKey ?? "",
@@ -354,6 +366,7 @@ function connectPumpFun(): void {
           buyTxns5m: pair?.txns?.m5?.buys ?? 0,
           sellTxns5m: pair?.txns?.m5?.sells ?? 0,
           marketCap,
+          source: "BONDING",   // C1: tag as bonding curve
         });
       } catch {}
     };
@@ -447,7 +460,6 @@ export function startTripleRadarScanner(callback: TokenCallback): void {
     8_000,
   );
 
-  // Fix 1: heartbeat — restart scan if no tokens received in 90s
   const HEARTBEAT_MS = 90_000;
   heartbeatInterval = setInterval(() => {
     const lastScan = state.lastSuccessfulScan;
@@ -468,7 +480,7 @@ export function startTripleRadarScanner(callback: TokenCallback): void {
 
   scheduleDailyReset();
   setScannerOnline(true);
-  console.log("PARSER FIX COMPLETE");
+  console.log("BONDING CURVE SOURCE TAG ACTIVE — BONDING tokens bypass liquidity/pair checks");
   logger.info(
     "[SCANNER] Triple-radar scanner started — DEX Screener primary, Pump.fun secondary, Birdeye tertiary",
   );
@@ -477,8 +489,9 @@ export function startTripleRadarScanner(callback: TokenCallback): void {
 export function stopTripleRadarScanner(): void {
   if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
   if (probeInterval) { clearInterval(probeInterval); probeInterval = null; }
-  if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }  // Fix 1
+  if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
   if (dailyResetTimeout) { clearTimeout(dailyResetTimeout); dailyResetTimeout = null; }
+  pumpFunWs = null;
   setScannerOnline(false);
   logger.info("[SCANNER] Triple-radar scanner stopped");
 }

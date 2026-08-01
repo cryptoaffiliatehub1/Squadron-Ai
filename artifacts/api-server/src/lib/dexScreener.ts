@@ -13,6 +13,8 @@ export interface DexToken {
   priceUsd: number;
   volume24h: number;
   volume5m: number;
+  volume1h?: number;   // C1: hourly volumes for consistency check
+  volume6h?: number;
   priceChange24h: number;
   pairAddress: string;
   dexId: string;
@@ -22,7 +24,13 @@ export interface DexToken {
   isTrending?: boolean;
   buyTxns5m: number;
   sellTxns5m: number;
-  marketCap?: number;   // Fix 4: fdv from DEX Screener pairs response
+  marketCap?: number;
+  source?: "DEX" | "BONDING";   // C1: bonding curve source tag
+  socialLinks?: {
+    twitter?: string;
+    telegram?: string;
+    website?: string;
+  };
 }
 
 export interface ScannerFilter {
@@ -67,7 +75,7 @@ async function getBoostedMints(): Promise<Set<string>> {
 interface PairRaw {
   baseToken: { address: string; name: string; symbol: string };
   liquidity?: { usd?: number };
-  volume?: { h24?: number; m5?: number };
+  volume?: { h24?: number; m5?: number; h1?: number; h6?: number };
   priceUsd?: string;
   priceChange?: { h24?: number };
   pairAddress: string;
@@ -75,13 +83,26 @@ interface PairRaw {
   chainId: string;
   pairCreatedAt?: number;
   boosts?: { active?: number };
-  fdv?: number;   // Fix 4: fully diluted market cap
+  fdv?: number;
   txns?: {
     m5?: { buys?: number; sells?: number };
     h1?: { buys?: number; sells?: number };
     h6?: { buys?: number; sells?: number };
     h24?: { buys?: number; sells?: number };
   };
+  info?: {
+    socials?: Array<{ type: string; url: string }>;
+    websites?: Array<{ label: string; url: string }>;
+  };
+}
+
+function extractSocialLinks(p: PairRaw): DexToken["socialLinks"] {
+  const socials = p.info?.socials ?? [];
+  const twitter = socials.find((s) => s.type === "twitter")?.url;
+  const telegram = socials.find((s) => s.type === "telegram")?.url;
+  const website = p.info?.websites?.[0]?.url;
+  if (!twitter && !telegram && !website) return undefined;
+  return { twitter, telegram, website };
 }
 
 function pairToToken(p: PairRaw, boostedMints: Set<string>, isTrending: boolean): DexToken {
@@ -92,6 +113,8 @@ function pairToToken(p: PairRaw, boostedMints: Set<string>, isTrending: boolean)
     liquidityUsd: p.liquidity?.usd ?? 0,
     priceUsd: parseFloat(p.priceUsd ?? "0"),
     volume24h: p.volume?.h24 ?? 0,
+    volume1h: p.volume?.h1,
+    volume6h: p.volume?.h6,
     volume5m: p.volume?.m5 ?? 0,
     priceChange24h: p.priceChange?.h24 ?? 0,
     pairAddress: p.pairAddress,
@@ -102,7 +125,9 @@ function pairToToken(p: PairRaw, boostedMints: Set<string>, isTrending: boolean)
     isTrending,
     buyTxns5m: p.txns?.m5?.buys ?? 0,
     sellTxns5m: p.txns?.m5?.sells ?? 0,
-    marketCap: p.fdv ?? undefined,   // Fix 4
+    marketCap: p.fdv ?? undefined,
+    source: "DEX",
+    socialLinks: extractSocialLinks(p),
   };
 }
 

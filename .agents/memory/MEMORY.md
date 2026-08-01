@@ -1,2 +1,3 @@
 - [UI Architecture — Header toggles](ui-header-toggles.md) — BOT chip + MODE chip in Layout; BotContext is global; network label reads from API not local state.
 - [UI Architecture — Alerts page](ui-alerts-page.md) — Events tab assembled client-side from history/skipped/circuit/wallet APIs; Price Alerts tab uses existing CRUD routes.
+- [Command 1 — Security gate design decisions](command1-design-decisions.md) — Bonding bypass, two-tier threshold, non-blocking Helius checks, 3-tier moonbag (ALL 5 conditions), secondary watchdog, REPORT_EMAIL fix.
