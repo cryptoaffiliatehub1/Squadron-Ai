@@ -38,8 +38,8 @@ export function calculatePositionSize(
   solPriceUsd: number,
   probabilityScore: number,
 ): PositionSize {
-  const isPaper = process.env["PAPER_TRADE"] !== "false";
-  const effectiveBalance = isPaper ? PAPER_TRADE_SOL : walletBalanceSol;
+  const { isPaperMode } = require("./tradingMode") as { isPaperMode: () => boolean };
+  const effectiveBalance = isPaperMode() ? PAPER_TRADE_SOL : walletBalanceSol;
 
   const regime = getRegime();
   const regimeMultiplier = getMultiplier();

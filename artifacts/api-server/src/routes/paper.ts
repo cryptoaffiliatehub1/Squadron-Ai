@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getPaperTrades, generateDailyReport, readDailyReport } from "../lib/paperTrading";
+import { getPaperTrades, generateDailyReport, readDailyReport, getSimBalanceFull } from "../lib/paperTrading";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -29,6 +29,16 @@ router.post("/paper/generate-report", (_req, res) => {
     res.json(report);
   } catch (err) {
     logger.error({ err }, "POST /paper/generate-report failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// C2: GET /sim/balance — complete simulated balance snapshot
+router.get("/sim/balance", (_req, res) => {
+  try {
+    res.json(getSimBalanceFull());
+  } catch (err) {
+    logger.error({ err }, "GET /sim/balance failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

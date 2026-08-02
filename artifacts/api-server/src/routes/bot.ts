@@ -31,7 +31,7 @@ router.get("/bot/status", (_req, res) => {
     lastActivity: state.lastActivity ? state.lastActivity.toISOString() : null,
     walletConfigured: !!process.env["SOLANA_PRIVATE_KEY"] || !!process.env["PRIVATE_KEY"],
     heliusConfigured: !!process.env["HELIUS_API_KEY"] || !!process.env["HELIUS_KEY"],
-    paperMode: process.env["PAPER_TRADE"] !== "false",
+    paperMode: (require("../lib/tradingMode") as { isPaperMode: () => boolean }).isPaperMode(),
     walletStatus: wallet.status,
     circuitState: circuit.state,
     conservativeMode: circuit.conservativeMode,

@@ -19,11 +19,16 @@ export interface ExtraSignals {
   narrativeSurvivorScore: number;
   walletSeedingDetected: boolean;
   walletSeedingDetail: string | null;
+  top10HolderPct: number;           // C2: 0–100 normalized holder concentration
 }
 
 export interface RiskGateResult {
   passed: boolean;
-  score: number;
+  score: number;                     // raw internal gate score
+  probabilityScore?: number;         // C2: 0-100 weighted final score (plain integer)
+  scoreBreakdownJson?: string;       // C2: JSON string of 6-component breakdown
+  signalsTriggered?: string[];       // C2: bonus signal labels
+  positionAdjustmentPct?: number;    // C2: 100=full, 75/50/25/2=reduced
   reasons: string[];
   checks: Record<string, boolean | string>;
   failureLabel?: string;
@@ -56,7 +61,7 @@ async function heliusGet(path: string): Promise<any> {
 
 async function checkBirdeyeSecurity(
   tokenMint: string,
-): Promise<{ safe: boolean; reason?: string; failureLabel?: string }> {
+): Promise<{ safe: boolean; reason?: string; failureLabel?: string; top10HolderPct?: number }> {
   const key = process.env["BIRDEYE_API_KEY"];
   if (!key) return { safe: true };
   try {
@@ -69,17 +74,129 @@ async function checkBirdeyeSecurity(
     if (d.freezeAuthority === true || d.mintAuthority === true) {
       return { safe: false, reason: "Freeze or mint authority is active", failureLabel: "FREEZE AUTH" };
     }
-    if (d.top10HolderPercent !== undefined && d.top10HolderPercent > 20) {
+    // C2: normalize to 0-100 range (Birdeye returns 0-1 or 0-100 depending on version)
+    const rawPct = d.top10HolderPercent;
+    const pct: number = rawPct !== undefined
+      ? (rawPct <= 1 ? rawPct * 100 : rawPct)
+      : 0;
+    // Hard block only at extreme concentration (>90%)
+    if (pct > 90) {
       return {
         safe: false,
-        reason: `Top 10 holders = ${(d.top10HolderPercent * 100).toFixed(1)}% (>20% limit)`,
-        failureLabel: "HOLDER CONC",
+        reason: `Extreme holder concentration: ${pct.toFixed(1)}% (>90% limit)`,
+        failureLabel: "EXTREME HOLDER CONC",
+        top10HolderPct: pct,
       };
     }
-    return { safe: true };
+    return { safe: true, top10HolderPct: pct };
   } catch {
     return { safe: true };
   }
+}
+
+// ── C2: 6-component weighted probability score ──────────────────────────────
+
+interface WeightedScoreResult {
+  score: number;
+  breakdown: Record<string, number>;
+  signalsTriggered: string[];
+  positionAdjustmentPct: number;
+  scoreBreakdownJson: string;
+}
+
+function computeWeightedScore(
+  token: DexToken,
+  rugcheckStatus: string | boolean,
+  top10HolderPct: number,
+  extraSignals: ExtraSignals,
+): WeightedScoreResult {
+  const breakdown: Record<string, number> = {};
+  const signalsTriggered: string[] = [];
+  let positionAdjustmentPct = 100;
+
+  // 1. RugCheck (20 pts)
+  const rcStr = String(rugcheckStatus);
+  let rugPts = 0;
+  if (rcStr.startsWith("VERIFIED")) { rugPts = 20; signalsTriggered.push("RUGCHECK_VERIFIED"); }
+  else if (rcStr.startsWith("UNVERIFIED")) rugPts = 10;
+  else if (rcStr === "false") rugPts = 0;
+  else rugPts = 8;
+  breakdown.rugcheck = rugPts;
+
+  // 2. Holder concentration (20 pts)
+  let holderPts = 0;
+  if (top10HolderPct < 60)      { holderPts = 20; }
+  else if (top10HolderPct < 70) { holderPts = 15; }
+  else if (top10HolderPct < 80) { holderPts = 10; positionAdjustmentPct = Math.min(positionAdjustmentPct, 75); }
+  else if (top10HolderPct < 90) { holderPts = 5;  positionAdjustmentPct = Math.min(positionAdjustmentPct, 50); }
+  else                          { holderPts = 0;  positionAdjustmentPct = Math.min(positionAdjustmentPct, 25); }
+  breakdown.holderConcentration = holderPts;
+
+  // 3. Volume momentum (20 pts max)
+  let volumePts = 0;
+  if (token.volume5m > 500) {
+    const h1 = token.volume1h ?? token.volume5m * 12;
+    const avgPerMin = h1 / 60;
+    const curPerMin = token.volume5m / 5;
+    if (curPerMin > avgPerMin) { volumePts += 10; signalsTriggered.push("VOLUME_CLIMBING"); }
+  }
+  if (token.buyTxns5m > token.sellTxns5m) volumePts += 5;
+  const h6 = token.volume6h ?? token.volume5m * 72;
+  const avgPer5mH6 = h6 / 72;
+  if (token.volume5m > avgPer5mH6 * 1.5) { volumePts += 5; signalsTriggered.push("VELOCITY_UP"); }
+  breakdown.volumeMomentum = Math.min(volumePts, 20);
+
+  // 4. Liquidity quality (20 pts)
+  const mcap = token.marketCap ?? 0;
+  const liqRatioPct = mcap > 0 ? (token.liquidityUsd / mcap) * 100 : 0;
+  let liqPts = 0;
+  if (liqRatioPct > 5)       { liqPts = 20; signalsTriggered.push("HIGH_LIQ_RATIO"); }
+  else if (liqRatioPct > 2)  { liqPts = 15; }
+  else if (liqRatioPct > 1)  { liqPts = 8;  positionAdjustmentPct = Math.min(positionAdjustmentPct, 50); }
+  else                       { liqPts = 0;  positionAdjustmentPct = Math.min(positionAdjustmentPct, 2); }
+  breakdown.liquidityQuality = liqPts;
+
+  // 5. Social presence (10 pts)
+  const s = token.socialLinks;
+  let socialPts = (s?.website ? 3 : 0) + (s?.twitter ? 4 : 0) + (s?.telegram ? 3 : 0);
+  breakdown.socialPresence = Math.min(socialPts, 10);
+  if (socialPts >= 7) signalsTriggered.push("STRONG_SOCIAL");
+
+  // 6. Dual signal bonus (10 pts when ≥2 independent signals)
+  const independentSignals = [
+    token.isTrending      ? "TRENDING"          : null,
+    token.isBoosted       ? "BOOSTED"           : null,
+    rugPts === 20         ? "RUGCHECK_VERIFIED" : null,
+    extraSignals.walletAgeLabel   === "VETERAN HOLDERS"    ? "VETERAN_WALLETS"    : null,
+    extraSignals.volumeConsistencyLabel === "CONSISTENT VOLUME" ? "CONSISTENT_VOL" : null,
+    extraSignals.holderGrowthLabel === "ORGANIC GROWTH"    ? "ORGANIC_GROWTH"   : null,
+  ].filter(Boolean) as string[];
+  const dualBonus = independentSignals.length >= 2 ? 10 : 0;
+  if (dualBonus > 0) signalsTriggered.push("DUAL_SIGNAL");
+  breakdown.dualSignalBonus = dualBonus;
+
+  // Base score from 6 components
+  let base = rugPts
+    + holderPts
+    + Math.min(volumePts, 20)
+    + liqPts
+    + Math.min(socialPts, 10)
+    + dualBonus;
+
+  // C1 bonus/penalty on top
+  base += extraSignals.walletAgeScore;
+  base += extraSignals.volumeConsistencyScore;
+  base += extraSignals.holderGrowthScore;
+  base += extraSignals.survivorScore;
+  base += extraSignals.narrativeSurvivorScore;
+  const c1Bonus = extraSignals.walletAgeScore
+    + extraSignals.volumeConsistencyScore
+    + extraSignals.holderGrowthScore
+    + extraSignals.survivorScore;
+  breakdown.c1Adjustments = c1Bonus;
+
+  const finalScore = Math.min(Math.max(Math.round(base), 0), 100);
+  return { score: finalScore, breakdown, signalsTriggered, positionAdjustmentPct, scoreBreakdownJson: JSON.stringify(breakdown) };
 }
 
 // ── Bitquery supply audit ─────────────────────────────────────────────────────
@@ -526,6 +643,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
     return { passed: false, score: 0, reasons, checks, failureLabel };
   }
   checks.birdeye = true;
+  const top10HolderPct = birdeye.top10HolderPct ?? 0; // C2: normalized 0-100
 
   // ── Bitquery supply audit ─────────────────────────────────────────────────
   const supply = await checkBitquerySupply(token.tokenMint);
@@ -646,38 +764,55 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
     logger.info({ mint: token.tokenMint, reasons }, "[AUDIT_FAIL] Token rejected by risk gate");
   }
 
+  const extraSignals: ExtraSignals = {
+    sniperRiskPct: sniperResult.riskPct,
+    walletAgeScore: walletAgeResult.score,
+    walletAgeLabel: walletAgeResult.label,
+    volumeConsistencyScore: volConsistency.score,
+    volumeConsistencyLabel: volConsistency.label,
+    holderGrowthScore: holderGrowth.score,
+    holderGrowthLabel: holderGrowth.label,
+    survivorScore: survivorInfo.score,
+    survivorLabel: survivorInfo.label,
+    narrativeSurvivorScore: 0,
+    walletSeedingDetected: seedingResult.blocked,
+    walletSeedingDetail: seedingResult.reason ?? null,
+    top10HolderPct,
+  };
+
+  // C2: compute 6-component weighted score on every passed token
+  const weighted = computeWeightedScore(
+    token,
+    checks.rugcheck,
+    top10HolderPct,
+    extraSignals,
+  );
+
   return {
     passed: reasons.length === 0,
     score,
+    probabilityScore: weighted.score,
+    scoreBreakdownJson: weighted.scoreBreakdownJson,
+    signalsTriggered: weighted.signalsTriggered,
+    positionAdjustmentPct: weighted.positionAdjustmentPct,
     reasons,
     checks,
     failureLabel: passed ? (unverified ? "UNVERIFIED" : undefined) : failureLabel,
     unverified,
-    extraSignals: {
-      sniperRiskPct: sniperResult.riskPct,
-      walletAgeScore: walletAgeResult.score,
-      walletAgeLabel: walletAgeResult.label,
-      volumeConsistencyScore: volConsistency.score,
-      volumeConsistencyLabel: volConsistency.label,
-      holderGrowthScore: holderGrowth.score,
-      holderGrowthLabel: holderGrowth.label,
-      survivorScore: survivorInfo.score,
-      survivorLabel: survivorInfo.label,
-      narrativeSurvivorScore: 0,
-      walletSeedingDetected: seedingResult.blocked,
-      walletSeedingDetail: seedingResult.reason ?? null,
-    },
+    extraSignals,
   };
 }
 
+// C2: compat shim — callers that still call calculateProbabilityScore get probabilityScore
+// (computed inside runRiskGate now); this is only used as a fallback
 export function calculateProbabilityScore(token: DexToken, gateResult: RiskGateResult): number {
+  if (gateResult.probabilityScore !== undefined) return gateResult.probabilityScore;
+  // Legacy fallback
   let s = Math.max(0, Math.min(100, gateResult.score));
-
   if (token.isTrending) s += 15;
   if (token.isBoosted) s += 10;
   if (token.liquidityUsd > 100_000) s += 10;
   if (token.volume5m > 50_000) s += 10;
   if (token.buyTxns5m > token.sellTxns5m * 1.5) s += 5;
-
   return Math.min(Math.max(Math.round(s), 0), 100);
 }
