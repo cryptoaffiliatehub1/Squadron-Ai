@@ -119,7 +119,7 @@ export async function executeBuy(
     incrementOpenPositions();
     logger.info(
       { mint: token.tokenMint, symbol: token.tokenSymbol, amountSol: positionSize.amountSol },
-      "[PAPER_TRADE] BUY simulated",
+      "[SIM] BUY simulated",
     );
     return { success: true, txSignature: `paper_${tradeId}` };
   }

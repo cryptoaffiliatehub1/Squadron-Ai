@@ -15,7 +15,7 @@ import { startReportingEngine } from "./reporting";
 import { logReadinessReport } from "./systemReadiness";
 import { loadTradingMode, isPaperMode } from "./tradingMode";
 import { recordSkippedToken } from "./sessionStats";
-import { recordPaperTrade, noRecentPaperTrades } from "./paperTrading";
+import { recordPaperTrade, noRecentPaperTrades, startExitEngine } from "./paperTrading";
 import type { PaperTrade } from "./paperTrading";
 import type { DexToken } from "./dexScreener";
 
@@ -297,11 +297,29 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
   if (isPaperMode()) {
     const liq = liquidityUsd ?? 0;
     const tier = isBonding ? "BONDING" : liq >= 100_000 ? "SAFE" : "MOON";
+
+    // C2: entry threshold — 60 relaxed/smart-money, 65 graduation/bonding, 70 standard
+    const scoreThreshold = relaxed ? 60 : isBonding ? 65 : 70;
+    if (probabilityScore < scoreThreshold) {
+      logger.info({ mint, probabilityScore, scoreThreshold }, "[SIM] Score below threshold — skipped");
+      return;
+    }
+
+    // C2: base position by tier (% of $100 sim balance)
+    // BONDING = 2% ($2), MOON = 10% ($10), SAFE = 20% ($20)
     let positionSizeUsd = tier === "SAFE" ? 20 : tier === "BONDING" ? 2 : 10;
-    if (riskResult.unverified) positionSizeUsd = 5;
+    if (riskResult.unverified) positionSizeUsd = Math.min(positionSizeUsd, 5);
+
+    // C2: apply holder concentration / liquidity quality position adjustment
+    const adjPct = riskResult.positionAdjustmentPct ?? 100;
+    if (adjPct < 100) {
+      positionSizeUsd = Math.max(1, Math.round(positionSizeUsd * adjPct / 100));
+    }
     const positionSizeSol = positionSizeUsd / 150;
 
     const extraSig = riskResult.extraSignals;
+    const signalsArr: string[] = [...(riskResult.signalsTriggered ?? [])];
+    if (relaxed) signalsArr.push("SIM_RELAXED");
 
     const pt: PaperTrade = {
       id: `pt_${Date.now()}_${mint.slice(0, 8)}`,
@@ -309,6 +327,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       tokenSymbol,
       tokenName,
       logoUrl: logoUrl ?? undefined,
+      socialLinks: rawToken.socialLinks ?? undefined,
       type: "buy",
       amountSol: positionSizeSol,
       positionSizeUsd,
@@ -321,6 +340,8 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       filtersFailedCount: Object.values(riskResult.checks).filter((v) => v === false).length,
       filterDetails: riskResult.checks,
       probabilityScore,
+      scoreBreakdownJson: riskResult.scoreBreakdownJson,
+      signalsTriggered: signalsArr,
       regime: getRegime().regime,
       timestamp: new Date().toISOString(),
       exitTimestamp: null,
@@ -340,7 +361,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     recordPaperTrade(pt);
     state.tradesExecutedToday++;
     console.log(
-      `PAPER TRADE EXECUTED — ${tokenName} — ${token.priceUsd} — $${positionSizeUsd}${isBonding ? " [BONDING]" : ""}${relaxed ? " [SIM-RELAXED]" : ""}`,
+      `[SIM] BUY — ${tokenName} (${tokenSymbol}) — entry $${token.priceUsd?.toFixed(8) ?? "?"} — $${positionSizeUsd}${isBonding ? " [BONDING]" : ""}${relaxed ? " [SIM-RELAXED]" : ""} — score ${probabilityScore}`,
     );
     return;
   }
@@ -453,6 +474,8 @@ export async function initializeOrchestrator(): Promise<void> {
 
   setInterval(() => cleanStaleRecords().catch(() => {}), 10 * 60 * 1000);
 
+  startExitEngine();
+  console.log("EXIT ENGINE ACTIVE — 60s price checks, moonbag tier protection, stop-loss monitoring");
   console.log("COMMAND 1 ACTIVE");
   console.log("BONDING CURVE FIX ACTIVE — source=BONDING skips liquidity/pair/buyers checks");
   console.log("TWO-TIER BUY THRESHOLD ACTIVE — <$500k: 5 buys | >$500k: 3 buys");
