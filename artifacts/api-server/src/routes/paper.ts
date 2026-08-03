@@ -4,9 +4,23 @@ import { logger } from "../lib/logger";
 
 const router = Router();
 
+// Normalize probabilityScore: old data stored it as an object {score,breakdown,...};
+// new data stores it as a plain integer. Coerce to integer for the frontend.
+function normalizeScore(raw: unknown): number {
+  if (typeof raw === "number") return Math.round(raw);
+  if (raw && typeof raw === "object" && typeof (raw as any).score === "number") {
+    return Math.round((raw as any).score);
+  }
+  return 0;
+}
+
 router.get("/paper/trades", (_req, res) => {
   try {
-    res.json(getPaperTrades());
+    const trades = getPaperTrades().map((t) => ({
+      ...t,
+      probabilityScore: normalizeScore(t.probabilityScore),
+    }));
+    res.json(trades);
   } catch (err) {
     logger.error({ err }, "GET /paper/trades failed");
     res.status(500).json({ error: "Internal server error" });

@@ -237,6 +237,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     liquidityUsd: liquidityUsd ?? 0, buyTxns5m, sellTxns5m, volume5m,
   };
 
+  const verdictStart = Date.now();
   let riskResult: Awaited<ReturnType<typeof runRiskGate>> | null = null;
   try {
     riskResult = await Promise.race([
@@ -246,8 +247,10 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
   } catch {
     riskResult = null;
   }
+  const verdictMs = Date.now() - verdictStart;
 
   if (riskResult === null) {
+    logger.warn({ mint, verdictMs }, "[RISK_GATE] TIMEOUT — no response within 15s — token moved to skipped");
     await db.update(detectedTokensTable)
       .set({ safetyStatus: "risky", failureLabel: "TIMEOUT" })
       .where(eq(detectedTokensTable.tokenMint, mint))
@@ -257,12 +260,11 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       reason:       "Risk gate timeout — no response within 15 seconds",
       safetyScore:  "0", liquidityUsd: String(liquidityUsd ?? 0), marketCap,
     }).catch(() => {});
-    logger.warn({ mint }, "[RISK_GATE] Timeout — token moved to skipped");
     return;
   }
 
   if (!riskResult.passed) {
-    logger.info({ mint, reasons: riskResult.reasons }, "[AUDIT_FAIL] Token failed risk gate");
+    logger.info({ mint, reasons: riskResult.reasons, verdictMs }, `[AUDIT_FAIL] Token failed risk gate — verdict in ${verdictMs}ms`);
     recordSkippedToken(isLikelyRug(riskResult.reasons));
 
     await db.update(detectedTokensTable)
@@ -464,7 +466,7 @@ export async function initializeOrchestrator(): Promise<void> {
     const isIdle = !scannerState.lastSuccessfulScan ||
       Date.now() - new Date(scannerState.lastSuccessfulScan).getTime() > 120_000;
     if (isIdle) {
-      console.log("AUTO-RESTART — secondary watchdog detected scanner IDLE, restarting scanner");
+      console.log("SCANNER STALLED — AUTO-RESTART TRIGGERED");
       restartScanner();
     } else {
       logger.debug("[SECONDARY_WATCHDOG] Scanner active — last scan within 120s");

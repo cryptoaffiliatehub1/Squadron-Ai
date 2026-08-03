@@ -13,6 +13,7 @@ interface ScannerState {
   pumpFunConnected: boolean;
   lastDexProbe: Date | null;
   lastSuccessfulScan: Date | null;
+  lastTokenCount: number;         // raw token count from the most recent successful poll
   rateLimitResetAt: Date | null;
   wsReconnectAttempts: number;
   failoverLog: Array<{ from: ScannerSource; to: ScannerSource; at: string; reason: string }>;
@@ -25,6 +26,7 @@ const state: ScannerState = {
   pumpFunConnected: false,
   lastDexProbe: null,
   lastSuccessfulScan: null,
+  lastTokenCount: 0,
   rateLimitResetAt: null,
   wsReconnectAttempts: 0,
   failoverLog: [],
@@ -416,6 +418,10 @@ async function runScanCycle(): Promise<void> {
     case "birdeye":
       tokens = await scanBirdeye();
       break;
+  }
+
+  if (tokens.length > 0) {
+    state.lastTokenCount = tokens.length;
   }
 
   if (onToken) {

@@ -1,11 +1,16 @@
 import { Layout } from "@/components/layout";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Briefcase, Moon, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import {
+  Briefcase, Moon, TrendingUp, TrendingDown, Wallet,
+  ChevronDown, ChevronUp, ExternalLink, Shield,
+} from "lucide-react";
 import { useTradingMode } from "@/contexts/trading-mode";
+import { useState } from "react";
 
 export default function Portfolio() {
   const { isPaper } = useTradingMode();
+  const [expandedMoonbag, setExpandedMoonbag] = useState<string | null>(null);
 
   const { data: portfolio, isLoading: portfolioLoading } = useQuery({
     queryKey: ["portfolio"],
@@ -23,10 +28,18 @@ export default function Portfolio() {
     refetchInterval: 15000,
   });
 
-  // C1: safeNum — guard against non-numeric values leaking into .toFixed() calls
   const safeNum = (v: unknown, fallback = 0): number => {
     const n = typeof v === "number" ? v : Number(v ?? fallback);
     return isFinite(n) ? n : fallback;
+  };
+
+  const fmtPrice = (v: unknown): string => {
+    const n = safeNum(v);
+    if (n === 0) return "—";
+    if (n < 0.0001) return `$${n.toExponential(3)}`;
+    if (n < 0.01)   return `$${n.toFixed(6)}`;
+    if (n < 1)      return `$${n.toFixed(4)}`;
+    return `$${n.toFixed(2)}`;
   };
 
   const tokens       = (portfolio as any[]) ?? [];
@@ -38,6 +51,11 @@ export default function Portfolio() {
 
   const panelCls = "bg-card border border-border rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.25)]";
   const labelCls = "text-[7.5px] text-muted-foreground uppercase tracking-[0.2em] font-bold";
+
+  const tierColor = (tier: string) =>
+    tier === "EMERGENCY_EXIT" ? "text-losses border-losses/40 bg-losses/8"
+    : tier === "ALERT"        ? "text-yellow-400 border-yellow-400/40 bg-yellow-400/8"
+    : "text-gains border-gains/40 bg-gains/8";
 
   return (
     <Layout>
@@ -101,18 +119,136 @@ export default function Portfolio() {
             </div>
           ) : (
             <div className="space-y-2">
-              {moonbagList.map((m: any) => (
-                <div key={m.id} className="flex justify-between items-center bg-background/40 rounded-lg px-2.5 py-2">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase">{m.tokenSymbol}</p>
-                    <p className="text-[7.5px] text-muted-foreground">Cost: <span className="text-gains">$0</span> (recovered)</p>
+              {moonbagList.map((m: any) => {
+                const isExpanded = expandedMoonbag === m.id;
+                const tier = (m.protectionTier ?? "HOLD") as string;
+                // entryPrice is the golden-exit price (= 2.5× from original)
+                // Original buy price ≈ entryPrice / 2.5
+                const goldenExitPrice = safeNum(m.entryPrice);
+                const originalBuyPrice = goldenExitPrice > 0 ? goldenExitPrice / 2.5 : 0;
+                const currentPrice    = safeNum(m.currentPrice);
+                const multiplier      = safeNum(m.currentMultiplier, 1);
+                const currentValueSol = safeNum(m.currentValueSol);
+                const originalCostUsd = safeNum(m.originalCostUsd);
+                const tokensHeld      = safeNum(m.tokensHeld);
+                const enteredAt       = m.enteredAt ? new Date(m.enteredAt).toLocaleString() : "—";
+                const dexUrl = `https://dexscreener.com/solana/${m.tokenMint ?? ""}`;
+
+                return (
+                  <div key={m.id} className="bg-background/40 rounded-lg border border-border/40 overflow-hidden">
+                    {/* Summary row — tap to expand */}
+                    <button
+                      className="w-full flex justify-between items-center px-2.5 py-2 hover:bg-background/60 transition-colors"
+                      onClick={() => setExpandedMoonbag(isExpanded ? null : m.id)}
+                    >
+                      <div className="flex items-center gap-2 text-left">
+                        <Moon size={9} className="text-primary shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-bold uppercase">{m.tokenSymbol}</p>
+                          <p className="text-[7.5px] text-muted-foreground">Cost: <span className="text-gains">$0</span> (recovered)</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="text-[10px] text-gains font-black font-mono">{multiplier.toFixed(2)}×</p>
+                          <p className="text-[7.5px] text-muted-foreground font-mono">{currentValueSol.toFixed(4)} SOL</p>
+                        </div>
+                        {isExpanded
+                          ? <ChevronUp size={12} className="text-muted-foreground shrink-0" />
+                          : <ChevronDown size={12} className="text-muted-foreground shrink-0" />}
+                      </div>
+                    </button>
+
+                    {/* Detail panel */}
+                    {isExpanded && (
+                      <div className="border-t border-border/30 px-3 py-2.5 space-y-2.5">
+                        {/* Protection tier */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <Shield size={9} className="text-muted-foreground" />
+                            <span className="text-[7.5px] text-muted-foreground uppercase tracking-wider">Protection Tier</span>
+                          </div>
+                          <span className={`text-[7.5px] px-1.5 py-0.5 rounded border font-bold uppercase ${tierColor(tier)}`}>
+                            {tier === "EMERGENCY_EXIT" ? "EMERGENCY EXIT" : tier}
+                          </span>
+                        </div>
+
+                        {/* Original buy → golden exit */}
+                        <div className="space-y-1">
+                          <p className="text-[7.5px] text-muted-foreground uppercase tracking-wider font-bold">Trade History</p>
+                          <div className="bg-card/60 rounded-lg p-2 space-y-1.5 text-[8.5px]">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Original entry</span>
+                              <span className="font-mono text-white">{fmtPrice(originalBuyPrice)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Golden exit at (2.5×)</span>
+                              <span className="font-mono text-gains">{fmtPrice(goldenExitPrice)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Capital invested</span>
+                              <span className="font-mono">{originalCostUsd > 0 ? `$${originalCostUsd.toFixed(2)}` : "—"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Capital recovered</span>
+                              <span className="font-mono text-gains">✓ Full (50% sold at 2.5×)</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Current moonbag holding */}
+                        <div className="space-y-1">
+                          <p className="text-[7.5px] text-muted-foreground uppercase tracking-wider font-bold">Current Moonbag</p>
+                          <div className="bg-card/60 rounded-lg p-2 space-y-1.5 text-[8.5px]">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Tokens held (50%)</span>
+                              <span className="font-mono">{tokensHeld > 0 ? tokensHeld.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Moonbag entry price</span>
+                              <span className="font-mono text-primary">{fmtPrice(goldenExitPrice)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Current price</span>
+                              <span className={`font-mono ${currentPrice > goldenExitPrice ? "text-gains" : "text-losses"}`}>
+                                {fmtPrice(currentPrice)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Current value</span>
+                              <span className="font-mono text-primary font-bold">{currentValueSol.toFixed(6)} SOL</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Multiplier vs entry</span>
+                              <span className={`font-mono font-bold ${multiplier >= 1 ? "text-gains" : "text-losses"}`}>
+                                {multiplier.toFixed(3)}×
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Cost basis</span>
+                              <span className="font-mono text-gains font-bold">$0.00</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Timestamps */}
+                        <p className="text-[7.5px] text-muted-foreground/50 font-mono">
+                          Moonbag created: {enteredAt}
+                        </p>
+
+                        {/* DexScreener link */}
+                        <button
+                          className="w-full flex items-center justify-center gap-1.5 text-[8px] text-primary/70 hover:text-primary transition-colors py-1"
+                          onClick={() => window.open(dexUrl, "_blank", "noopener,noreferrer")}
+                        >
+                          <ExternalLink size={9} />
+                          View on DexScreener
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-gains font-black font-mono">{safeNum(m.currentMultiplier, 1).toFixed(2)}×</p>
-                    <p className="text-[7.5px] text-muted-foreground font-mono">{safeNum(m.currentValueSol).toFixed(4)} SOL</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -137,7 +273,6 @@ export default function Portfolio() {
           ) : (
             <div className="space-y-2">
               {tokens.map((token: any, i: number) => {
-                // C1: safeNum guards prevent crash when priceChange24h/usdValue are non-numeric
                 const change = safeNum(token.priceChange24h);
                 const usdVal = safeNum(token.usdValue);
                 return (

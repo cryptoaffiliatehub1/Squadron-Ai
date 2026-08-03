@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import {
   Bell, BellOff, Plus, Trash2, X, Zap, Shield, AlertTriangle,
   Activity, TrendingUp, TrendingDown, AlertCircle, RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useTradingMode } from "@/contexts/trading-mode";
 
@@ -25,6 +27,11 @@ interface SystemEvent {
   title: string;
   detail: string;
   ts: number;
+  /** Contract address for navigation — never use name */
+  tokenMint?: string;
+  /** Cached snapshot if token ages out */
+  cachedSymbol?: string;
+  cachedName?: string;
 }
 
 const EVENT_META: Record<EventType, { icon: any; color: string; bg: string }> = {
@@ -38,11 +45,11 @@ const EVENT_META: Record<EventType, { icon: any; color: string; bg: string }> = 
 };
 
 function useSystemEvents() {
-  const { data: history }  = useQuery({ queryKey: ["history-20"], queryFn: () => fetch("/api/history?limit=20").then(r => r.json()), refetchInterval: 30000 });
+  const { data: history }  = useQuery({ queryKey: ["history-20"],       queryFn: () => fetch("/api/history?limit=20").then(r => r.json()),       refetchInterval: 30000 });
   const { data: skipped }  = useQuery({ queryKey: ["tokens-skipped-10"], queryFn: () => fetch("/api/tokens/skipped?limit=10").then(r => r.json()), refetchInterval: 30000 });
-  const { data: circuit }  = useQuery({ queryKey: ["circuit"],    queryFn: () => fetch("/api/circuit").then(r => r.json()),            refetchInterval: 10000 });
-  const { data: wallet }   = useQuery({ queryKey: ["wallet-balance"], queryFn: () => fetch("/api/wallet/balance").then(r => r.json()),  refetchInterval: 30000 });
-  const { data: sys }      = useQuery({ queryKey: ["system-status"], queryFn: () => fetch("/api/system/status").then(r => r.json()),    refetchInterval: 10000 });
+  const { data: circuit }  = useQuery({ queryKey: ["circuit"],           queryFn: () => fetch("/api/circuit").then(r => r.json()),                 refetchInterval: 10000 });
+  const { data: wallet }   = useQuery({ queryKey: ["wallet-balance"],    queryFn: () => fetch("/api/wallet/balance").then(r => r.json()),           refetchInterval: 30000 });
+  const { data: sys }      = useQuery({ queryKey: ["system-status"],     queryFn: () => fetch("/api/system/status").then(r => r.json()),            refetchInterval: 10000 });
 
   const events = useMemo(() => {
     const out: SystemEvent[] = [];
@@ -52,22 +59,28 @@ function useSystemEvents() {
       if (!t.exitedAt) return;
       const pnl = t.pnlSol ?? 0;
       out.push({
-        id: `trade-${t.id}`,
-        type: "TRADE_EXECUTED",
-        title: `${pnl >= 0 ? "WIN" : "LOSS"} — ${t.tokenSymbol}`,
-        detail: `${pnl >= 0 ? "+" : ""}${pnl.toFixed(4)} SOL · Score ${t.probabilityScore ?? "—"} · ${t.regime ?? ""}`,
-        ts: new Date(t.exitedAt).getTime(),
+        id:           `trade-${t.id}`,
+        type:         "TRADE_EXECUTED",
+        title:        `${pnl >= 0 ? "WIN" : "LOSS"} — ${t.tokenSymbol}`,
+        detail:       `${pnl >= 0 ? "+" : ""}${pnl.toFixed(4)} SOL · Score ${t.probabilityScore ?? "—"} · ${t.regime ?? ""}`,
+        ts:           new Date(t.exitedAt).getTime(),
+        tokenMint:    t.tokenMint,
+        cachedSymbol: t.tokenSymbol,
+        cachedName:   t.tokenName,
       });
     });
 
     // Skipped tokens → RUG_AVOIDED
     ((skipped as any[]) ?? []).slice(0, 5).forEach((t: any) => {
       out.push({
-        id: `rug-${t.id}`,
-        type: "RUG_AVOIDED",
-        title: `RUG AVOIDED — ${t.tokenSymbol}`,
-        detail: t.reason ?? "Risk gate rejected",
-        ts: new Date(t.detectedAt).getTime(),
+        id:           `rug-${t.id}`,
+        type:         "RUG_AVOIDED",
+        title:        `RUG AVOIDED — ${t.tokenSymbol}`,
+        detail:       t.reason ?? "Risk gate rejected",
+        ts:           new Date(t.detectedAt).getTime(),
+        tokenMint:    t.tokenMint,
+        cachedSymbol: t.tokenSymbol,
+        cachedName:   t.tokenName,
       });
     });
 
@@ -75,9 +88,9 @@ function useSystemEvents() {
     const cs = (circuit as any)?.state;
     if (cs && cs !== "NORMAL") {
       out.push({
-        id: `circuit-${cs}`,
-        type: "CIRCUIT_BREAKER",
-        title: `CIRCUIT BREAKER — ${cs.replace(/_/g, " ")}`,
+        id:     `circuit-${cs}`,
+        type:   "CIRCUIT_BREAKER",
+        title:  `CIRCUIT BREAKER — ${cs.replace(/_/g, " ")}`,
         detail: cs === "FORTRESS_LOCKED" ? "10% daily loss limit hit. Scanner paused 12h."
               : cs === "GLOBAL_FLOOR_HIT" ? "Balance below 50% of starting capital. Manual reset required."
               : cs === "OBSERVATION_MODE" ? "3 consecutive losses. Observation mode active."
@@ -91,11 +104,11 @@ function useSystemEvents() {
     const sol = (wallet as any)?.solBalance ?? 0;
     if (sol > 0 && sol < 0.01) {
       out.push({
-        id: "low-balance",
-        type: "LOW_BALANCE",
-        title: "LOW BALANCE WARNING",
+        id:     "low-balance",
+        type:   "LOW_BALANCE",
+        title:  "LOW BALANCE WARNING",
         detail: `${sol.toFixed(4)} SOL — need ≥ 0.01 SOL for live trading`,
-        ts: Date.now() - 30_000,
+        ts:     Date.now() - 30_000,
       });
     }
 
@@ -103,9 +116,9 @@ function useSystemEvents() {
     const regime = (sys as any)?.regime?.regime;
     if (regime && regime !== "CHOP") {
       out.push({
-        id: `regime-${regime}`,
-        type: "REGIME_CHANGE",
-        title: `REGIME — ${regime.replace(/_/g, " ")}`,
+        id:     `regime-${regime}`,
+        type:   "REGIME_CHANGE",
+        title:  `REGIME — ${regime.replace(/_/g, " ")}`,
         detail: regime === "MANIA" ? "High momentum detected. Multipliers elevated."
               : regime === "RUG_CYCLE" ? "Rug pull spike. Risk hardened."
               : regime === "DEATH_ZONE" ? "Market collapse. All entries suspended."
@@ -120,7 +133,9 @@ function useSystemEvents() {
   return events;
 }
 
+// ── EventCard — tappable, navigates by mint address ─────────────────────────
 function EventCard({ event }: { event: SystemEvent }) {
+  const [, navigate] = useLocation();
   const meta = EVENT_META[event.type];
   const Icon = meta.icon;
   const age  = Date.now() - event.ts;
@@ -129,17 +144,53 @@ function EventCard({ event }: { event: SystemEvent }) {
                : age < 86400_000 ? `${Math.floor(age / 3600_000)}h ago`
                : new Date(event.ts).toLocaleDateString();
 
+  // Determine navigation target by event type
+  function handleClick() {
+    if (event.type === "RUG_AVOIDED") {
+      // Navigate to Radar → Skipped tab
+      navigate("/tokens");
+      // Small delay to let the page mount before we signal the tab
+      setTimeout(() => {
+        const btn = document.querySelector<HTMLButtonElement>('[data-tab="skipped"]');
+        if (btn) btn.click();
+        // If token has aged out of radar, the cached snapshot in detail is still shown
+      }, 100);
+    } else if (event.type === "TRADE_EXECUTED") {
+      navigate("/simulation");
+    } else if (event.tokenMint) {
+      // Open DexScreener as fallback for any event with a known mint
+      window.open(`https://dexscreener.com/solana/${event.tokenMint}`, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  const isNavigable = event.type === "RUG_AVOIDED" || event.type === "TRADE_EXECUTED" || !!event.tokenMint;
+
   return (
-    <div className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 ${meta.bg}`}>
+    <div
+      className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 ${meta.bg} ${
+        isNavigable ? "cursor-pointer hover:brightness-110 transition-all" : ""
+      }`}
+      onClick={isNavigable ? handleClick : undefined}
+      title={isNavigable ? "Tap to navigate" : undefined}
+    >
       <div className={`mt-0.5 shrink-0 ${meta.color}`}>
         <Icon size={12} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className={`text-[8.5px] font-bold uppercase tracking-wider ${meta.color}`}>{event.title}</p>
-          <span className="text-[7.5px] text-muted-foreground/50 font-mono shrink-0">{ageStr}</span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-[7.5px] text-muted-foreground/50 font-mono">{ageStr}</span>
+            {isNavigable && <ExternalLink size={8} className="text-muted-foreground/40" />}
+          </div>
         </div>
         <p className="text-[8px] text-muted-foreground mt-0.5 leading-relaxed">{event.detail}</p>
+        {/* Cached snapshot for aged-out tokens */}
+        {event.tokenMint && (event.cachedSymbol || event.cachedName) && (
+          <p className="text-[7.5px] text-muted-foreground/40 mt-1 font-mono">
+            {event.cachedSymbol ?? ""}{event.cachedName ? ` · ${event.cachedName}` : ""} · {event.tokenMint.slice(0, 6)}…{event.tokenMint.slice(-4)}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -184,7 +235,6 @@ function PriceAlerts() {
 
   return (
     <div className="space-y-3">
-      {/* New alert button */}
       <Button
         size="sm"
         variant="outline"
@@ -257,7 +307,11 @@ function PriceAlerts() {
       ) : (
         <div className="space-y-2">
           {alertList.map((alert: any) => (
-            <div key={alert.id} className={`bg-card border border-border rounded-xl p-3 ${alert.isTriggered ? "border-gains/30" : ""}`}>
+            <div
+              key={alert.id}
+              className={`bg-card border border-border rounded-xl p-3 ${alert.isTriggered ? "border-gains/30" : ""} cursor-pointer hover:border-border/80 transition-colors`}
+              onClick={() => window.open(`https://dexscreener.com/solana/${alert.tokenMint}`, "_blank", "noopener,noreferrer")}
+            >
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-[10px] uppercase">{alert.tokenSymbol}</span>
@@ -275,7 +329,7 @@ function PriceAlerts() {
                 <Button
                   size="sm" variant="ghost"
                   className="h-6 w-6 p-0 text-muted-foreground hover:text-losses"
-                  onClick={() => deleteAlert.mutate(alert.id)}
+                  onClick={(e) => { e.stopPropagation(); deleteAlert.mutate(alert.id); }}
                 >
                   <Trash2 size={10} />
                 </Button>

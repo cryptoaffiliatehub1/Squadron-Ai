@@ -2,7 +2,7 @@ import { Router } from "express";
 import { startBot, stopBot, getBotState, getFullSystemState, restartScanner } from "../lib/bot";
 import { getReadinessReport } from "../lib/systemReadiness";
 import { getCircuitState, resetFortress, humanOverride, engageFortress } from "../lib/circuitBreaker";
-import { getMoonbags, getTotalMoonbagValueSol } from "../lib/moonbagVault";
+import { getMoonbags, getTotalMoonbagValueSol, getMoonbagProtectionTiers } from "../lib/moonbagVault";
 import { getScannerState } from "../lib/scanner";
 import { getWatchdogState } from "../lib/watchdog";
 import { getRegime } from "../lib/marketRegime";
@@ -89,10 +89,14 @@ router.post("/system/human-override", (_req, res) => {
 
 router.get("/moonbags", (_req, res) => {
   const moonbags = getMoonbags();
+  const tiers = getMoonbagProtectionTiers();
   res.json({
     count: moonbags.length,
     totalValueSol: getTotalMoonbagValueSol(),
-    positions: moonbags,
+    positions: moonbags.map((m) => ({
+      ...m,
+      protectionTier: tiers.get(m.id) ?? "HOLD",
+    })),
   });
 });
 

@@ -40,6 +40,7 @@ interface MoonbagMonitorState {
   alertCount: number;
   lastChecked: Date | null;
   tier2AlertSent: boolean;
+  lastTier: "HOLD" | "ALERT" | "EMERGENCY_EXIT";
 }
 
 const vault: Map<string, MoonbagPosition> = new Map();
@@ -63,6 +64,7 @@ export function addMoonbag(position: Omit<MoonbagPosition, "currentMultiplier" |
     alertCount:          0,
     lastChecked:         new Date(),
     tier2AlertSent:      false,
+    lastTier:            "HOLD",
   });
 
   logger.info({ id: position.id, symbol: position.tokenSymbol }, "Moonbag added to vault (cost basis = 0 after capital recovery)");
@@ -160,6 +162,7 @@ async function runMoonbagCheck(): Promise<void> {
     vault.set(id, pos);
 
     const tier = evaluateTier(pos, ms, live);
+    ms.lastTier = tier;
 
     if (tier === "EMERGENCY_EXIT") {
       logger.warn(
@@ -254,4 +257,12 @@ export function getMoonbagMonitorState(): Array<{ id: string; tier2AlertCount: n
     priceReadings:    ms.priceHistory.length,
     lastChecked:      ms.lastChecked?.toISOString() ?? null,
   }));
+}
+
+export function getMoonbagProtectionTiers(): Map<string, "HOLD" | "ALERT" | "EMERGENCY_EXIT"> {
+  const out = new Map<string, "HOLD" | "ALERT" | "EMERGENCY_EXIT">();
+  for (const [id, ms] of monitorState.entries()) {
+    out.set(id, ms.lastTier);
+  }
+  return out;
 }

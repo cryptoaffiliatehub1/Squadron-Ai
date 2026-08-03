@@ -618,6 +618,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
     token.tokenMint,
   ).catch(() => ({ data: null, statusCode: 0 }));
 
+  // Note: rugcheck.ts already logs specific reason for each status code (TIMEOUT / 404 / RATE LIMITED / SERVER ERROR)
   if (rugData === null) {
     unverified = true;
     failureLabel = "UNVERIFIED";
@@ -626,6 +627,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   } else if (rugData.isRugged) {
     const specificReasons =
       rugData.risks.length > 0 ? rugData.risks.join(", ") : "RugCheck risk detected — verify manually";
+    console.log(`RUGCHECK DANGER — genuine risk flag (${token.tokenMint.slice(0, 8)}): ${specificReasons}`);
     failureLabel = "RUGCHECK FAIL";
     reasons.push(`RugCheck: ${specificReasons}`);
     checks.rugcheck = false;

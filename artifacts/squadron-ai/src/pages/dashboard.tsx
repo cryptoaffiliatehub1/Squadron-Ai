@@ -144,8 +144,20 @@ export default function Dashboard() {
     if (!ex || Number(t.liquidityUsd ?? 0) > Number(ex.liquidityUsd ?? 0)) _nameMap.set(key, t);
   }
   const tokenList = [..._nameMap.values()].slice(0, 5);
-  const scannerSource = (scanner as any)?.activeSource ?? "dexscreener";
-  const failoverLog   = (scanner as any)?.failoverLog ?? [];
+  const scannerSource    = (scanner as any)?.activeSource ?? "dexscreener";
+  const failoverLog      = (scanner as any)?.failoverLog ?? [];
+  const lastScanTs: string | null = (scanner as any)?.lastSuccessfulScan ?? null;
+  const lastTokenCount: number    = (scanner as any)?.lastTokenCount ?? 0;
+
+  // Format last poll time as relative seconds/minutes ago
+  function fmtScanAge(ts: string | null): string {
+    if (!ts) return "—";
+    const diffMs = Date.now() - new Date(ts).getTime();
+    const secs = Math.floor(diffMs / 1_000);
+    if (secs < 60) return `${secs}s ago`;
+    const mins = Math.floor(secs / 60);
+    return `${mins}m ago`;
+  }
   const dailyGainPct  = Number((circuit as any)?.dailyGainPct ?? 0) || 0;
   const drawdownPct   = Math.abs(Math.min(0, dailyGainPct));
   const gainPct       = Math.max(0, dailyGainPct);
@@ -330,6 +342,20 @@ export default function Dashboard() {
                     ${isRunning ? "right-0.5" : "left-0.5"}`}
                   />
                 </button>
+              </div>
+            </div>
+            {/* Scanner heartbeat row */}
+            <div className="mt-2 pt-2 border-t border-border/30 flex items-center justify-between">
+              <p className={`${labelCls} flex items-center gap-1`}>
+                <Radio size={7} className={lastScanTs ? "text-gains" : "text-muted-foreground/40"} /> Last Poll
+              </p>
+              <div className="flex items-center gap-3 text-[7.5px] text-muted-foreground font-mono">
+                <span className={lastScanTs ? "text-gains/80" : ""}>{fmtScanAge(lastScanTs)}</span>
+                {lastTokenCount > 0 && (
+                  <span className="text-muted-foreground/60">
+                    <span className="text-white">{lastTokenCount}</span> tokens
+                  </span>
+                )}
               </div>
             </div>
             {failoverLog.length > 0 && (

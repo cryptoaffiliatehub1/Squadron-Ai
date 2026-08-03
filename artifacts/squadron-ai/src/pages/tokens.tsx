@@ -19,7 +19,7 @@ function fmtUsd(v: unknown): string | null {
   return n.toFixed(0);
 }
 
-// ── Tier badge — Fix 3 ──────────────────────────────────────────────────────
+// ── Tier badge ───────────────────────────────────────────────────────────────
 function TierBadge({ liq }: { liq: unknown }) {
   const n = safeNum(liq);
   if (n === null) return null;
@@ -42,9 +42,9 @@ function StatusBadge({ status }: { status?: string }) {
       PASS
     </span>
   );
-  if (status === "risky") return (
-    <span className="text-[7.5px] px-1.5 py-0.5 rounded-lg border font-bold uppercase tracking-wide text-losses border-losses/40 bg-losses/8">
-      SKIP
+  if (status === "pending") return (
+    <span className="text-[7.5px] px-1.5 py-0.5 rounded-lg border font-bold uppercase tracking-wide text-blue-300 border-blue-300/40 bg-blue-300/8 animate-pulse">
+      EVALUATING
     </span>
   );
   if (status === "unknown") return (
@@ -59,7 +59,7 @@ function StatusBadge({ status }: { status?: string }) {
   );
 }
 
-// Fix 3: specific failure label badge — replaces generic SKIP for detected tokens
+// ── Specific failure label badge ─────────────────────────────────────────────
 function FailureBadge({ label, status }: { label?: string | null; status?: string }) {
   if (!label) return <StatusBadge status={status} />;
   const colorMap: Record<string, string> = {
@@ -150,7 +150,7 @@ function CopyAddress({ address }: { address?: string | null }) {
   );
 }
 
-// ── Safe liquidity display — Fix 1 crash prevention ─────────────────────────
+// ── Safe liquidity display ───────────────────────────────────────────────────
 function LiqDisplay({ liq }: { liq: unknown }) {
   const formatted = fmtUsd(liq);
   const n = safeNum(liq);
@@ -179,7 +179,9 @@ function DetectedCard({ token }: { token: any }) {
               <CopyAddress address={token.tokenMint} />
             </div>
             <div className="flex flex-col items-end gap-1">
-              <FailureBadge label={token.failureLabel} status={token.safetyStatus} />
+              {token.safetyStatus === "pending"
+                ? <StatusBadge status="pending" />
+                : <FailureBadge label={token.failureLabel} status={token.safetyStatus} />}
               <TierBadge liq={token.liquidityUsd} />
             </div>
           </div>
@@ -188,7 +190,6 @@ function DetectedCard({ token }: { token: any }) {
               <span className="text-muted-foreground">Liq: </span>
               <LiqDisplay liq={token.liquidityUsd} />
             </div>
-            {/* Fix 4: market cap from fdv */}
             <div>
               <span className="text-muted-foreground">MCap: </span>
               {token.marketCap != null
@@ -220,7 +221,7 @@ function DetectedCard({ token }: { token: any }) {
   );
 }
 
-// ── Skip reason formatter — Fix 5 + new tier reasons ───────────────────────
+// ── Skip reason formatter ────────────────────────────────────────────────────
 function formatSkipReason(raw: string): { label: string; detail: string } {
   if (!raw) return { label: "FILTERED", detail: "No reason recorded" };
   if (/no dex pair|liquidity unavailable/i.test(raw))
@@ -238,7 +239,6 @@ function formatSkipReason(raw: string): { label: string; detail: string } {
   if (/liquidity too high/i.test(raw))
     return { label: "TOO LARGE",    detail: "Above $500k — low meme profit potential" };
   if (/liquidity too low|below \$15k|below \$10k/i.test(raw)) {
-    // Fix 6: match the parenthetical actual amount e.g. ($14,100), not the threshold "$15k"
     const m = raw.match(/\(\$([\d,]+)\)/);
     return { label: "LIQUIDITY",    detail: m ? `$${m[1]} — below minimum` : "Liquidity below minimum" };
   }
@@ -246,6 +246,14 @@ function formatSkipReason(raw: string): { label: string; detail: string } {
     const m = raw.match(/\(\$([\d,]+)\)/);
     return { label: "LIQUIDITY",    detail: m ? `$${m[1]} — below minimum` : "Liquidity below minimum" };
   }
+  if (/sniper|accumulation/i.test(raw))
+    return { label: "SNIPER",       detail: raw.split(";")[0] ?? raw };
+  if (/wallet seeding|seeded/i.test(raw))
+    return { label: "WALLET SEED",  detail: "Coordinated wallet seeding detected" };
+  if (/coordinated attack|copycat/i.test(raw))
+    return { label: "COPYCAT",      detail: raw.split(";")[0] ?? raw };
+  if (/price collapsed|dead token|-50%/i.test(raw))
+    return { label: "PRICE DUMP",   detail: raw.split(";")[0] ?? raw };
   if (/rugcheck/i.test(raw))
     return { label: "RUGCHECK",     detail: raw.replace(/^rugcheck:\s*/i, "").split(";")[0] ?? raw };
   if (/holder/i.test(raw)) {
@@ -267,7 +275,17 @@ function formatSkipReason(raw: string): { label: string; detail: string } {
   return { label: "FILTERED",       detail: raw };
 }
 
-// ── Skipped card — Fix 5: every value null-safe ─────────────────────────────
+// ── Build a verification link based on skip label ────────────────────────────
+function skipReasonLink(label: string, tokenMint: string): string {
+  if (!tokenMint) return `https://dexscreener.com/solana/${tokenMint}`;
+  if (/rugcheck/i.test(label)) {
+    return `https://rugcheck.xyz/tokens/${tokenMint}`;
+  }
+  // All others (liquidity, no pair, low activity, too large, sniper, wallet seed, copycat, price dump, security, filtered)
+  return `https://dexscreener.com/solana/${tokenMint}`;
+}
+
+// ── Skipped card — reason badge tappable ────────────────────────────────────
 function SkippedCard({ token }: { token: any }) {
   if (!token) return null;
   const { label, detail } = formatSkipReason(String(token.reason ?? ""));
@@ -281,8 +299,14 @@ function SkippedCard({ token }: { token: any }) {
     try { return new Date(token.detectedAt).toLocaleTimeString(); } catch { return "—"; }
   })();
 
+  const verifyUrl = skipReasonLink(label, token.tokenMint ?? "");
+  const dexUrl    = `https://dexscreener.com/solana/${token.tokenMint ?? ""}`;
+
   return (
-    <div className="bg-card border border-border border-l-2 border-l-losses/50 rounded-xl p-3 shadow-[0_2px_12px_rgba(0,0,0,0.25)]">
+    <div
+      className="bg-card border border-border border-l-2 border-l-losses/50 rounded-xl p-3 shadow-[0_2px_12px_rgba(0,0,0,0.25)] cursor-pointer hover:border-border/80 transition-colors"
+      onClick={() => window.open(dexUrl, "_blank", "noopener,noreferrer")}
+    >
       <div className="flex items-start gap-3">
         <TokenLogo logoUrl={token.logoUrl} symbol={symbol} />
         <div className="flex-1 min-w-0">
@@ -292,16 +316,22 @@ function SkippedCard({ token }: { token: any }) {
               <p className="text-[10px] font-mono text-primary tracking-wider">{symbol}</p>
               <CopyAddress address={token.tokenMint} />
             </div>
-            <span className="text-[7.5px] px-1.5 py-0.5 rounded-lg border font-bold uppercase tracking-wide text-losses border-losses/40 bg-losses/8 shrink-0">
-              {label}
-            </span>
+            {/* Badge taps open the targeted verification link — stopPropagation prevents card nav */}
+            <button
+              className="text-[7.5px] px-1.5 py-0.5 rounded-lg border font-bold uppercase tracking-wide text-losses border-losses/40 bg-losses/8 shrink-0 hover:bg-losses/15 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(verifyUrl, "_blank", "noopener,noreferrer");
+              }}
+            >
+              {label} ↗
+            </button>
           </div>
           <div className="flex gap-3 text-[8.5px] mt-1.5">
             <p>
               <span className="text-muted-foreground">Liq: </span>
               <LiqDisplay liq={token.liquidityUsd} />
             </p>
-            {/* Fix 4: market cap on skipped cards */}
             {token.marketCap != null && (
               <p>
                 <span className="text-muted-foreground">MCap: </span>
@@ -346,9 +376,8 @@ function SkippedList() {
 }
 
 const TEN_MINUTES_MS = 10 * 60 * 1000;
-const SIXTY_SECONDS_MS = 60 * 1000;
 
-// ── Scan pulse animation — Fix 2 ────────────────────────────────────────────
+// ── Scan pulse animation ──────────────────────────────────────────────────────
 function ScanPulse() {
   return (
     <span className="relative inline-flex items-center justify-center w-3 h-3 shrink-0">
@@ -359,7 +388,7 @@ function ScanPulse() {
 }
 
 export default function Tokens() {
-  // Fix 2: re-render every 5 s to apply the 60-second risky-token filter
+  // Re-render every 5 s to apply the time-based token filter
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 5_000);
@@ -373,18 +402,31 @@ export default function Tokens() {
   });
   const [tab, setTab] = useState<"recent" | "skipped">("recent");
 
-  // Fix 2: Auto-remove risky/timed-out tokens after 60 s; remove anything >10 min old
-  const tokenList = (Array.isArray(tokens) ? tokens : []).filter((t: any) => {
-    const age = now - new Date(t.detectedAt).getTime();
-    if (age >= TEN_MINUTES_MS) return false;
-    if ((t.safetyStatus === "risky" || t.safetyStatus === "unknown") && age >= SIXTY_SECONDS_MS) return false;
+  // Detected tab rules:
+  //  1. Never show "risky" safetyStatus — those belong in Skipped
+  //  2. Remove anything >10 min old
+  //  3. Deduplicate by tokenMint — keep the most recently detected entry per mint
+  const rawList = (Array.isArray(tokens) ? tokens : [])
+    .filter((t: any) => {
+      if (t.safetyStatus === "risky") return false;           // risky → Skipped only
+      const age = now - new Date(t.detectedAt).getTime();
+      if (age >= TEN_MINUTES_MS) return false;                // too old
+      return true;
+    });
+
+  // Dedup by tokenMint — keep first (DB returns most-recent first)
+  const seenMints = new Set<string>();
+  const tokenList = rawList.filter((t: any) => {
+    const mint = t.tokenMint;
+    if (!mint || seenMints.has(mint)) return false;
+    seenMints.add(mint);
     return true;
   });
 
   return (
     <Layout>
       <div className="px-3 pb-4 space-y-3 max-w-lg mx-auto">
-        {/* Header with scan pulse — Fix 2 */}
+        {/* Header with scan pulse */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-sm font-bold text-primary tracking-[0.2em] uppercase flex items-center gap-2">
