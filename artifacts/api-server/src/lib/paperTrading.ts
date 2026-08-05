@@ -363,12 +363,26 @@ async function runExitCheck(): Promise<void> {
     if (!trade.entryPrice || trade.entryPrice <= 0) continue;
 
     const live = await fetchLiveData(trade.tokenMint);
-    if (!live) continue;
+
+    // Fallback: use last stored price when DexScreener fetch fails so exit checks still fire
+    // (avoids silent skip every cycle when rate-limited or no Solana pair returned)
+    let effectiveLive = live;
+    if (!effectiveLive && trade.currentPrice && trade.currentPrice > 0) {
+      console.log(`EXIT CHECK — fetch failed for ${trade.tokenName}, using stored $${trade.currentPrice.toFixed(8)}`);
+      effectiveLive = {
+        price:        trade.currentPrice,
+        liquidityUsd: trade.currentLiquidity  ?? 0,
+        volume5m:     trade.currentVolume5m   ?? 0,
+        buyTxns5m:    trade.currentBuys5m     ?? 0,
+        sellTxns5m:   trade.currentSells5m    ?? 0,
+      };
+    }
+    if (!effectiveLive) continue;
 
     const now = new Date().toISOString();
 
-    // Store live data on the record
-    {
+    // Store live data on the record (only when we have a fresh fetch)
+    if (live) {
       const all = readJson<any[]>(PAPER_TRADES_FILE, []);
       const idx = all.findIndex((t: any) => t.id === trade.id);
       if (idx === -1) continue;
@@ -381,7 +395,7 @@ async function runExitCheck(): Promise<void> {
       writeJson(PAPER_TRADES_FILE, all);
     }
 
-    const currentPrice  = live.price;
+    const currentPrice  = effectiveLive.price;
     const multiplier    = currentPrice / trade.entryPrice;
     const targetPrice   = trade.targetPrice  || trade.entryPrice * 2.5;
     const stopLossPrice = trade.stopLoss     || trade.entryPrice * 0.7;
@@ -452,7 +466,7 @@ async function runExitCheck(): Promise<void> {
         entryMarketCap:      trade.entryMarketCap,
         sniperRiskPct:       trade.sniperRiskPct,
         currentPrice,
-        currentLiquidity:    live.liquidityUsd,
+        currentLiquidity:    effectiveLive.liquidityUsd,
         lastLiveFetch:       now,
       };
       all2.push(moonbagEntry);
@@ -543,9 +557,9 @@ export function startExitEngine(): void {
   if (exitEngineInterval) return;
   exitEngineInterval = setInterval(() => {
     runExitCheck().catch((e) => logger.warn({ e }, "[EXIT_ENGINE] Price check error"));
-  }, 60_000);
+  }, 30_000);
   startMoonbagMonitor();
-  console.log("EXIT ENGINE ACTIVE — checking prices every 60s, moonbag tier protection active");
+  console.log("EXIT ENGINE ACTIVE — checking prices every 30s, moonbag tier protection active");
 }
 
 export function stopExitEngine(): void {

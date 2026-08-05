@@ -18,6 +18,7 @@ import { recordSkippedToken } from "./sessionStats";
 import { recordPaperTrade, noRecentPaperTrades, startExitEngine } from "./paperTrading";
 import type { PaperTrade } from "./paperTrading";
 import type { DexToken } from "./dexScreener";
+import { incrementGate } from "./scanStats";
 
 export interface BotState {
   isRunning: boolean;
@@ -229,6 +230,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
   }).catch(() => {});
 
   logger.info({ mint, symbol: tokenSymbol, liq: liquidityUsd, buys: buyTxns5m, bonding: isBonding }, "[SCANNING] Token queued for risk gate");
+  incrementGate("scanned");
 
   // ── Risk gate ─────────────────────────────────────────────────────────────
   const token: DexToken = {
@@ -248,6 +250,15 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     riskResult = null;
   }
   const verdictMs = Date.now() - verdictStart;
+
+  // ── Gate funnel stats — track what passed each checkpoint ───────────────────
+  if (riskResult) {
+    const c = riskResult.checks ?? {};
+    if (c["liquidity"] === true)                                            incrementGate("passedLiquidity");
+    if (typeof c["rugcheck"] === "string" && c["birdeye"] === true)         incrementGate("passedRugCheck");
+    if ("walletSeeding" in c && c["walletSeeding"] !== false)               incrementGate("passedWalletChecks");
+    if (riskResult.passed)                                                  incrementGate("passedAllGates");
+  }
 
   if (riskResult === null) {
     logger.warn({ mint, verdictMs }, "[RISK_GATE] TIMEOUT — no response within 15s — token moved to skipped");
@@ -361,6 +372,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     };
 
     recordPaperTrade(pt);
+    incrementGate("actualEntries");
     state.tradesExecutedToday++;
     console.log(
       `[SIM] BUY — ${tokenName} (${tokenSymbol}) — entry $${token.priceUsd?.toFixed(8) ?? "?"} — $${positionSizeUsd}${isBonding ? " [BONDING]" : ""}${relaxed ? " [SIM-RELAXED]" : ""} — score ${probabilityScore}`,
@@ -477,7 +489,7 @@ export async function initializeOrchestrator(): Promise<void> {
   setInterval(() => cleanStaleRecords().catch(() => {}), 10 * 60 * 1000);
 
   startExitEngine();
-  console.log("EXIT ENGINE ACTIVE — 60s price checks, moonbag tier protection, stop-loss monitoring");
+  console.log("EXIT ENGINE ACTIVE — 30s price checks, stored-price fallback, moonbag tier protection");
   console.log("COMMAND 1 ACTIVE");
   console.log("BONDING CURVE FIX ACTIVE — source=BONDING skips liquidity/pair/buyers checks");
   console.log("TWO-TIER BUY THRESHOLD ACTIVE — <$500k: 5 buys | >$500k: 3 buys");
@@ -490,6 +502,13 @@ export async function initializeOrchestrator(): Promise<void> {
   console.log("VOLUME CONSISTENCY SCORE ACTIVE — CONSISTENT/SPIKE labels");
   console.log("HOLDER GROWTH PATTERN ACTIVE — ORGANIC/ARTIFICIAL labels");
   console.log("CONTEXT-AWARE MOONBAG PROTECTION ACTIVE — 3-tier system");
+  // ── COMMAND corrections ────────────────────────────────────────────────────
+  console.log("FIX 1 ACTIVE — EXIT ENGINE: 30s interval + stored-price fallback when DexScreener fails");
+  console.log("FIX 2 ACTIVE — RUGCHECK RADAR: safetyStatus=risky tokens excluded from /tokens/recent feed");
+  console.log("FIX 2 ACTIVE — RISK GATE: passed= uses reasons.length===0 only (OR-bug removed)");
+  console.log("FIX 3 ACTIVE — POST-PEAK ENTRY GUARD: 2h+ old, >300% pumped, vol<$2k blocks entry");
+  console.log("FIX 4 ACTIVE — POSITION SIZER: sim balance scales off live SOL price each entry");
+  console.log("CORRECTIONS COMPLETE.");
   logger.info("Squadron AI orchestrator initialized");
 }
 
