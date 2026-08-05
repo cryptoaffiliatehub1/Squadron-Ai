@@ -112,6 +112,7 @@ export default function Dashboard() {
   const { data: circuit }  = useQuery({ queryKey: ["circuit"],        queryFn: () => fetch("/api/circuit").then(r => r.json()),           refetchInterval: 5000 });
   const { data: scanner }  = useQuery({ queryKey: ["scanner-status"], queryFn: () => fetch("/api/scanner/status").then(r => r.json()),    refetchInterval: 5000 });
   const { data: weights }  = useQuery({ queryKey: ["weights"],        queryFn: () => fetch("/api/weights").then(r => r.json()) });
+  const { data: scanStats }= useQuery({ queryKey: ["scan-stats"],     queryFn: () => fetch("/api/scan-stats").then(r => r.json()),     refetchInterval: 30_000 });
 
   const killSwitch = useMutation({
     mutationFn: () => fetch("/api/system/kill-switch", { method: "POST" }).then(r => r.json()),
@@ -374,6 +375,63 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* 5.5 ── SCAN FUNNEL ── */}
+          {(() => {
+            const td = (scanStats as any)?.today;
+            const wk = (scanStats as any)?.week;
+            const scanned = td?.tokensScanned ?? 0;
+            const funnel = [
+              { label: "Scanned",       val: scanned,                 key: "tokensScanned"      },
+              { label: "Liquidity ✓",   val: td?.passedLiquidity ?? 0, key: "passedLiquidity"   },
+              { label: "Rug Check ✓",   val: td?.passedRugCheck ?? 0,  key: "passedRugCheck"    },
+              { label: "Wallet ✓",      val: td?.passedWalletChecks ?? 0, key: "passedWalletChecks" },
+              { label: "All Gates ✓",   val: td?.passedAllGates ?? 0,  key: "passedAllGates"    },
+              { label: "Entries",        val: td?.actualEntries ?? 0,   key: "actualEntries"     },
+            ];
+            return (
+              <div className={`col-span-2 ${panelCls}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className={`${labelCls} flex items-center gap-1`}>
+                    <BarChart2 size={8} /> Scan Funnel
+                  </p>
+                  <span className="text-[7.5px] text-muted-foreground font-mono">Today / 7d</span>
+                </div>
+                <div className="grid grid-cols-6 gap-1">
+                  {funnel.map((row, i) => {
+                    const pct = i === 0 || scanned === 0 ? 100 : Math.round((row.val / scanned) * 100);
+                    const wkVal = (wk as any)?.[row.key] ?? 0;
+                    const barW = Math.max(4, pct);
+                    return (
+                      <div key={row.key} className="flex flex-col items-center gap-0.5">
+                        <span className={`text-[7px] font-mono font-bold ${
+                          i === 0 ? "text-muted-foreground" :
+                          i === funnel.length - 1 ? "text-gains" : "text-white"
+                        }`}>{row.val}</span>
+                        <div className="w-full bg-border/30 rounded-full h-1 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              i === funnel.length - 1 ? "bg-gains" :
+                              i >= 4 ? "bg-gains/60" :
+                              i >= 2 ? "bg-yellow-400/50" : "bg-muted-foreground/30"
+                            }`}
+                            style={{ width: `${barW}%` }}
+                          />
+                        </div>
+                        <span className="text-[6px] text-muted-foreground text-center leading-tight">{row.label}</span>
+                        <span className="text-[6px] text-muted-foreground/50 font-mono">{wkVal}w</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {scanned === 0 && (
+                  <p className="text-[7.5px] text-muted-foreground/50 text-center mt-2">
+                    Stats accumulate as tokens are scanned
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
           {/* 6 ── LIVE RADAR (full) ── */}
           <div className={`col-span-2 ${panelCls}`}>
             <div className="flex items-center justify-between mb-2">
@@ -388,8 +446,10 @@ export default function Dashboard() {
             </div>
             {tokenList.length === 0 ? (
               <div className="text-center py-5">
-                <Radio size={20} className="mx-auto mb-2 text-muted-foreground/20" />
-                <p className="text-[8.5px] text-muted-foreground">Scanner idle — start the bot to begin</p>
+                <Radio size={20} className={`mx-auto mb-2 ${isRunning ? "text-gains/40 animate-pulse" : "text-muted-foreground/20"}`} />
+                <p className="text-[8.5px] text-muted-foreground">
+                  {isRunning ? "Scanning — no tokens passed filters recently" : "Scanner idle — start the bot to begin"}
+                </p>
               </div>
             ) : (
               <div className="space-y-1.5">
