@@ -172,7 +172,7 @@
     "stopLoss": null,
     "exitPrice": null,
     "exitMultiplier": 2.930728241563055,
-    "pnlUsd": 67.99289520426288,
+    "pnlUsd": 63.33037300177621,
     "pnlSol": 0.19538188277087035,
     "moonbagAmountUsd": 29.307282415630553,
     "moonbagCreatedAt": "2026-08-08T05:30:51.516Z",
@@ -213,12 +213,12 @@
     "entryLiquidity": 23427.45,
     "entryMarketCap": 112622,
     "sniperRiskPct": 0,
-    "currentPrice": 0.0007656,
-    "currentLiquidity": 65640,
-    "lastLiveFetch": "2026-08-08T05:38:51.604Z",
-    "currentVolume5m": 416655.65,
-    "currentBuys5m": 2636,
-    "currentSells5m": 2474
+    "currentPrice": 0.0007131,
+    "currentLiquidity": 63428.4,
+    "lastLiveFetch": "2026-08-08T05:39:51.527Z",
+    "currentVolume5m": 439189.99,
+    "currentBuys5m": 2712,
+    "currentSells5m": 2538
   },
   {
     "id": "pt_1786167417648_JBKWfCwh",
@@ -287,11 +287,11 @@
     "exitMultiplier": null,
     "moonbagAmountUsd": null,
     "entryTimestamp": "2026-08-08T05:36:57.648Z",
-    "currentPrice": 0.0007656,
-    "currentLiquidity": 65640,
-    "currentVolume5m": 416655.65,
-    "currentBuys5m": 2636,
-    "currentSells5m": 2474,
-    "lastLiveFetch": "2026-08-08T05:38:51.587Z"
+    "currentPrice": 0.0007131,
+    "currentLiquidity": 63428.4,
+    "currentVolume5m": 439189.99,
+    "currentBuys5m": 2712,
+    "currentSells5m": 2538,
+    "lastLiveFetch": "2026-08-08T05:39:51.506Z"
   }
 ]
