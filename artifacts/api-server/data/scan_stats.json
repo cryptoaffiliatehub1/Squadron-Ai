@@ -1,0 +1,15 @@
+{
+  "daily": {
+    "2026-08-08": {
+      "date": "2026-08-08",
+      "tokensScanned": 8,
+      "passedLiquidity": 5,
+      "passedVolume": 5,
+      "passedRugCheck": 5,
+      "passedWalletChecks": 5,
+      "passedAllGates": 5,
+      "actualEntries": 5
+    }
+  },
+  "lastUpdated": "2026-08-08T05:57:01.230Z"
+}
