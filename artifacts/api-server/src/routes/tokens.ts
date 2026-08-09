@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, skippedTokensTable, detectedTokensTable } from "@workspace/db";
-import { desc } from "drizzle-orm";
+import { desc, ne } from "drizzle-orm";
 import { checkTokenSafety } from "../lib/rugcheck";
 import { logger } from "../lib/logger";
 
@@ -40,6 +40,7 @@ router.get("/tokens/recent", async (req, res) => {
     const tokens = await db
       .select()
       .from(detectedTokensTable)
+      .where(ne(detectedTokensTable.safetyStatus, "risky"))
       .orderBy(desc(detectedTokensTable.detectedAt))
       .limit(isNaN(limit) ? 20 : limit);
 
