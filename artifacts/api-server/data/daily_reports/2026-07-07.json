@@ -1,0 +1,22 @@
+{
+  "date": "2026-07-07",
+  "totalTrades": 23,
+  "wins": 0,
+  "losses": 0,
+  "winRate": 0,
+  "totalPnlSol": 0,
+  "pnlUsd": 0.13370745,
+  "pnlPct": 0,
+  "startBalanceSol": 0,
+  "endBalanceSol": 0.000891383,
+  "rugsCaught": 63,
+  "rugsMissed": 0,
+  "biggestWin": null,
+  "biggestLoss": null,
+  "jitoTipAvgSol": 0,
+  "jitoTipCount": 0,
+  "regime": "CHOP",
+  "circuitBreakerTriggers": 0,
+  "conservativeModeTriggers": 0,
+  "isPaperMode": true
+}
