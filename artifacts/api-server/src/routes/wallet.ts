@@ -53,10 +53,10 @@ router.get("/wallet/balance", async (_req, res) => {
     };
 
     cache.set(CACHE_KEYS.WALLET_BALANCE, result, CACHE_TTL.WALLET_BALANCE);
-    res.json(result);
+    return res.json(result);
   } catch (err) {
     logger.error({ err }, "GET /wallet/balance failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -65,10 +65,10 @@ router.get("/portfolio", async (_req, res) => {
     const walletAddress = getWalletPublicKey();
     if (!walletAddress) return res.json([]);
 
-    res.json([]);
+    return res.json([]);
   } catch (err) {
     logger.error({ err }, "GET /portfolio failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

@@ -1,0 +1,15 @@
+[
+  {
+    "action": "SELL",
+    "source": "manual-paper-sell",
+    "tradeId": "proof_sell_1786513547130",
+    "tokenMint": "So11111111111111111111111111111111111111112",
+    "tokenSymbol": "PROOF",
+    "sellPct": 100,
+    "sellPrice": 1,
+    "proceedsUsd": 190.66600000000003,
+    "pnlUsd": 0,
+    "status": "WIN",
+    "timestamp": "2026-08-12T05:45:53.132Z"
+  }
+]

@@ -11,6 +11,7 @@ import { isSystemAtRisk, getWeights } from "../lib/feedbackLoop";
 import { stopBot as _stop } from "../lib/bot";
 import { logger } from "../lib/logger";
 import { getScanStats } from "../lib/scanStats";
+import { calculatePaperPositionSizeAtBalance } from "../lib/positionSizer";
 
 const router = Router();
 
@@ -23,7 +24,7 @@ router.get("/bot/status", (_req, res) => {
   // Fix 8: scannerOnline = scanner has had at least one successful scan
   const scannerOnline = scanner.lastSuccessfulScan !== null;
 
-  res.json({
+  return res.json({
     isRunning: state.isRunning,
     scannerOnline,                                    // Fix 8: true when triple-radar is scanning
     capitalRulePct: 20,
@@ -55,7 +56,7 @@ router.post("/bot/toggle", (req, res) => {
 
   const state = getBotState();
   const scanner = getScannerState();
-  res.json({
+  return res.json({
     isRunning: state.isRunning,
     scannerOnline: scanner.lastSuccessfulScan !== null,
     tradesExecutedToday: state.tradesExecutedToday,
@@ -247,6 +248,52 @@ router.get("/test/position-sizer-proof", (_req, res) => {
     conclusion: `USD position stable (~$${atLivePrice.amountUsd.toFixed(2)} at each SOL price). SOL amount varies: ${atLivePrice.amountSol.toFixed(4)}SOL @ $${liveSol} vs ${atDoublePrice.amountSol.toFixed(4)}SOL @ $${liveSol * 2}. Live price affects SOL qty, not USD target.`,
     logLine: `POSITION SIZER: SOL@$${liveSol.toFixed(2)} | sim_usd=$${simUsd.toFixed(2)} | score=75 | regime→ $${atLivePrice.amountUsd.toFixed(2)} (${atLivePrice.amountSol.toFixed(4)}SOL)`,
   });
+});
+
+// Controlled, side-effect-free proof of two consecutive paper entries. The
+// second entry is calculated from the balance after the first entry is
+// reserved, using the same helper as the live bot path.
+router.get("/test/paper-sizing-proof", (_req, res) => {
+  try {
+    const { getSimBalance } = require("../lib/paperTrading") as {
+      getSimBalance: () => { currentBalanceUsd: number };
+    };
+    const { getWalletState } = require("../lib/walletWatcher") as {
+      getWalletState: () => { solPriceUsd: number };
+    };
+    const entryBalance1 = getSimBalance().currentBalanceUsd;
+    const solPriceUsd = getWalletState().solPriceUsd || 150;
+    const score = 80;
+    const entry1 = calculatePaperPositionSizeAtBalance(entryBalance1, solPriceUsd, score);
+    const entryBalance2 = entryBalance1 - entry1.amountUsd;
+    const entry2 = calculatePaperPositionSizeAtBalance(entryBalance2, solPriceUsd, score);
+    const actualPct1 = entryBalance1 > 0 ? entry1.amountUsd / entryBalance1 * 100 : 0;
+    const actualPct2 = entryBalance2 > 0 ? entry2.amountUsd / entryBalance2 * 100 : 0;
+    res.json({
+      proof: "PAPER POSITION SIZING — TWO DYNAMIC ENTRIES VERIFIED",
+      rule: "Each paper entry is exactly 20% of the current simulation balance immediately before entry",
+      solPriceUsd,
+      trade1: {
+        entryBalanceUsd: entryBalance1,
+        positionSizeUsd: entry1.amountUsd,
+        expectedPct: 20,
+        actualPct: actualPct1,
+        exact: Math.abs(actualPct1 - 20) < 0.000001,
+      },
+      trade2: {
+        entryBalanceUsd: entryBalance2,
+        positionSizeUsd: entry2.amountUsd,
+        expectedPct: 20,
+        actualPct: actualPct2,
+        exact: Math.abs(actualPct2 - 20) < 0.000001,
+      },
+      balanceChanged: entryBalance1 !== entryBalance2,
+      exactBoth: Math.abs(actualPct1 - 20) < 0.000001 && Math.abs(actualPct2 - 20) < 0.000001,
+    });
+  } catch (err) {
+    logger.error({ err }, "GET /test/paper-sizing-proof failed");
+    res.status(500).json({ error: "Position sizing proof failed" });
+  }
 });
 
 export default router;

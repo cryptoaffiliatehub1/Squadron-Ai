@@ -60,10 +60,10 @@ router.post("/alerts", async (req, res) => {
       })
       .returning();
 
-    res.status(201).json(serializeAlert(created));
+    return res.status(201).json(serializeAlert(created));
   } catch (err) {
     logger.error({ err }, "POST /alerts failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -73,10 +73,10 @@ router.delete("/alerts/:id", async (req, res) => {
     if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
     await db.delete(priceAlertsTable).where(eq(priceAlertsTable.id, id));
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     logger.error({ err }, "DELETE /alerts failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

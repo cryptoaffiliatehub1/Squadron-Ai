@@ -22,6 +22,8 @@ export interface TokenSafetyResult {
   isGood: boolean;
   risks: string[];
   rawScore: number;
+  statusCode: number;
+  verdict: "CLEAN" | "CLEAN_WITH_WARNINGS" | "RISK" | "UNVERIFIED";
 }
 
 // ── Rate limiter — max 2 req/sec (below the 3/sec platform limit) ─────────────
@@ -80,14 +82,16 @@ async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
       )
       .filter((r: string) => r.length > 0);
 
-    if (risks.length === 0 && score < 300) {
-      risks.push("RugCheck risk detected — verify manually");
-    }
-
     const topHolderPct =
       (data?.topHolders ?? [])
         .slice(0, 10)
         .reduce((sum: number, h: { pct?: number }) => sum + (h.pct ?? 0), 0) * 100;
+
+    // RugCheck's raw `score` is a risk-point score: lower is safer. The
+    // normalized score is not a "minimum safety score" and must not be
+    // compared to 400. Treat only high risk points or explicit severe risk
+    // indicators as a danger verdict.
+    const severeRisk = risks.some((r: string) => /rug|honeypot|scam|freeze authority|mint authority/i.test(r));
 
     return {
       statusCode: resp.status,
@@ -95,7 +99,7 @@ async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
         score,
         rating: data?.score_normalised ?? "unknown",
         risks,
-        isRugged: score < 300 || risks.some((r: string) => /rug|honeypot|scam/i.test(r)),
+        isRugged: score >= 300 || severeRisk,
         topHolderPct,
         holderCount: data?.totalHolders ?? 0,
       },
@@ -135,16 +139,35 @@ export async function checkToken(tokenMint: string): Promise<RugCheckResult | nu
 }
 
 export async function checkTokenSafety(tokenMint: string): Promise<TokenSafetyResult> {
-  const result = await checkToken(tokenMint);
+  const response = await checkTokenWithStatus(tokenMint);
+  const result = response.data;
   if (!result) {
-    return { score: 0, isGood: false, risks: ["Unable to fetch safety data"], rawScore: 0 };
+    const failed = {
+      score: 0,
+      isGood: false,
+      risks: ["Unable to fetch safety data"],
+      rawScore: 0,
+      statusCode: response.statusCode,
+      verdict: "UNVERIFIED" as const,
+    };
+    console.log(`[RUGCHECK_VERIFICATION] mint=${tokenMint} rawScore=0 verdict=UNVERIFIED http=${response.statusCode}`);
+    return failed;
   }
-  return {
+  const verdict = result.isRugged
+    ? "RISK" as const
+    : result.risks.length > 0
+      ? "CLEAN_WITH_WARNINGS" as const
+      : "CLEAN" as const;
+  const verified = {
     score: result.score,
-    isGood: !result.isRugged && result.score >= 400,
+    isGood: !result.isRugged,
     risks: result.risks,
     rawScore: result.score,
+    statusCode: response.statusCode,
+    verdict,
   };
+  console.log(`[RUGCHECK_VERIFICATION] mint=${tokenMint} rawScore=${verified.rawScore} verdict=${verified.verdict} risks=${verified.risks.length} http=${verified.statusCode}`);
+  return verified;
 }
 
 // ── Status getter for monitoring ──────────────────────────────────────────────
