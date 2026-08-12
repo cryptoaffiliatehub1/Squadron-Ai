@@ -1,0 +1,50 @@
+{
+  "daily": {
+    "2026-08-05": {
+      "date": "2026-08-05",
+      "tokensScanned": 6,
+      "passedLiquidity": 3,
+      "passedRugCheck": 0,
+      "passedWalletChecks": 0,
+      "passedAllGates": 0,
+      "actualEntries": 0
+    },
+    "2026-08-09": {
+      "date": "2026-08-09",
+      "tokensScanned": 41,
+      "passedLiquidity": 34,
+      "passedRugCheck": 7,
+      "passedWalletChecks": 6,
+      "passedAllGates": 6,
+      "actualEntries": 4
+    },
+    "2026-08-10": {
+      "date": "2026-08-10",
+      "tokensScanned": 6,
+      "passedLiquidity": 6,
+      "passedRugCheck": 2,
+      "passedWalletChecks": 2,
+      "passedAllGates": 2,
+      "actualEntries": 2
+    },
+    "2026-08-11": {
+      "date": "2026-08-11",
+      "tokensScanned": 4,
+      "passedLiquidity": 3,
+      "passedRugCheck": 0,
+      "passedWalletChecks": 0,
+      "passedAllGates": 0,
+      "actualEntries": 0
+    },
+    "2026-08-12": {
+      "date": "2026-08-12",
+      "tokensScanned": 10,
+      "passedLiquidity": 6,
+      "passedRugCheck": 0,
+      "passedWalletChecks": 0,
+      "passedAllGates": 0,
+      "actualEntries": 0
+    }
+  },
+  "lastUpdated": "2026-08-12T09:03:18.968Z"
+}

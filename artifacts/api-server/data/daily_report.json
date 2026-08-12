@@ -1,0 +1,18 @@
+{
+  "date": "2026-07-07",
+  "totalTrades": 23,
+  "openTrades": 23,
+  "wins": 0,
+  "losses": 0,
+  "winRate": 0,
+  "avgWinSol": 0,
+  "avgLossSol": 0,
+  "expectancy": 0,
+  "topFailureReason": "none",
+  "totalPnlSol": 0,
+  "totalPnlUsd": 0,
+  "simBalanceUsd": -160,
+  "biggestWin": null,
+  "biggestLoss": null,
+  "isPaperMode": true
+}

@@ -1,0 +1,49 @@
+╔══════════════════════════════════════════╗
+  SIMULATION REPORT
+  2026-07-07
+  ⚠️  SIMULATION MODE — NO REAL MONEY TRADED
+╚══════════════════════════════════════════╝
+
+TRADING SUMMARY
+────────────────────────────────────────
+Total Trades:       23
+Wins:               0
+Losses:             0
+Win Rate:           0.0%
+Avg Win:            +0.0000 SOL
+Avg Loss:           -0.0000 SOL
+Expectancy/Trade:   +0.0000 SOL
+
+NET PROFIT / LOSS
+────────────────────────────────────────
+P&L (SOL):          +0.0009 SOL
+P&L (USD):          +$0.13
+P&L (%):            +0.00%
+Starting Balance:   0.0000 SOL ($0.00)
+Ending Balance:     0.0009 SOL ($0.13)
+
+RISK CONTROL
+────────────────────────────────────────
+Rugs Caught:        63  (blocked by risk gate)
+Rugs Missed:        0  (slipped through)
+Top Failure Reason: none
+
+TRADE HIGHLIGHTS
+────────────────────────────────────────
+Biggest Win:        —
+Biggest Loss:       —
+
+MARKET REGIME
+────────────────────────────────────────
+Current Regime:     CHOP
+Description:        Default startup state
+Recent Win Rate:    50.0%
+
+JITO TIP EFFICIENCY
+────────────────────────────────────────
+Avg Tip Per Trade:  0.000000 SOL
+Total Tips Paid:    0.000000 SOL (0 trades)
+
+═══════════════════════════════════════════
+Generated: Tue, 07 Jul 2026 23:00:00 GMT
+Squadron AI — Tactical Meme Sniper

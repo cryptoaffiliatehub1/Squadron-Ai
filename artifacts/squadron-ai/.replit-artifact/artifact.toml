@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Squadron AI"
+description = "A Solana meme coin trading engine dashboard with live radar scanning, paper trading, portfolio tracking, AI token analysis, and automated reports."
+version = "1.0.0"
+id = "artifacts/squadron-ai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24775
+
+[services.development]
+run = "pnpm --filter @workspace/squadron-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/squadron-ai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/squadron-ai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24775"
+BASE_PATH = "/"

@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Squadron AI - Automated Meme Trading Blueprint API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: tokens
+    description: Meme coin tokens
+  - name: signals
+    description: AI trading signals
+  - name: portfolio
+    description: Portfolio positions
+  - name: strategies
+    description: Automated trading strategies
+  - name: dashboard
+    description: Dashboard summary data
 paths:
   /healthz:
     get:
@@ -24,6 +34,379 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /tokens:
+    get:
+      operationId: listTokens
+      tags: [tokens]
+      summary: List all meme coin tokens
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [marketCap, priceChange24h, volume24h, name]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of tokens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Token"
+    post:
+      operationId: createToken
+      tags: [tokens]
+      summary: Add a meme coin token to watchlist
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTokenBody"
+      responses:
+        "201":
+          description: Token created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+
+  /tokens/{id}:
+    get:
+      operationId: getToken
+      tags: [tokens]
+      summary: Get a token by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Token details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Token"
+    delete:
+      operationId: deleteToken
+      tags: [tokens]
+      summary: Remove token from watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /signals:
+    get:
+      operationId: listSignals
+      tags: [signals]
+      summary: List AI trading signals
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [BUY, SELL, HOLD]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, EXECUTED, EXPIRED, CANCELLED]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of signals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Signal"
+    post:
+      operationId: createSignal
+      tags: [signals]
+      summary: Create a trading signal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSignalBody"
+      responses:
+        "201":
+          description: Signal created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+
+  /signals/{id}:
+    get:
+      operationId: getSignal
+      tags: [signals]
+      summary: Get a signal by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Signal details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+    patch:
+      operationId: updateSignal
+      tags: [signals]
+      summary: Update signal status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSignalBody"
+      responses:
+        "200":
+          description: Signal updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Signal"
+
+  /portfolio:
+    get:
+      operationId: listPositions
+      tags: [portfolio]
+      summary: List portfolio positions
+      responses:
+        "200":
+          description: List of positions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Position"
+    post:
+      operationId: createPosition
+      tags: [portfolio]
+      summary: Add a portfolio position
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePositionBody"
+      responses:
+        "201":
+          description: Position created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Position"
+
+  /portfolio/{id}:
+    patch:
+      operationId: updatePosition
+      tags: [portfolio]
+      summary: Update position
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePositionBody"
+      responses:
+        "200":
+          description: Position updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Position"
+    delete:
+      operationId: deletePosition
+      tags: [portfolio]
+      summary: Remove a position
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /strategies:
+    get:
+      operationId: listStrategies
+      tags: [strategies]
+      summary: List trading strategies
+      responses:
+        "200":
+          description: List of strategies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Strategy"
+    post:
+      operationId: createStrategy
+      tags: [strategies]
+      summary: Create a trading strategy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStrategyBody"
+      responses:
+        "201":
+          description: Strategy created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Strategy"
+
+  /strategies/{id}:
+    get:
+      operationId: getStrategy
+      tags: [strategies]
+      summary: Get a strategy by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Strategy details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Strategy"
+    patch:
+      operationId: updateStrategy
+      tags: [strategies]
+      summary: Update a strategy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStrategyBody"
+      responses:
+        "200":
+          description: Strategy updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Strategy"
+    delete:
+      operationId: deleteStrategy
+      tags: [strategies]
+      summary: Delete a strategy
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/trending:
+    get:
+      operationId: getTrendingTokens
+      tags: [dashboard]
+      summary: Get top trending meme tokens
+      responses:
+        "200":
+          description: Trending tokens
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Token"
+
+  /dashboard/activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Recent trading activity feed
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +414,333 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Token:
+      type: object
+      properties:
+        id:
+          type: integer
+        symbol:
+          type: string
+        name:
+          type: string
+        contractAddress:
+          type: string
+        chain:
+          type: string
+        price:
+          type: number
+        priceChange24h:
+          type: number
+        marketCap:
+          type: number
+        volume24h:
+          type: number
+        liquidity:
+          type: number
+        holders:
+          type: integer
+        isWatched:
+          type: boolean
+        riskScore:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, symbol, name, chain, price, priceChange24h, marketCap, volume24h, isWatched, riskScore, createdAt]
+
+    CreateTokenBody:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        contractAddress:
+          type: string
+        chain:
+          type: string
+        price:
+          type: number
+        priceChange24h:
+          type: number
+        marketCap:
+          type: number
+        volume24h:
+          type: number
+        liquidity:
+          type: number
+        holders:
+          type: integer
+        riskScore:
+          type: integer
+      required: [symbol, name, chain, price, priceChange24h, marketCap, volume24h, riskScore]
+
+    Signal:
+      type: object
+      properties:
+        id:
+          type: integer
+        tokenId:
+          type: integer
+        tokenSymbol:
+          type: string
+        tokenName:
+          type: string
+        type:
+          type: string
+          enum: [BUY, SELL, HOLD]
+        status:
+          type: string
+          enum: [ACTIVE, EXECUTED, EXPIRED, CANCELLED]
+        confidence:
+          type: number
+        entryPrice:
+          type: number
+        targetPrice:
+          type: number
+        stopLoss:
+          type: number
+        reasoning:
+          type: string
+        strategyId:
+          type: integer
+        strategyName:
+          type: string
+        profitLoss:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+      required: [id, tokenId, tokenSymbol, tokenName, type, status, confidence, entryPrice, reasoning, createdAt]
+
+    CreateSignalBody:
+      type: object
+      properties:
+        tokenId:
+          type: integer
+        type:
+          type: string
+          enum: [BUY, SELL, HOLD]
+        confidence:
+          type: number
+        entryPrice:
+          type: number
+        targetPrice:
+          type: number
+        stopLoss:
+          type: number
+        reasoning:
+          type: string
+        strategyId:
+          type: integer
+        expiresAt:
+          type: string
+          format: date-time
+      required: [tokenId, type, confidence, entryPrice, reasoning]
+
+    UpdateSignalBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ACTIVE, EXECUTED, EXPIRED, CANCELLED]
+        profitLoss:
+          type: number
+
+    Position:
+      type: object
+      properties:
+        id:
+          type: integer
+        tokenId:
+          type: integer
+        tokenSymbol:
+          type: string
+        tokenName:
+          type: string
+        entryPrice:
+          type: number
+        currentPrice:
+          type: number
+        quantity:
+          type: number
+        totalValue:
+          type: number
+        profitLoss:
+          type: number
+        profitLossPercent:
+          type: number
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
+        openedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+      required: [id, tokenId, tokenSymbol, tokenName, entryPrice, currentPrice, quantity, totalValue, profitLoss, profitLossPercent, status, openedAt]
+
+    CreatePositionBody:
+      type: object
+      properties:
+        tokenId:
+          type: integer
+        entryPrice:
+          type: number
+        currentPrice:
+          type: number
+        quantity:
+          type: number
+        notes:
+          type: string
+      required: [tokenId, entryPrice, currentPrice, quantity]
+
+    UpdatePositionBody:
+      type: object
+      properties:
+        currentPrice:
+          type: number
+        status:
+          type: string
+          enum: [OPEN, CLOSED]
+        closedAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+
+    Strategy:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [MOMENTUM, SNIPER, SCALP, SWING, AI_HYBRID]
+        isActive:
+          type: boolean
+        totalSignals:
+          type: integer
+        winRate:
+          type: number
+        totalProfitLoss:
+          type: number
+        riskLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, DEGEN]
+        maxPositionSize:
+          type: number
+        stopLossPercent:
+          type: number
+        takeProfitPercent:
+          type: number
+        conditions:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, type, isActive, totalSignals, winRate, totalProfitLoss, riskLevel, createdAt]
+
+    CreateStrategyBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [MOMENTUM, SNIPER, SCALP, SWING, AI_HYBRID]
+        riskLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, DEGEN]
+        maxPositionSize:
+          type: number
+        stopLossPercent:
+          type: number
+        takeProfitPercent:
+          type: number
+        conditions:
+          type: string
+      required: [name, type, riskLevel]
+
+    UpdateStrategyBody:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        isActive:
+          type: boolean
+        riskLevel:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, DEGEN]
+        maxPositionSize:
+          type: number
+        stopLossPercent:
+          type: number
+        takeProfitPercent:
+          type: number
+        conditions:
+          type: string
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalPortfolioValue:
+          type: number
+        totalProfitLoss:
+          type: number
+        totalProfitLossPercent:
+          type: number
+        activePositions:
+          type: integer
+        activeSignals:
+          type: integer
+        totalSignalsToday:
+          type: integer
+        winRate:
+          type: number
+        activeStrategies:
+          type: integer
+        watchlistCount:
+          type: integer
+        topGainer:
+          $ref: "#/components/schemas/Token"
+        topLoser:
+          $ref: "#/components/schemas/Token"
+      required: [totalPortfolioValue, totalProfitLoss, totalProfitLossPercent, activePositions, activeSignals, totalSignalsToday, winRate, activeStrategies, watchlistCount]
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [SIGNAL_CREATED, POSITION_OPENED, POSITION_CLOSED, STRATEGY_ACTIVATED, STRATEGY_DEACTIVATED, TOKEN_ADDED]
+        title:
+          type: string
+        description:
+          type: string
+        tokenSymbol:
+          type: string
+        profitLoss:
+          type: number
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, type, title, description, createdAt]
