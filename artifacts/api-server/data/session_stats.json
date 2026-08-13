@@ -1,10 +1,10 @@
 {
-  "date": "2026-08-12",
+  "date": "2026-08-13",
   "dayStartBalance": 0,
-  "dayStartAt": "2026-08-12T05:39:37.772Z",
+  "dayStartAt": "2026-08-13T08:05:29.508Z",
   "lastKnownBalance": 0.000891383,
   "solPriceUsd": 150,
-  "rugsCaught": 20,
+  "rugsCaught": 3,
   "rugsMissed": 0,
   "jitoTipsPaidSol": 0,
   "jitoTipCount": 0,
