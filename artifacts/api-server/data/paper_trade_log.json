@@ -1,39 +1,15 @@
 [
   {
-    "action": "MANUAL EXIT — BULK (Open Positions)",
-    "source": "manual-bulk-sell",
-    "scope": "OPEN_POSITIONS",
-    "scopeLabel": "Open Positions",
-    "sellPct": 25,
-    "affectedCount": 3,
-    "totalProceedsUsd": 7.975623907079409,
-    "totalPnlUsd": -0.06837609292059121,
-    "positions": [
-      {
-        "tradeId": "pt_1786238596663_EavU1XbH",
-        "tokenSymbol": "CHARITY",
-        "status": "PARTIAL EXIT",
-        "sellPrice": 0.0001903,
-        "proceedsUsd": 0.8311495457721872,
-        "pnlUsd": -1.6688504542278126
-      },
-      {
-        "tradeId": "pt_1786615460372_5AJ3F1WT",
-        "tokenSymbol": "Plung",
-        "status": "PARTIAL EXIT",
-        "sellPrice": 0.0001199,
-        "proceedsUsd": 5.200678457352419,
-        "pnlUsd": 1.5341784573524189
-      },
-      {
-        "tradeId": "pt_1786616063718_7CYomkAd",
-        "tokenSymbol": "PLUMBALON",
-        "status": "PARTIAL EXIT",
-        "sellPrice": 0.0001466,
-        "proceedsUsd": 1.9437959039548025,
-        "pnlUsd": 0.06629590395480256
-      }
-    ],
-    "timestamp": "2026-08-13T10:17:21.557Z"
+    "action": "SELL",
+    "source": "manual-paper-sell",
+    "tradeId": "proof_sell_1786513547130",
+    "tokenMint": "So11111111111111111111111111111111111111112",
+    "tokenSymbol": "PROOF",
+    "sellPct": 100,
+    "sellPrice": 1,
+    "proceedsUsd": 190.66600000000003,
+    "pnlUsd": 0,
+    "status": "WIN",
+    "timestamp": "2026-08-12T05:45:53.132Z"
   }
 ]

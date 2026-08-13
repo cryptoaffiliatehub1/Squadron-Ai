@@ -1,0 +1,49 @@
+╔══════════════════════════════════════════╗
+  SIMULATION REPORT
+  2026-08-12
+  ⚠️  SIMULATION MODE — NO REAL MONEY TRADED
+╚══════════════════════════════════════════╝
+
+TRADING SUMMARY
+────────────────────────────────────────
+Total Trades:       27
+Wins:               5
+Losses:             15
+Win Rate:           25.0%
+Avg Win:            +0.4225 SOL
+Avg Loss:           -0.2421 SOL
+Expectancy/Trade:   -0.0759 SOL
+
+NET PROFIT / LOSS
+────────────────────────────────────────
+P&L (SOL):          +0.0009 SOL
+P&L (USD):          +$0.13
+P&L (%):            +0.00%
+Starting Balance:   0.0000 SOL ($0.00)
+Ending Balance:     0.0009 SOL ($0.13)
+
+RISK CONTROL
+────────────────────────────────────────
+Rugs Caught:        23  (blocked by risk gate)
+Rugs Missed:        0  (slipped through)
+Top Failure Reason: Unknown
+
+TRADE HIGHLIGHTS
+────────────────────────────────────────
+Biggest Win:        BHENCHOD — 2.52x gain (+0.9687 SOL)
+Biggest Loss:       CASHTOAD — Unknown (-0.7945 SOL)
+
+MARKET REGIME
+────────────────────────────────────────
+Current Regime:     CHOP
+Description:        Sideways market — reduced size
+Recent Win Rate:    50.0%
+
+JITO TIP EFFICIENCY
+────────────────────────────────────────
+Avg Tip Per Trade:  0.000000 SOL
+Total Tips Paid:    0.000000 SOL (0 trades)
+
+═══════════════════════════════════════════
+Generated: Wed, 12 Aug 2026 23:00:00 GMT
+Squadron AI — Tactical Meme Sniper

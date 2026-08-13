@@ -1,19 +1,16 @@
 {
   "date": "2026-08-12",
   "totalTrades": 27,
-  "openTrades": 3,
   "wins": 5,
   "losses": 15,
   "winRate": 0.25,
-  "avgWinSol": 0.4225364473644338,
-  "avgLossSol": 0.24207157254992276,
-  "avgWinUsd": 63.38046710466507,
-  "avgLossUsd": 36.310735882488416,
-  "expectancy": -0.07591956757133363,
-  "topFailureReason": "Unknown",
   "totalPnlSol": 1.953610885395498,
-  "totalPnlUsd": 104.43407485135805,
-  "simBalanceUsd": 39.52,
+  "pnlUsd": 0.13370745,
+  "pnlPct": 0,
+  "startBalanceSol": 0,
+  "endBalanceSol": 0.000891383,
+  "rugsCaught": 23,
+  "rugsMissed": 0,
   "biggestWin": {
     "tokenSymbol": "BHENCHOD",
     "multiplier": 2.524208107664533,
@@ -26,5 +23,10 @@
     "pnlSol": -0.7944811887719299,
     "reason": "Unknown"
   },
+  "jitoTipAvgSol": 0,
+  "jitoTipCount": 0,
+  "regime": "CHOP",
+  "circuitBreakerTriggers": 0,
+  "conservativeModeTriggers": 0,
   "isPaperMode": true
 }

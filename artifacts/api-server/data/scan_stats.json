@@ -29,31 +29,31 @@
     },
     "2026-08-11": {
       "date": "2026-08-11",
-      "tokensScanned": 4,
-      "passedLiquidity": 3,
-      "passedRugCheck": 0,
-      "passedWalletChecks": 0,
-      "passedAllGates": 0,
-      "actualEntries": 0
+      "tokensScanned": 52,
+      "passedLiquidity": 34,
+      "passedRugCheck": 3,
+      "passedWalletChecks": 3,
+      "passedAllGates": 3,
+      "actualEntries": 3
     },
     "2026-08-12": {
       "date": "2026-08-12",
-      "tokensScanned": 21,
-      "passedLiquidity": 13,
-      "passedRugCheck": 0,
-      "passedWalletChecks": 0,
-      "passedAllGates": 0,
-      "actualEntries": 0
+      "tokensScanned": 184,
+      "passedLiquidity": 148,
+      "passedRugCheck": 120,
+      "passedWalletChecks": 118,
+      "passedAllGates": 116,
+      "actualEntries": 106
     },
     "2026-08-13": {
       "date": "2026-08-13",
-      "tokensScanned": 33,
-      "passedLiquidity": 31,
-      "passedRugCheck": 19,
-      "passedWalletChecks": 19,
-      "passedAllGates": 17,
-      "actualEntries": 15
+      "tokensScanned": 111,
+      "passedLiquidity": 101,
+      "passedRugCheck": 77,
+      "passedWalletChecks": 77,
+      "passedAllGates": 75,
+      "actualEntries": 66
     }
   },
-  "lastUpdated": "2026-08-13T10:18:29.811Z"
+  "lastUpdated": "2026-08-13T09:55:48.775Z"
 }
