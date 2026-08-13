@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useTradingMode } from "@/contexts/trading-mode";
 import { useState } from "react";
+import { BulkSellControl } from "@/components/bulk-sell-control";
 
 export default function Portfolio() {
   const { isPaper } = useTradingMode();
@@ -67,6 +68,14 @@ export default function Portfolio() {
           <p className="text-[8px] text-muted-foreground uppercase tracking-[0.25em] mt-0.5">
             Holdings · Moonbag Vault · Balance
           </p>
+        </div>
+
+        <div className="flex items-center justify-between rounded-xl border border-losses/30 bg-losses/5 px-3 py-2">
+          <div>
+            <p className="text-[8px] text-losses font-bold uppercase tracking-[0.18em]">Global Exit</p>
+            <p className="text-[7px] text-muted-foreground uppercase tracking-wider mt-0.5">Sell paper positions now</p>
+          </div>
+          <BulkSellControl />
         </div>
 
         {/* Wallet Balance Card */}

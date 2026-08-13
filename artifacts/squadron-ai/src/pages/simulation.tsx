@@ -7,6 +7,7 @@ import {
   AlertTriangle, CheckCircle2, Layers, Flame,
 } from "lucide-react";
 import { useTradingMode } from "@/contexts/trading-mode";
+import { BulkSellControl } from "@/components/bulk-sell-control";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -258,6 +259,10 @@ export default function Simulation() {
   const returnPct     = sb?.returnPct ?? 0;
   const openPositions = sb?.openPositions ?? 0;
   const moonbagCount  = sb?.moonbagCount ?? 0;
+  const baseCapital   = sb?.baseCapital ?? 100;
+  const injectedCapital = sb?.injectedCapital ?? 0;
+  const startingCapital = sb?.startingCapital ?? baseCapital + injectedCapital;
+  const realizedPnl = sb?.realizedPnl ?? totalPnL;
 
   const panelCls = "bg-card border border-border rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.25)]";
   const progressBarPct = Math.min(Math.max(progressPct, 0), 100);
@@ -300,7 +305,7 @@ export default function Simulation() {
           <Skeleton className="h-28 rounded-xl" />
         ) : (
           <div className={`${panelCls} p-4`}>
-            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-2">
               <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em]">Sim Balance</p>
               <div className="flex items-center gap-2">
                 {openPositions > 0 && (
@@ -313,6 +318,7 @@ export default function Simulation() {
                     {moonbagCount} MOONBAG{moonbagCount > 1 ? "S" : ""}
                   </span>
                 )}
+                 <BulkSellControl />
               </div>
             </div>
             <div className="flex items-end gap-3">
@@ -323,7 +329,12 @@ export default function Simulation() {
                 {totalPnL >= 0 ? "+" : ""}${totalPnL.toFixed(2)} ({returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%)
               </p>
             </div>
-            <p className="text-[7.5px] text-muted-foreground mt-1">Started at $100 · net realized P&L only</p>
+             <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 pt-2 border-t border-border/40 text-[7px] uppercase tracking-wider">
+               <span className="text-muted-foreground">Base <b className="text-foreground font-mono">${baseCapital.toFixed(2)}</b></span>
+               <span className="text-muted-foreground">Injected <b className="text-primary font-mono">+${injectedCapital.toFixed(2)}</b></span>
+               <span className="text-muted-foreground">Starting <b className="text-foreground font-mono">${startingCapital.toFixed(2)}</b></span>
+               <span className="text-muted-foreground">Realized P&amp;L <b className={realizedPnl >= 0 ? "text-gains font-mono" : "text-losses font-mono"}>{realizedPnl >= 0 ? "+" : ""}${realizedPnl.toFixed(2)}</b></span>
+             </div>
           </div>
         )}
 

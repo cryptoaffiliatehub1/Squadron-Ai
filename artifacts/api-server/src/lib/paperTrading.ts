@@ -170,7 +170,10 @@ export function noRecentPaperTrades(windowMinutes = 30): boolean {
 export function hasOpenPaperTrade(mint: string): boolean {
   try {
     const trades = readJson<any[]>(PAPER_TRADES_FILE, []);
-    return trades.some((t) => t.tokenMint === mint && resolveStatus(t) === "OPEN");
+    return trades.some((t) => {
+      const status = resolveStatus(t);
+      return t.tokenMint === mint && (status === "OPEN" || status === "PARTIAL EXIT");
+    });
   } catch { return false; }
 }
 
@@ -181,7 +184,7 @@ export function getPaperTrades(): PaperTrade[] {
 }
 
 export function getOpenTrades(): PaperTrade[] {
-  return getPaperTrades().filter((t) => t.status === "OPEN");
+  return getPaperTrades().filter((t) => t.status === "OPEN" || t.status === "PARTIAL EXIT");
 }
 
 export function getMoonbagTrades(): PaperTrade[] {
@@ -299,7 +302,12 @@ function computeSimCash(): number {
   const trades = getPaperTrades();
   let cash = START;
   for (const t of trades) {
-    if (t.status === "MOONBAG" || t.status === "MOONBAG EXIT") continue; // cost basis $0
+    if (t.status === "MOONBAG" || t.status === "MOONBAG EXIT") {
+      // Moonbags have a zero cost basis. Any manual proceeds are pure
+      // realized cash and must be reflected immediately in the sim balance.
+      cash += t.realizedProceedsUsd ?? 0;
+      continue;
+    }
     cash -= t.positionSizeUsd; // subtract entry
     if (t.realizedProceedsUsd != null) {
       cash += t.realizedProceedsUsd;
@@ -337,7 +345,7 @@ export function getSimBalanceFull() {
   const capital = getSimCapital();
   const cash = computeSimCash();
   const trades = getPaperTrades();
-  const openTrades   = trades.filter(t => t.status === "OPEN");
+  const openTrades   = trades.filter(t => t.status === "OPEN" || t.status === "PARTIAL EXIT");
   const moonbagTrades = trades.filter(t => t.status === "MOONBAG");
 
   const totalDeployed = openTrades.reduce((s, t) => s + t.positionSizeUsd, 0);
@@ -430,6 +438,165 @@ export interface PaperSellResult {
   sellPrice: number;
   sellPct: number;
   logEntry: Record<string, unknown>;
+}
+
+export type BulkSellScope = "OPEN_POSITIONS" | "MOONBAGS" | "BOTH";
+
+export interface BulkSellResult {
+  scope: BulkSellScope;
+  scopeLabel: string;
+  sellPct: number;
+  affectedCount: number;
+  positions: Array<{
+    tradeId: string;
+    tokenSymbol: string;
+    status: PaperTrade["status"];
+    sellPrice: number;
+    proceedsUsd: number;
+    pnlUsd: number;
+  }>;
+  totalProceedsUsd: number;
+  totalPnlUsd: number;
+  balance: ReturnType<typeof getSimBalanceFull>;
+  logEntry: Record<string, unknown>;
+}
+
+const BULK_SCOPE_LABELS: Record<BulkSellScope, string> = {
+  OPEN_POSITIONS: "Open Positions",
+  MOONBAGS: "Moonbags",
+  BOTH: "Both",
+};
+
+function isBulkSellScope(value: unknown): value is BulkSellScope {
+  return value === "OPEN_POSITIONS" || value === "MOONBAGS" || value === "BOTH";
+}
+
+/**
+ * Execute one global paper exit at the latest stored/fetched token price.
+ * Percentages apply to each selected position's current remaining size.
+ */
+export async function bulkSellPaperTrades(scope: BulkSellScope, sellPct: number): Promise<BulkSellResult> {
+  if (!isBulkSellScope(scope)) throw new Error("scope must be OPEN_POSITIONS, MOONBAGS, or BOTH");
+  if (!Number.isFinite(sellPct) || sellPct <= 0 || sellPct > 100) {
+    throw new Error("sellPct must be greater than 0 and no more than 100");
+  }
+
+  const all = readJson<any[]>(PAPER_TRADES_FILE, []);
+  const selected = all
+    .map((raw, index) => ({ raw, index, status: resolveStatus(raw) as PaperTrade["status"] }))
+    .filter(({ status }) => {
+      const isOpen = status === "OPEN" || status === "PARTIAL EXIT";
+      const isMoonbag = status === "MOONBAG";
+      return scope === "OPEN_POSITIONS" ? isOpen : scope === "MOONBAGS" ? isMoonbag : isOpen || isMoonbag;
+    });
+
+  if (selected.length === 0) {
+    throw new Error(`No positions available for ${BULK_SCOPE_LABELS[scope]}`);
+  }
+
+  const fraction = sellPct / 100;
+  const positions: BulkSellResult["positions"] = [];
+  const now = new Date().toISOString();
+
+  for (const { raw, index, status } of selected) {
+    const existing = { ...raw, status } as PaperTrade;
+    const live = await fetchLiveData(existing.tokenMint);
+    const sellPrice = live?.price ?? existing.currentPrice ?? existing.entryPrice;
+    if (!Number.isFinite(sellPrice) || sellPrice <= 0) continue;
+
+    const multiplier = sellPrice / existing.entryPrice;
+    const previousPnl = existing.pnlUsd ?? 0;
+    let proceedsUsd = 0;
+    let pnlUsd = 0;
+
+    if (status === "MOONBAG") {
+      const heldSol = existing.remainingPositionSol ?? existing.amountSol ?? 0;
+      const currentValueUsd = heldSol * 150 * multiplier;
+      proceedsUsd = currentValueUsd * fraction;
+      pnlUsd = proceedsUsd;
+      const remainingSol = heldSol * (1 - fraction);
+      all[index] = {
+        ...raw,
+        status: sellPct === 100 ? "MOONBAG EXIT" : "MOONBAG",
+        amountSol: remainingSol,
+        remainingPositionSol: remainingSol,
+        currentPrice: sellPrice,
+        currentValueUsd: currentValueUsd * (1 - fraction),
+        moonbagAmountUsd: currentValueUsd * (1 - fraction),
+        realizedProceedsUsd: (existing.realizedProceedsUsd ?? 0) + proceedsUsd,
+        pnlUsd: previousPnl + pnlUsd,
+        pnlSol: (previousPnl + pnlUsd) / 150,
+        manualSellPct: sellPct,
+        exitPrice: sellPrice,
+        exitMultiplier: multiplier,
+        exitTimestamp: sellPct === 100 ? now : existing.exitTimestamp,
+      };
+    } else {
+      const remainingCostUsd = existing.positionSizeUsd;
+      const amountSol = existing.amountSol;
+      proceedsUsd = remainingCostUsd * multiplier * fraction;
+      const costUsd = remainingCostUsd * fraction;
+      pnlUsd = proceedsUsd - costUsd;
+      const remainingFraction = 1 - fraction;
+      const fullyClosed = sellPct === 100;
+      all[index] = {
+        ...raw,
+        status: fullyClosed ? (previousPnl + pnlUsd >= 0 ? "WIN" : "LOSS") : "PARTIAL EXIT",
+        positionSizeUsd: fullyClosed ? existing.positionSizeUsd : remainingCostUsd * remainingFraction,
+        amountSol: fullyClosed ? amountSol : amountSol * remainingFraction,
+        remainingPositionSol: fullyClosed ? 0 : amountSol * remainingFraction,
+        currentPrice: sellPrice,
+        exitPrice: sellPrice,
+        exitMultiplier: multiplier,
+        pnlUsd: previousPnl + pnlUsd,
+        pnlSol: (previousPnl + pnlUsd) / 150,
+        realizedProceedsUsd: (existing.realizedProceedsUsd ?? 0) + proceedsUsd,
+        manualSellPct: sellPct,
+        exitTimestamp: now,
+      };
+    }
+
+    positions.push({
+      tradeId: existing.id,
+      tokenSymbol: existing.tokenSymbol,
+      status: all[index].status,
+      sellPrice,
+      proceedsUsd,
+      pnlUsd,
+    });
+  }
+
+  if (positions.length === 0) throw new Error("No selected positions had a usable current price");
+  writeJson(PAPER_TRADES_FILE, all);
+
+  const totalProceedsUsd = positions.reduce((sum, position) => sum + position.proceedsUsd, 0);
+  const totalPnlUsd = positions.reduce((sum, position) => sum + position.pnlUsd, 0);
+  const scopeLabel = BULK_SCOPE_LABELS[scope];
+  const action = `MANUAL EXIT — BULK (${scopeLabel})`;
+  const logEntry = recordPaperEvent({
+    action,
+    source: "manual-bulk-sell",
+    scope,
+    scopeLabel,
+    sellPct,
+    affectedCount: positions.length,
+    totalProceedsUsd,
+    totalPnlUsd,
+    positions,
+  });
+  logger.info({ scope, sellPct, affectedCount: positions.length, totalProceedsUsd, totalPnlUsd }, action);
+
+  return {
+    scope,
+    scopeLabel,
+    sellPct,
+    affectedCount: positions.length,
+    positions,
+    totalProceedsUsd,
+    totalPnlUsd,
+    balance: getSimBalanceFull(),
+    logEntry,
+  };
 }
 
 export function sellPaperTrade(tradeId: string, sellPct: number, requestedPrice?: number): PaperSellResult {

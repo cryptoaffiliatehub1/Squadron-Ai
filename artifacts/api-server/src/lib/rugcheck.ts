@@ -61,20 +61,22 @@ async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
       validateStatus: () => true,
     });
 
-    // 404 = not yet indexed, 429 = rate limited, 5xx = backend down → UNVERIFIED
-    if (resp.status === 404 || resp.status === 429 || resp.status >= 500) {
+    // Only a successful 2xx report is a safety classification. 404, 400,
+    // 429, and 5xx responses are unavailable/invalid lookups and must never
+    // fall through as an empty CLEAN result.
+    if (resp.status < 200 || resp.status >= 300) {
       if (resp.status === 404) {
         console.log(`RUGCHECK 404 — token not yet indexed, treating as UNVERIFIED (${tokenMint.slice(0, 8)})`);
       } else if (resp.status === 429) {
         console.log(`RUGCHECK RATE LIMITED — API quota hit, treating as UNVERIFIED (${tokenMint.slice(0, 8)})`);
       } else {
-        console.log(`RUGCHECK SERVER ERROR (HTTP ${resp.status}) — treating as UNVERIFIED (${tokenMint.slice(0, 8)})`);
+        console.log(`RUGCHECK HTTP ${resp.status} — unavailable result, treating as UNVERIFIED (${tokenMint.slice(0, 8)})`);
       }
       return { data: null, statusCode: resp.status };
     }
 
     const data = resp.data;
-    const score = data?.score ?? 0;
+    const score = Number(data?.score ?? 0);
 
     const risks: string[] = (data?.risks ?? [])
       .map((r: { name?: string; description?: string }) =>

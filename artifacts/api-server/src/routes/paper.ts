@@ -10,6 +10,8 @@ import {
   getPaperTradeLog,
   recordPaperTrade,
   getSimBalance,
+  bulkSellPaperTrades,
+  type BulkSellScope,
 } from "../lib/paperTrading";
 import { calculatePaperPositionSizeAtBalance } from "../lib/positionSizer";
 import { getWalletState } from "../lib/walletWatcher";
@@ -103,6 +105,19 @@ router.post("/paper/trades/:id/sell", (req, res) => {
     logger.warn({ err, tradeId: req.params.id }, "POST /paper/trades/:id/sell failed");
     const status = /not found/i.test(message) ? 404 : /not open|invalid|must be|no more/i.test(message) ? 400 : 500;
     res.status(status).json({ success: false, error: message });
+  }
+});
+
+router.post("/sim/bulk-sell", async (req, res) => {
+  try {
+    const scope = req.body?.scope as BulkSellScope;
+    const sellPct = Number(req.body?.sellPct ?? req.body?.percentage);
+    const result = await bulkSellPaperTrades(scope, sellPct);
+    return res.json({ success: true, ...result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Bulk paper sell failed";
+    logger.warn({ err }, "POST /sim/bulk-sell failed");
+    return res.status(/no positions/i.test(message) ? 400 : 500).json({ success: false, error: message });
   }
 });
 
