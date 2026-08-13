@@ -728,7 +728,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   // ── C1: Sniper accumulation (async, with 8s timeout) ─────────────────────
   const sniperResult = await Promise.race([
     checkSniperAccumulation(token.tokenMint, token.createdAt),
-    new Promise<{ riskPct: number; blocked: boolean }>((r) => setTimeout(() => r({ riskPct: 0, blocked: false }), 8_000)),
+    new Promise<{ riskPct: number; blocked: boolean; reason?: string }>((r) => setTimeout(() => r({ riskPct: 0, blocked: false }), 8_000)),
   ]);
   if (sniperResult.blocked) {
     failureLabel = "SNIPER ACCUMULATION";
@@ -746,7 +746,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   // ── C1: Wallet seeding detection (async, with 8s timeout) ────────────────
   const seedingResult = await Promise.race([
     checkWalletSeeding(token.tokenMint),
-    new Promise<{ blocked: boolean }>((r) => setTimeout(() => r({ blocked: false }), 8_000)),
+    new Promise<{ blocked: boolean; reason?: string }>((r) => setTimeout(() => r({ blocked: false }), 8_000)),
   ]);
   if (seedingResult.blocked) {
     failureLabel = "WALLET SEEDING";

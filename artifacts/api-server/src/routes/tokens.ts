@@ -69,10 +69,10 @@ router.post("/tokens/check-safety", async (req, res) => {
     if (!tokenMint) return res.status(400).json({ error: "tokenMint is required" });
 
     const result = await checkTokenSafety(tokenMint);
-    res.json({ tokenMint, ...result });
+    return res.json({ tokenMint, ...result });
   } catch (err) {
     logger.error({ err }, "POST /tokens/check-safety failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

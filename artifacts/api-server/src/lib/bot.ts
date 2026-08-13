@@ -16,7 +16,6 @@ import { logReadinessReport } from "./systemReadiness";
 import { loadTradingMode, isPaperMode } from "./tradingMode";
 import { recordSkippedToken } from "./sessionStats";
 import { recordPaperTrade, noRecentPaperTrades, startExitEngine } from "./paperTrading";
-import type { PaperTrade } from "./paperTrading";
 import type { DexToken } from "./dexScreener";
 import { incrementGate } from "./scanStats";
 
@@ -318,23 +317,23 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       return;
     }
 
-    // C2: base position by tier (% of $100 sim balance)
-    // BONDING = 2% ($2), MOON = 10% ($10), SAFE = 20% ($20)
-    let positionSizeUsd = tier === "SAFE" ? 20 : tier === "BONDING" ? 2 : 10;
-    if (riskResult.unverified) positionSizeUsd = Math.min(positionSizeUsd, 5);
-
-    // C2: apply holder concentration / liquidity quality position adjustment
-    const adjPct = riskResult.positionAdjustmentPct ?? 100;
-    if (adjPct < 100) {
-      positionSizeUsd = Math.max(1, Math.round(positionSizeUsd * adjPct / 100));
-    }
-    const positionSizeSol = positionSizeUsd / 150;
+    // Paper entries always use the current sim balance immediately before the
+    // entry. calculatePositionSize is the single source of truth and returns
+    // exactly 20% in paper mode; tier only remains a descriptive label.
+    const walletAtEntry = getWalletState();
+    const positionSize = calculatePositionSize(
+      walletAtEntry.solBalance || 1,
+      walletAtEntry.solPriceUsd || 150,
+      probabilityScore,
+    );
+    const positionSizeUsd = positionSize.amountUsd;
+    const positionSizeSol = positionSize.amountSol;
 
     const extraSig = riskResult.extraSignals;
     const signalsArr: string[] = [...(riskResult.signalsTriggered ?? [])];
     if (relaxed) signalsArr.push("SIM_RELAXED");
 
-    const pt: PaperTrade = {
+    const pt: Parameters<typeof recordPaperTrade>[0] = {
       id: `pt_${Date.now()}_${mint.slice(0, 8)}`,
       tokenMint: mint,
       tokenSymbol,

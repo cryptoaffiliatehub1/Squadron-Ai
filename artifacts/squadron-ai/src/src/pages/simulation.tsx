@@ -1,5 +1,6 @@
 import { Layout } from "@/components/layout";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Activity, TrendingUp, TrendingDown, Zap, FlaskConical,
@@ -7,6 +8,7 @@ import {
   AlertTriangle, CheckCircle2, Layers, Flame,
 } from "lucide-react";
 import { useTradingMode } from "@/contexts/trading-mode";
+import { useToast } from "@/hooks/use-toast";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -134,7 +136,11 @@ function TokenLogo({ logoUrl, symbol }: { logoUrl?: string | null; symbol?: stri
 
 // ── Trade card ────────────────────────────────────────────────────────────────
 
-function TradeCard({ t }: { t: any }) {
+function TradeCard({ t, onSell, isSelling }: {
+  t: any;
+  onSell: (tradeId: string) => void;
+  isSelling: boolean;
+}) {
   const ep = t.entryPrice as number | null;
   const cp = (t.currentPrice ?? ep) as number | null;
 
@@ -196,6 +202,18 @@ function TradeCard({ t }: { t: any }) {
 
       {/* Row 3: social icons */}
       <SocialRow mint={t.tokenMint} links={t.socialLinks} />
+      {t.status === "OPEN" && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={isSelling}
+          onClick={() => onSell(t.id)}
+          className="h-7 w-full text-[8px] uppercase tracking-wider text-losses border-losses/30 hover:bg-losses/10"
+        >
+          {isSelling ? "Selling…" : "Sell 100%"}
+        </Button>
+      )}
     </div>
   );
 }
@@ -220,6 +238,8 @@ function StatCard({ label, value, sub, color }: {
 
 export default function Simulation() {
   const { isPaper, isLive } = useTradingMode();
+  const qc = useQueryClient();
+  const { toast } = useToast();
 
   const { data: simBal, isLoading: simLoading } = useQuery({
     queryKey: ["sim-balance"],
@@ -237,6 +257,37 @@ export default function Simulation() {
     queryKey: ["paper-trades"],
     queryFn: () => fetch("/api/paper/trades").then(r => r.json()),
     refetchInterval: 30_000,
+  });
+
+  const sellTrade = useMutation({
+    mutationFn: async (tradeId: string) => {
+      const response = await fetch(`/api/paper/trades/${encodeURIComponent(tradeId)}/sell`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sellPct: 100 }),
+      });
+      const text = await response.text();
+      let payload: any;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        throw new Error(`Sell endpoint returned non-JSON (${response.status})`);
+      }
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload.error ?? `Sell failed (${response.status})`);
+      }
+      return payload;
+    },
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["sim-balance"] });
+      qc.invalidateQueries({ queryKey: ["paper-trades"] });
+      qc.invalidateQueries({ queryKey: ["daily-report"] });
+      toast({
+        title: "100% paper sell executed",
+        description: `${result.trade?.tokenSymbol ?? "Position"} closed · ${Number(result.pnlUsd ?? 0) >= 0 ? "+" : ""}$${Number(result.pnlUsd ?? 0).toFixed(2)} P&L`,
+      });
+    },
+    onError: (error: Error) => toast({ variant: "destructive", title: "Paper sell failed", description: error.message }),
   });
 
   const sb = simBal as any;
@@ -323,7 +374,13 @@ export default function Simulation() {
                 {totalPnL >= 0 ? "+" : ""}${totalPnL.toFixed(2)} ({returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%)
               </p>
             </div>
-            <p className="text-[7.5px] text-muted-foreground mt-1">Started at $100 · net realized P&L only</p>
+            <p className="text-[7.5px] text-muted-foreground mt-1">
+              Base ${Number(sb?.baseCapital ?? 100).toFixed(0)} + injected ${Number(sb?.injectedCapital ?? 0).toFixed(0)} = ${Number(sb?.startingCapital ?? 100).toFixed(0)} starting capital
+            </p>
+            <div className="flex gap-3 text-[7.5px] mt-2 uppercase tracking-wider">
+              <span className="text-muted-foreground">Injected <b className="text-primary">${Number(sb?.injectedCapital ?? 0).toFixed(2)}</b></span>
+              <span className="text-muted-foreground">Realized P&L <b className={totalPnL >= 0 ? "text-gains" : "text-losses"}>{totalPnL >= 0 ? "+" : ""}${totalPnL.toFixed(2)}</b></span>
+            </div>
           </div>
         )}
 
@@ -437,7 +494,12 @@ export default function Simulation() {
           ) : (
             <div className="space-y-2">
               {[...paperTrades].reverse().slice(0, 50).map((t: any) => (
-                <TradeCard key={t.id} t={t} />
+                <TradeCard
+                  key={t.id}
+                  t={t}
+                  onSell={(tradeId) => sellTrade.mutate(tradeId)}
+                  isSelling={sellTrade.isPending && sellTrade.variables === t.id}
+                />
               ))}
             </div>
           )}

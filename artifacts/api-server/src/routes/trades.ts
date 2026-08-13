@@ -71,10 +71,10 @@ router.get("/trades/pnl", async (req, res) => {
     };
 
     cache.set(CACHE_KEYS.PNL_SUMMARY, result, CACHE_TTL.PNL_SUMMARY);
-    res.json(result);
+    return res.json(result);
   } catch (err) {
     logger.error({ err }, "GET /trades/pnl failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -97,10 +97,10 @@ router.patch("/trades/:id", async (req, res) => {
     if (!updated) return res.status(404).json({ error: "Trade not found" });
 
     cache.invalidate(CACHE_KEYS.PNL_SUMMARY);
-    res.json(serializeTrade(updated));
+    return res.json(serializeTrade(updated));
   } catch (err) {
     logger.error({ err }, "PATCH /trades/:id failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
