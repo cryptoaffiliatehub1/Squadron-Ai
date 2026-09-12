@@ -47,13 +47,49 @@
     },
     "2026-08-13": {
       "date": "2026-08-13",
-      "tokensScanned": 111,
-      "passedLiquidity": 101,
-      "passedRugCheck": 77,
-      "passedWalletChecks": 77,
-      "passedAllGates": 75,
-      "actualEntries": 66
+      "tokensScanned": 1807,
+      "passedLiquidity": 1775,
+      "passedRugCheck": 1473,
+      "passedWalletChecks": 1455,
+      "passedAllGates": 1451,
+      "actualEntries": 134
+    },
+    "2026-08-14": {
+      "date": "2026-08-14",
+      "tokensScanned": 435,
+      "passedLiquidity": 432,
+      "passedRugCheck": 395,
+      "passedWalletChecks": 395,
+      "passedAllGates": 394,
+      "actualEntries": 5
+    },
+    "2026-09-06": {
+      "date": "2026-09-06",
+      "tokensScanned": 144,
+      "passedLiquidity": 144,
+      "passedRugCheck": 118,
+      "passedWalletChecks": 116,
+      "passedAllGates": 116,
+      "actualEntries": 6
+    },
+    "2026-09-07": {
+      "date": "2026-09-07",
+      "tokensScanned": 183,
+      "passedLiquidity": 157,
+      "passedRugCheck": 95,
+      "passedWalletChecks": 90,
+      "passedAllGates": 89,
+      "actualEntries": 64
+    },
+    "2026-09-12": {
+      "date": "2026-09-12",
+      "tokensScanned": 6,
+      "passedLiquidity": 4,
+      "passedRugCheck": 2,
+      "passedWalletChecks": 2,
+      "passedAllGates": 2,
+      "actualEntries": 2
     }
   },
-  "lastUpdated": "2026-08-13T09:55:48.775Z"
+  "lastUpdated": "2026-09-12T06:11:44.190Z"
 }
