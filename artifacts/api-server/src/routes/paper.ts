@@ -11,6 +11,7 @@ import {
   recordPaperTrade,
   getSimBalance,
   bulkSellPaperTrades,
+  refreshActivePaperPrices,
   type BulkSellScope,
 } from "../lib/paperTrading";
 import { calculatePaperPositionSizeAtBalance } from "../lib/positionSizer";
@@ -29,8 +30,9 @@ function normalizeScore(raw: unknown): number {
   return 0;
 }
 
-router.get("/paper/trades", (_req, res) => {
+router.get("/paper/trades", async (_req, res) => {
   try {
+    await refreshActivePaperPrices();
     const trades = getPaperTrades().map((t) => ({
       ...t,
       probabilityScore: normalizeScore(t.probabilityScore),
@@ -90,11 +92,11 @@ router.post("/test/paper-open", (_req, res) => {
 
 // Canonical paper sell route. The frontend must call this JSON endpoint rather
 // than a UI path, otherwise the web server returns index.html (<!DOCTYPE...).
-router.post("/paper/trades/:id/sell", (req, res) => {
+router.post("/paper/trades/:id/sell", async (req, res) => {
   try {
     const sellPct = Number(req.body?.sellPct ?? req.body?.percentage);
     const requestedPrice = req.body?.sellPrice ?? req.body?.price;
-    const result = sellPaperTrade(req.params.id, sellPct, requestedPrice == null ? undefined : Number(requestedPrice));
+    const result = await sellPaperTrade(req.params.id, sellPct, requestedPrice == null ? undefined : Number(requestedPrice));
     res.json({
       success: true,
       route: "POST /api/paper/trades/:id/sell",
@@ -161,8 +163,9 @@ router.get("/paper/log", (req, res) => {
 });
 
 // C2: GET /sim/balance — complete simulated balance snapshot
-router.get("/sim/balance", (_req, res) => {
+router.get("/sim/balance", async (_req, res) => {
   try {
+    await refreshActivePaperPrices();
     res.json(getSimBalanceFull());
   } catch (err) {
     logger.error({ err }, "GET /sim/balance failed");

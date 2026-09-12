@@ -13,7 +13,7 @@ export interface PaperTrade {
   tokenName: string;
   logoUrl?: string | null;
   type: "buy" | "sell";
-  status: "OPEN" | "PARTIAL EXIT" | "WIN" | "LOSS" | "MOONBAG" | "MOONBAG EXIT";
+  status: "OPEN" | "PARTIAL EXIT" | "WIN" | "LOSS" | "MOONBAG" | "MOONBAG EXIT" | "CANCELLED";
   amountSol: number;
   positionSizeUsd: number;
   tier: string;
@@ -68,6 +68,8 @@ export interface PaperTrade {
   // Manual/full-exit accounting
   realizedProceedsUsd?: number | null;
   manualSellPct?: number | null;
+  exitReason?: string | null;
+  initialPositionSizeUsd?: number;
 }
 
 export interface DailyReport {
@@ -120,6 +122,8 @@ const FAILED_REPORTS_DIR = path.join(DATA_DIR, "failed_reports");
 
 const BASE_SIM_CAPITAL_USD = 100;
 const ONE_TIME_INJECTION_USD = 900;
+const MAX_OPEN_POSITIONS = 3;
+const MAX_MOONBAGS = 3;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -144,6 +148,80 @@ function resolveStatus(t: any): PaperTrade["status"] {
   if (t.status) return t.status as PaperTrade["status"];
   if (t.exitTimestamp && t.pnlSol !== null) return t.pnlSol > 0 ? "WIN" : "LOSS";
   return "OPEN";
+}
+
+/**
+ * The paper ledger has been written by more than one historical code path.
+ * Normalize duplicate IDs and retire phantom zero-value positions before any
+ * read is used for accounting or UI. This preserves an audit row instead of
+ * silently deleting evidence.
+ */
+function normalizePaperLedger(): void {
+  const raw = readJson<any[]>(PAPER_TRADES_FILE, []);
+  if (!Array.isArray(raw) || raw.length === 0) return;
+
+  const byId = new Map<string, any>();
+  for (const row of raw) {
+    if (row?.id) byId.set(String(row.id), row);
+  }
+  const normalized = [...byId.values()];
+  let changed = normalized.length !== raw.length;
+
+  for (const row of normalized) {
+    const status = resolveStatus(row);
+    const active = status === "OPEN" || status === "PARTIAL EXIT";
+    const validValue = Number.isFinite(Number(row.entryPrice)) && Number(row.entryPrice) > 0
+      && Number.isFinite(Number(row.positionSizeUsd)) && Number(row.positionSizeUsd) > 0
+      && Number.isFinite(Number(row.amountSol)) && Number(row.amountSol) > 0;
+    if (active && !validValue) {
+      Object.assign(row, {
+        status: "CANCELLED",
+        exitTimestamp: row.exitTimestamp ?? new Date().toISOString(),
+        exitReason: "INVALID_ZERO_VALUE_RECORD_CLEANUP",
+        pnlUsd: 0,
+        pnlSol: 0,
+        realizedProceedsUsd: 0,
+      });
+      changed = true;
+      logger.warn({ id: row.id, symbol: row.tokenSymbol }, "[SIM] Cancelled invalid zero-value paper position");
+    }
+    if (status === "MOONBAG" && (!Number.isFinite(Number(row.remainingPositionSol)) || Number(row.remainingPositionSol) <= 0)) {
+      Object.assign(row, {
+        status: "MOONBAG EXIT",
+        exitTimestamp: row.exitTimestamp ?? new Date().toISOString(),
+        exitReason: "INVALID_ZERO_VALUE_MOONBAG_CLEANUP",
+        amountSol: 0,
+        remainingPositionSol: 0,
+        moonbagAmountUsd: 0,
+        realizedProceedsUsd: row.realizedProceedsUsd ?? 0,
+        pnlUsd: row.pnlUsd ?? 0,
+        pnlSol: row.pnlSol ?? 0,
+      });
+      changed = true;
+      logger.warn({ id: row.id, symbol: row.tokenSymbol }, "[SIM] Retired invalid zero-value moonbag");
+    }
+  }
+
+  const moonbags = normalized
+    .filter((row) => resolveStatus(row) === "MOONBAG")
+    .sort((a, b) => new Date(b.moonbagCreatedAt ?? b.timestamp ?? 0).getTime()
+      - new Date(a.moonbagCreatedAt ?? a.timestamp ?? 0).getTime());
+  for (const row of moonbags.slice(MAX_MOONBAGS)) {
+    Object.assign(row, {
+      status: "MOONBAG EXIT",
+      exitTimestamp: row.exitTimestamp ?? new Date().toISOString(),
+      exitReason: "MOONBAG_CAP_CLEANUP",
+      amountSol: 0,
+      remainingPositionSol: 0,
+      moonbagAmountUsd: 0,
+      realizedProceedsUsd: row.realizedProceedsUsd ?? 0,
+      pnlUsd: row.pnlUsd ?? 0,
+      pnlSol: row.pnlSol ?? 0,
+    });
+    changed = true;
+  }
+
+  if (changed) writeJson(PAPER_TRADES_FILE, normalized);
 }
 
 function getTodayUTC(): string {
@@ -179,6 +257,7 @@ export function hasOpenPaperTrade(mint: string): boolean {
 
 // ── Read helpers ──────────────────────────────────────────────────────────────
 export function getPaperTrades(): PaperTrade[] {
+  normalizePaperLedger();
   const raw = readJson<any[]>(PAPER_TRADES_FILE, []);
   return raw.map((t) => ({ ...t, status: resolveStatus(t) })) as PaperTrade[];
 }
@@ -191,18 +270,53 @@ export function getMoonbagTrades(): PaperTrade[] {
   return getPaperTrades().filter((t) => t.status === "MOONBAG");
 }
 
+function getLossProtection(mint: string): {
+  allowed: boolean;
+  reason: string | null;
+  totalLosses: number;
+  lossesToday: number;
+} {
+  const today = getTodayUTC();
+  const losses = getPaperTrades().filter((t) => t.tokenMint === mint && t.status === "LOSS");
+  const lossesToday = losses.filter((t) => (t.exitTimestamp ?? t.timestamp).startsWith(today)).length;
+  const totalLosses = losses.length;
+  if (totalLosses >= 3) {
+    return {
+      allowed: false,
+      reason: `PERMANENT RE-ENTRY BLOCK — ${mint} has ${totalLosses} recorded losses`,
+      totalLosses,
+      lossesToday,
+    };
+  }
+  if (lossesToday >= 2) {
+    return {
+      allowed: false,
+      reason: `DAILY RE-ENTRY BLOCK — ${mint} reached ${lossesToday} losses on ${today} UTC`,
+      totalLosses,
+      lossesToday,
+    };
+  }
+  return { allowed: true, reason: null, totalLosses, lossesToday };
+}
+
 // ── C2: daily compound tracker ────────────────────────────────────────────────
 
 function loadOrInitDailyCompound(currentBalance?: number): DailyCompound {
   const today = getTodayUTC();
   const existing = readJson<DailyCompound | null>(DAILY_COMPOUND_FILE, null);
-  if (existing && existing.date === today) return existing;
+  if (existing && existing.date === today) {
+    if (existing.dailyTarget < 0) {
+      existing.dailyTarget = 0;
+      writeJson(DAILY_COMPOUND_FILE, existing);
+    }
+    return existing;
+  }
   // New day or first launch: snapshot current balance as today's start
   const startBalance = currentBalance ?? 100;
   const dc: DailyCompound = {
     date: today,
     startBalance: Math.round(startBalance * 100) / 100,
-    dailyTarget: Math.round(startBalance * 0.30 * 100) / 100,
+    dailyTarget: Math.max(0, Math.round(startBalance * 0.30 * 100) / 100),
   };
   writeJson(DAILY_COMPOUND_FILE, dc);
   logger.info({ date: today, startBalance, dailyTarget: dc.dailyTarget }, "[DAILY_COMPOUND] Day reset — new target set");
@@ -308,7 +422,7 @@ function computeSimCash(): number {
       cash += t.realizedProceedsUsd ?? 0;
       continue;
     }
-    cash -= t.positionSizeUsd; // subtract entry
+    cash -= t.initialPositionSizeUsd ?? t.positionSizeUsd; // subtract original entry once
     if (t.realizedProceedsUsd != null) {
       cash += t.realizedProceedsUsd;
     } else if (t.status === "PARTIAL EXIT" || t.status === "WIN") {
@@ -325,7 +439,7 @@ export function getSimBalance(): SimBalance {
   const START = capital.baseCapitalUsd + capital.injectedCapitalUsd;
   const cash = computeSimCash();
   const trades = getPaperTrades();
-  const lockedInOpenUsd = trades.filter(t => t.status === "OPEN")
+  const lockedInOpenUsd = trades.filter(t => t.status === "OPEN" || t.status === "PARTIAL EXIT")
     .reduce((s, t) => s + t.positionSizeUsd, 0);
   const realizedPnlUsd = cash - START;
   const pnlPct = ((cash - START) / START) * 100;
@@ -364,7 +478,7 @@ export function getSimBalanceFull() {
   const START = capital.baseCapitalUsd + capital.injectedCapitalUsd;
   const dc = loadOrInitDailyCompound(cash);
   const todayPnL = cash - dc.startBalance;
-  const aboveTarget = todayPnL >= dc.dailyTarget;
+  const aboveTarget = cash > 0 && dc.dailyTarget > 0 && todayPnL >= dc.dailyTarget;
   const dailyProgressPct = dc.dailyTarget > 0 ? (todayPnL / dc.dailyTarget) * 100 : 0;
 
   return {
@@ -385,25 +499,77 @@ export function getSimBalanceFull() {
     todayPnL:          Math.round(todayPnL * 100) / 100,
     aboveTarget,
     dailyProgressPct:  Math.round(dailyProgressPct * 100) / 100,
+    cashStatus: cash < 0 ? "INSOLVENT" : cash === 0 ? "DEPLETED" : "FUNDED",
+    entryBlocked: cash <= 0,
   };
 }
 
 // ── Record a new paper trade — max 3 open cap ─────────────────────────────────
 export function recordPaperTrade(
   trade: Omit<PaperTrade, "status" | "targetPrice" | "stopLoss" | "exitMultiplier" | "moonbagAmountUsd"> & { entryPrice: number },
-): void {
+): { accepted: boolean; reason?: string; trade?: PaperTrade } {
   ensureDir(DATA_DIR);
 
+  const invalidReason = !Number.isFinite(trade.entryPrice) || trade.entryPrice <= 0
+    ? "ENTRY BLOCKED — invalid entry price"
+    : !Number.isFinite(trade.positionSizeUsd) || trade.positionSizeUsd <= 0 || !Number.isFinite(trade.amountSol) || trade.amountSol <= 0
+      ? "ENTRY BLOCKED — zero-value position"
+      : null;
+  if (invalidReason) {
+    recordPaperEvent({
+      action: "PAPER ENTRY BLOCKED",
+      source: "paper-ledger",
+      tokenMint: trade.tokenMint,
+      tokenSymbol: trade.tokenSymbol,
+      reason: invalidReason,
+    });
+    logger.warn({ mint: trade.tokenMint, reason: invalidReason }, "[SIM] Paper entry rejected");
+    return { accepted: false, reason: invalidReason };
+  }
+
+  const availableCash = computeSimCash();
+  if (!Number.isFinite(availableCash) || availableCash <= 0) {
+    const reason = `ENTRY BLOCKED — simulated cash is ${Number.isFinite(availableCash) ? `$${availableCash.toFixed(2)}` : "invalid"}; fund the simulation before opening another position`;
+    recordPaperEvent({
+      action: "PAPER ENTRY BLOCKED",
+      source: "cash-protection",
+      tokenMint: trade.tokenMint,
+      tokenSymbol: trade.tokenSymbol,
+      reason,
+    });
+    logger.warn({ mint: trade.tokenMint, availableCash }, "[SIM] Cash protection blocked paper entry");
+    return { accepted: false, reason };
+  }
+
+  const protection = getLossProtection(trade.tokenMint);
+  if (!protection.allowed) {
+    recordPaperEvent({
+      action: "PAPER ENTRY BLOCKED",
+      source: "loss-protection",
+      tokenMint: trade.tokenMint,
+      tokenSymbol: trade.tokenSymbol,
+      reason: protection.reason,
+      totalLosses: protection.totalLosses,
+      lossesToday: protection.lossesToday,
+    });
+    logger.warn({ mint: trade.tokenMint, reason: protection.reason }, "[SIM] Loss protection blocked paper entry");
+    return { accepted: false, reason: protection.reason ?? "Loss protection blocked entry" };
+  }
+
   if (hasOpenPaperTrade(trade.tokenMint)) {
+    const reason = `ENTRY BLOCKED — duplicate open position for ${trade.tokenMint}`;
+    recordPaperEvent({ action: "PAPER ENTRY BLOCKED", source: "deduplication", tokenMint: trade.tokenMint, tokenSymbol: trade.tokenSymbol, reason });
     console.log(`DUPLICATE TRADE SKIPPED — ${trade.tokenName}`);
-    return;
+    return { accepted: false, reason };
   }
 
   // C2: enforce max 3 simultaneously open trades
   const openCount = getOpenTrades().length;
-  if (openCount >= 3) {
-    console.log(`MAX OPEN TRADES REACHED (3) — ${trade.tokenName} skipped`);
-    return;
+  if (openCount >= MAX_OPEN_POSITIONS) {
+    const reason = `ENTRY BLOCKED — maximum ${MAX_OPEN_POSITIONS} open positions reached`;
+    recordPaperEvent({ action: "PAPER ENTRY BLOCKED", source: "position-cap", tokenMint: trade.tokenMint, tokenSymbol: trade.tokenSymbol, reason });
+    console.log(`MAX OPEN TRADES REACHED (${MAX_OPEN_POSITIONS}) — ${trade.tokenName} skipped`);
+    return { accepted: false, reason };
   }
 
   const full: PaperTrade = {
@@ -417,6 +583,7 @@ export function recordPaperTrade(
     pnlUsd:           null,
     moonbagAmountUsd: null,
     exitTimestamp:    null,
+    initialPositionSizeUsd: trade.positionSizeUsd,
   } as PaperTrade;
 
   const trades = readJson<any[]>(PAPER_TRADES_FILE, []);
@@ -429,6 +596,7 @@ export function recordPaperTrade(
     `${tag} BUY ${full.tokenSymbol} — ${full.amountSol.toFixed(4)} SOL ($${full.positionSizeUsd}) — score ${full.probabilityScore}`,
   );
   console.log(`${tag} BUY — ${full.tokenName} (${full.tokenSymbol}) — entry $${full.entryPrice?.toFixed(6) ?? "?"} — $${full.positionSizeUsd} — score ${full.probabilityScore} — open: ${openCount + 1}/3`);
+  return { accepted: true, trade: full };
 }
 
 export interface PaperSellResult {
@@ -599,7 +767,7 @@ export async function bulkSellPaperTrades(scope: BulkSellScope, sellPct: number)
   };
 }
 
-export function sellPaperTrade(tradeId: string, sellPct: number, requestedPrice?: number): PaperSellResult {
+export async function sellPaperTrade(tradeId: string, sellPct: number, requestedPrice?: number): Promise<PaperSellResult> {
   if (!tradeId || tradeId.length > 160) throw new Error("Invalid paper trade id");
   if (!Number.isFinite(sellPct) || sellPct <= 0 || sellPct > 100) {
     throw new Error("sellPct must be greater than 0 and no more than 100");
@@ -612,11 +780,12 @@ export function sellPaperTrade(tradeId: string, sellPct: number, requestedPrice?
   if (existing.status !== "OPEN") throw new Error(`Paper trade is not open (status: ${existing.status})`);
   if (!Number.isFinite(existing.entryPrice) || existing.entryPrice <= 0) throw new Error("Paper trade has no valid entry price");
 
+  const live = Number.isFinite(requestedPrice) && (requestedPrice as number) > 0
+    ? null
+    : await fetchLiveData(existing.tokenMint);
   const sellPrice = Number.isFinite(requestedPrice) && (requestedPrice as number) > 0
     ? requestedPrice as number
-    : existing.currentPrice && existing.currentPrice > 0
-      ? existing.currentPrice
-      : existing.entryPrice;
+    : live?.price ?? existing.currentPrice ?? existing.entryPrice;
   const fraction = sellPct / 100;
   const proceedsUsd = existing.positionSizeUsd * (sellPrice / existing.entryPrice) * fraction;
   const costUsd = existing.positionSizeUsd * fraction;
@@ -632,6 +801,8 @@ export function sellPaperTrade(tradeId: string, sellPct: number, requestedPrice?
     realizedProceedsUsd: proceedsUsd,
     manualSellPct: sellPct,
     exitTimestamp: now,
+    currentPrice: sellPrice,
+    ...(sellPct === 100 && pnlUsd < 0 ? { lossAmount: pnlUsd } : {}),
     ...(sellPct < 100 ? {
       positionSizeUsd: existing.positionSizeUsd * (1 - fraction),
       amountSol: existing.amountSol * (1 - fraction),
@@ -689,6 +860,41 @@ async function fetchLiveData(mint: string): Promise<{
       sellTxns5m:   best.txns?.m5?.sells ?? 0,
     };
   } catch { return null; }
+}
+
+/** Refresh every active persisted position from DexScreener and save the
+ * snapshot used by exits, balance views, and the frontend. */
+export async function refreshActivePaperPrices(): Promise<{ updated: number; failed: string[] }> {
+  const active = getPaperTrades().filter((t) =>
+    (t.status === "OPEN" || t.status === "PARTIAL EXIT" || t.status === "MOONBAG")
+    && t.tokenMint
+    && Number(t.entryPrice) > 0,
+  );
+  if (active.length === 0) return { updated: 0, failed: [] };
+
+  const all = readJson<any[]>(PAPER_TRADES_FILE, []);
+  const failed: string[] = [];
+  let updated = 0;
+  for (const trade of active) {
+    const live = await fetchLiveData(trade.tokenMint);
+    const index = all.findIndex((row) => row.id === trade.id);
+    if (index === -1) continue;
+    if (!live) {
+      failed.push(trade.tokenMint);
+      continue;
+    }
+    Object.assign(all[index], {
+      currentPrice: live.price,
+      currentLiquidity: live.liquidityUsd,
+      currentVolume5m: live.volume5m,
+      currentBuys5m: live.buyTxns5m,
+      currentSells5m: live.sellTxns5m,
+      lastLiveFetch: new Date().toISOString(),
+    });
+    updated++;
+  }
+  if (updated > 0) writeJson(PAPER_TRADES_FILE, all);
+  return { updated, failed };
 }
 
 // ── In-memory moonbag price history for tier-3 lower-lows check ─────────────
@@ -916,19 +1122,26 @@ export async function getMoonbagsWithPrices(): Promise<Array<PaperTrade & {
   currentValueUsd: number | null;
   delisted: boolean;
 }>> {
+  await refreshActivePaperPrices();
   const moonbags = getMoonbagTrades();
   return Promise.all(
     moonbags.map(async (mb) => {
-      // Prefer stored currentPrice (updated by exit engine), fall back to live fetch
-      let cp: number | null = mb.currentPrice ?? null;
-      if (!cp) cp = await fetchLiveData(mb.tokenMint).then(d => d?.price ?? null);
+      const cp: number | null = mb.currentPrice ?? null;
       const delisted = cp === null;
       const currentMultiplier = cp != null && mb.entryPrice > 0
         ? cp / mb.entryPrice : null;
       const rs = mb.remainingPositionSol ?? mb.amountSol * 0.5;
       const currentValueUsd = cp != null
         ? rs * 150 * (currentMultiplier ?? 1) : mb.moonbagAmountUsd;
-      return { ...mb, currentPrice: cp, currentMultiplier, currentValueUsd, delisted };
+      return {
+        ...mb,
+        currentPrice: cp,
+        currentMultiplier,
+        currentValueUsd,
+        delisted,
+        priceSource: cp != null ? "DexScreener" : "unavailable",
+        priceAgeSeconds: mb.lastLiveFetch ? Math.max(0, (Date.now() - new Date(mb.lastLiveFetch).getTime()) / 1000) : null,
+      };
     }),
   );
 }

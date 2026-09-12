@@ -370,7 +370,11 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       entryRegime: getRegime().regime,
     };
 
-    recordPaperTrade(pt);
+    const recorded = recordPaperTrade(pt);
+    if (!recorded.accepted) {
+      logger.info({ mint, reason: recorded.reason }, "[SIM] BUY not recorded");
+      return;
+    }
     incrementGate("actualEntries");
     state.tradesExecutedToday++;
     console.log(

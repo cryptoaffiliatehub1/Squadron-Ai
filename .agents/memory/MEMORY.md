@@ -3,3 +3,4 @@
 - [Command 1 — Security gate design decisions](command1-design-decisions.md) — Bonding bypass, two-tier threshold, non-blocking Helius checks, 3-tier moonbag (ALL 5 conditions), secondary watchdog, REPORT_EMAIL fix.
 - [Codegen zod version issue](codegen-zod.md) — Orval v8.23 generates z.int() (zod v4), but workspace uses zod@3.x; always restore pre-generated files from repo, never re-run codegen without pinning orval version.
 - [Imported repository runtime](imported-repo-runtime.md) — Squadron AI frontend/API and development schema must be resumed as a paired runtime.
+- [Paper ledger invariants](paper-ledger-invariants.md) — Paper-trade IDs are deduplicated; only positive-value active positions count, and active prices come from DexScreener snapshots.

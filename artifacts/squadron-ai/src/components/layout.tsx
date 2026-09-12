@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/tokens",     label: "Radar",     icon: Radio },
   { href: "/simulation", label: "Sim",       icon: BookOpen },
   { href: "/portfolio",  label: "Portfolio", icon: Briefcase },
+  { href: "/history",   label: "History",   icon: BookOpen },
   { href: "/alerts",     label: "Alerts",    icon: Bell },
 ];
 

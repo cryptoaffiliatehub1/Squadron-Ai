@@ -2,7 +2,7 @@ import { Router } from "express";
 import { startBot, stopBot, getBotState, getFullSystemState, restartScanner } from "../lib/bot";
 import { getReadinessReport } from "../lib/systemReadiness";
 import { getCircuitState, resetFortress, humanOverride, engageFortress } from "../lib/circuitBreaker";
-import { getMoonbags, getTotalMoonbagValueSol, getMoonbagProtectionTiers } from "../lib/moonbagVault";
+import { getMoonbagsWithPrices } from "../lib/paperTrading";
 import { getScannerState } from "../lib/scanner";
 import { getWatchdogState } from "../lib/watchdog";
 import { getRegime } from "../lib/marketRegime";
@@ -89,17 +89,24 @@ router.post("/system/human-override", (_req, res) => {
   res.json({ success: true, message: "Human override recorded — 2-hour psychological lockout active" });
 });
 
-router.get("/moonbags", (_req, res) => {
-  const moonbags = getMoonbags();
-  const tiers = getMoonbagProtectionTiers();
-  res.json({
-    count: moonbags.length,
-    totalValueSol: getTotalMoonbagValueSol(),
-    positions: moonbags.map((m) => ({
-      ...m,
-      protectionTier: tiers.get(m.id) ?? "HOLD",
-    })),
-  });
+router.get("/moonbags", async (_req, res) => {
+  try {
+    const positions = await getMoonbagsWithPrices();
+    const totalValueUsd = positions.reduce((sum, position) => sum + Number(position.currentValueUsd ?? 0), 0);
+    res.json({
+      count: positions.length,
+      totalValueSol: totalValueUsd / 150,
+      totalValueUsd,
+      source: "paper-ledger",
+      positions: positions.map((position) => ({
+        ...position,
+        protectionTier: "HOLD",
+      })),
+    });
+  } catch (err) {
+    logger.error({ err }, "GET /moonbags failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.get("/regime", (_req, res) => {

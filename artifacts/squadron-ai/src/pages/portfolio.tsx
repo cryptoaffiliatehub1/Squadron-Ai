@@ -131,16 +131,17 @@ export default function Portfolio() {
               {moonbagList.map((m: any) => {
                 const isExpanded = expandedMoonbag === m.id;
                 const tier = (m.protectionTier ?? "HOLD") as string;
-                // entryPrice is the golden-exit price (= 2.5× from original)
-                // Original buy price ≈ entryPrice / 2.5
-                const goldenExitPrice = safeNum(m.entryPrice);
-                const originalBuyPrice = goldenExitPrice > 0 ? goldenExitPrice / 2.5 : 0;
+                const originalBuyPrice = safeNum(m.entryPrice);
+                const goldenExitPrice = originalBuyPrice * 2.5;
                 const currentPrice    = safeNum(m.currentPrice);
-                const multiplier      = safeNum(m.currentMultiplier, 1);
-                const currentValueSol = safeNum(m.currentValueSol);
-                const originalCostUsd = safeNum(m.originalCostUsd);
-                const tokensHeld      = safeNum(m.tokensHeld);
-                const enteredAt       = m.enteredAt ? new Date(m.enteredAt).toLocaleString() : "—";
+                const multiplier      = safeNum(m.currentMultiplier, originalBuyPrice > 0 ? currentPrice / originalBuyPrice : 1);
+                const currentValueUsd = safeNum(m.currentValueUsd);
+                const currentValueSol = currentValueUsd / 150;
+                const originalCostUsd = 0;
+                const tokensHeld      = safeNum(m.remainingPositionSol);
+                const enteredAt       = m.moonbagCreatedAt || m.timestamp
+                  ? new Date(m.moonbagCreatedAt || m.timestamp).toLocaleString()
+                  : "—";
                 const dexUrl = `https://dexscreener.com/solana/${m.tokenMint ?? ""}`;
 
                 return (
@@ -210,12 +211,12 @@ export default function Portfolio() {
                           <p className="text-[7.5px] text-muted-foreground uppercase tracking-wider font-bold">Current Moonbag</p>
                           <div className="bg-card/60 rounded-lg p-2 space-y-1.5 text-[8.5px]">
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Tokens held (50%)</span>
-                              <span className="font-mono">{tokensHeld > 0 ? tokensHeld.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}</span>
+                              <span className="text-muted-foreground">Remaining SOL basis</span>
+                              <span className="font-mono">{tokensHeld > 0 ? `${tokensHeld.toFixed(6)} SOL` : "—"}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Moonbag entry price</span>
-                              <span className="font-mono text-primary">{fmtPrice(goldenExitPrice)}</span>
+                              <span className="font-mono text-primary">{fmtPrice(originalBuyPrice)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Current price</span>
@@ -225,7 +226,7 @@ export default function Portfolio() {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Current value</span>
-                              <span className="font-mono text-primary font-bold">{currentValueSol.toFixed(6)} SOL</span>
+                              <span className="font-mono text-primary font-bold">${currentValueUsd.toFixed(2)} · {currentValueSol.toFixed(6)} SOL</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Multiplier vs entry</span>
@@ -242,7 +243,7 @@ export default function Portfolio() {
 
                         {/* Timestamps */}
                         <p className="text-[7.5px] text-muted-foreground/50 font-mono">
-                          Moonbag created: {enteredAt}
+                          Moonbag created: {enteredAt} · Price source: {m.priceSource ?? "ledger"}
                         </p>
 
                         {/* DexScreener link */}

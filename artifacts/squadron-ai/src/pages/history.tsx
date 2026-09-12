@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, ArrowUpRight, ArrowDownLeft, XCircle } from "lucide-react";
+import { BookOpen, ArrowUpRight, ArrowDownLeft, XCircle, Activity } from "lucide-react";
 
 function useHistory() {
   return useQuery({
@@ -17,9 +17,10 @@ export default function History() {
   const { data, isLoading } = useHistory();
   const entries = (data as any[]) ?? [];
 
-  const trades = entries.filter(e => e.kind === "trade");
+  const trades = entries.filter(e => e.kind === "trade" || e.kind === "paper");
   const rejected = entries.filter(e => e.kind === "rejected");
-  const totalPnl = trades.reduce((s, t) => s + (t.pnlUsd ?? 0), 0);
+  const events = entries.filter(e => e.kind === "event");
+  const totalPnl = entries.reduce((s, t) => s + Number(t.pnlUsd ?? 0), 0);
 
   return (
     <Layout>
@@ -38,7 +39,7 @@ export default function History() {
           </div>
           <div className="bg-card border border-card-border rounded-lg p-2">
             <p className="text-[9px] text-muted-foreground uppercase">Rejected</p>
-            <p className="text-sm font-bold text-losses">{rejected.length}</p>
+            <p className="text-sm font-bold text-losses">{rejected.length + events.filter(e => String(e.outcome).includes("BLOCKED")).length}</p>
           </div>
           <div className="bg-card border border-card-border rounded-lg p-2">
             <p className="text-[9px] text-muted-foreground uppercase">All P&L</p>
@@ -59,21 +60,26 @@ export default function History() {
           </div>
         ) : (
           <div className="space-y-2">
-            {entries.map((entry: any) => (
-              <Card key={`${entry.kind}-${entry.id}`} className={`bg-card border-card-border ${entry.kind === "rejected" ? "border-l-2 border-l-destructive/30" : entry.pnlUsd !== null && entry.pnlUsd >= 0 ? "border-l-2 border-l-gains/30" : entry.pnlUsd !== null ? "border-l-2 border-l-losses/30" : ""}`}>
+            {entries.map((entry: any) => {
+              const isRejected = entry.kind === "rejected" || entry.kind === "event" && String(entry.outcome).includes("BLOCKED");
+              const isBuy = entry.outcome === "buy" || entry.kind === "paper" && entry.status === "OPEN";
+              return (
+              <Card key={`${entry.kind}-${entry.id}`} className={`bg-card border-card-border ${isRejected ? "border-l-2 border-l-destructive/30" : entry.pnlUsd !== null && entry.pnlUsd >= 0 ? "border-l-2 border-l-gains/30" : entry.pnlUsd !== null ? "border-l-2 border-l-losses/30" : ""}`}>
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      {entry.kind === "rejected" ? (
+                      {isRejected ? (
                         <XCircle size={12} className="text-destructive" />
-                      ) : entry.outcome === "buy" ? (
+                      ) : entry.kind === "event" ? (
+                        <Activity size={12} className="text-primary" />
+                      ) : isBuy ? (
                         <ArrowUpRight size={12} className="text-gains" />
                       ) : (
                         <ArrowDownLeft size={12} className="text-losses" />
                       )}
                       <span className="font-bold text-sm uppercase">{entry.tokenSymbol}</span>
-                      <Badge variant="outline" className={`text-[9px] uppercase ${entry.kind === "rejected" ? "text-destructive border-destructive/30" : entry.outcome === "buy" ? "text-gains border-gains/30" : "text-losses border-losses/30"}`}>
-                        {entry.kind === "rejected" ? "REJECTED" : entry.outcome.toUpperCase()}
+                      <Badge variant="outline" className={`text-[9px] uppercase ${isRejected ? "text-destructive border-destructive/30" : entry.kind === "event" ? "text-primary border-primary/30" : isBuy ? "text-gains border-gains/30" : "text-losses border-losses/30"}`}>
+                        {entry.kind === "rejected" ? "REJECTED" : String(entry.outcome ?? entry.kind).toUpperCase()}
                       </Badge>
                     </div>
                     {entry.pnlUsd !== null && (
@@ -87,7 +93,8 @@ export default function History() {
                   <p className="text-[9px] text-muted-foreground mt-1">{new Date(entry.timestamp).toLocaleString()}</p>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

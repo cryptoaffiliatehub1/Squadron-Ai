@@ -3,6 +3,7 @@ import { db, tradesTable, skippedTokensTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { cache, CACHE_KEYS, CACHE_TTL } from "../lib/cache";
 import { logger } from "../lib/logger";
+import { getPaperTrades, getPaperTradeLog } from "../lib/paperTrading";
 
 const router = Router();
 
@@ -114,8 +115,8 @@ router.get("/history", async (req, res) => {
     ]);
 
     type HistoryEntry = {
-      id: number;
-      kind: "trade" | "rejected";
+      id: string | number;
+      kind: "trade" | "rejected" | "paper" | "event";
       tokenMint: string;
       tokenSymbol: string;
       tokenName: string;
@@ -167,7 +168,43 @@ router.get("/history", async (req, res) => {
       timestamp: s.detectedAt.toISOString(),
     }));
 
-    const combined = [...tradeEntries, ...rejectedEntries]
+    const paperEntries: HistoryEntry[] = getPaperTrades().map((t) => ({
+      id: `paper:${t.id}`,
+      kind: "paper",
+      tokenMint: t.tokenMint,
+      tokenSymbol: t.tokenSymbol,
+      tokenName: t.tokenName,
+      outcome: t.status,
+      amountSol: Number(t.amountSol ?? 0),
+      pnlUsd: t.pnlUsd !== null && t.pnlUsd !== undefined ? Number(t.pnlUsd) : null,
+      txSignature: null,
+      reason: t.exitReason ?? null,
+      safetyScore: t.probabilityScore !== null && t.probabilityScore !== undefined ? String(t.probabilityScore) : null,
+      notes: t.relaxedMode ? "SIM-RELAXED" : null,
+      tag: t.tier ?? null,
+      status: t.status,
+      timestamp: t.exitTimestamp ?? t.timestamp,
+    }));
+
+    const eventEntries: HistoryEntry[] = getPaperTradeLog(Math.max(limit, 500)).map((event, index) => ({
+      id: `event:${event.timestamp ?? index}:${index}`,
+      kind: "event",
+      tokenMint: String(event.tokenMint ?? ""),
+      tokenSymbol: String(event.tokenSymbol ?? event.scopeLabel ?? "SYSTEM"),
+      tokenName: String(event.tokenName ?? event.scopeLabel ?? "Paper event"),
+      outcome: String(event.action ?? "PAPER EVENT"),
+      amountSol: null,
+      pnlUsd: event.pnlUsd !== undefined ? Number(event.pnlUsd) : event.totalPnlUsd !== undefined ? Number(event.totalPnlUsd) : null,
+      txSignature: null,
+      reason: event.reason ? String(event.reason) : null,
+      safetyScore: null,
+      notes: event.source ? String(event.source) : null,
+      tag: event.scopeLabel ? String(event.scopeLabel) : null,
+      status: null,
+      timestamp: String(event.timestamp ?? new Date(0).toISOString()),
+    }));
+
+    const combined = [...tradeEntries, ...rejectedEntries, ...paperEntries, ...eventEntries]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit);
 

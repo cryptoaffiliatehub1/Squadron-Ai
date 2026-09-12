@@ -2607,5 +2607,37 @@
       }
     ],
     "timestamp": "2026-09-06T09:46:17.848Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:18:41.409Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:18:45.409Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:19:56.774Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:20:01.090Z"
   }
 ]

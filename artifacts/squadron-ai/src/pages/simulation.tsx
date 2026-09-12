@@ -243,6 +243,9 @@ export default function Simulation() {
   const sb = simBal as any;
   const rp = report as any;
   const paperTrades: any[] = (trades as any[]) ?? [];
+  const openPaperTrades = paperTrades.filter((t) => t.status === "OPEN" || t.status === "PARTIAL EXIT");
+  const moonbagTrades = paperTrades.filter((t) => t.status === "MOONBAG");
+  const settledPaperTrades = paperTrades.filter((t) => !openPaperTrades.includes(t) && !moonbagTrades.includes(t));
 
   const winRate   = rp?.winRate ?? 0;
   const totalTrades = rp?.totalTrades ?? 0;
@@ -263,6 +266,8 @@ export default function Simulation() {
   const injectedCapital = sb?.injectedCapital ?? 0;
   const startingCapital = sb?.startingCapital ?? baseCapital + injectedCapital;
   const realizedPnl = sb?.realizedPnl ?? totalPnL;
+  const cashStatus = sb?.cashStatus ?? "FUNDED";
+  const entryBlocked = Boolean(sb?.entryBlocked);
 
   const panelCls = "bg-card border border-border rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.25)]";
   const progressBarPct = Math.min(Math.max(progressPct, 0), 100);
@@ -329,6 +334,11 @@ export default function Simulation() {
                 {totalPnL >= 0 ? "+" : ""}${totalPnL.toFixed(2)} ({returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%)
               </p>
             </div>
+            {entryBlocked && (
+              <p className="mt-2 rounded-lg border border-losses/30 bg-losses/5 px-2 py-1.5 text-[8px] font-bold uppercase tracking-wider text-losses">
+                {cashStatus} — new paper entries are blocked until simulated cash is positive
+              </p>
+            )}
              <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 pt-2 border-t border-border/40 text-[7px] uppercase tracking-wider">
                <span className="text-muted-foreground">Base <b className="text-foreground font-mono">${baseCapital.toFixed(2)}</b></span>
                <span className="text-muted-foreground">Injected <b className="text-primary font-mono">+${injectedCapital.toFixed(2)}</b></span>
@@ -426,33 +436,62 @@ export default function Simulation() {
           </div>
         )}
 
-        {/* Trade log */}
+        {/* Active open positions */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1">
-              <BarChart2 size={8} /> Trade Log
+              <BarChart2 size={8} /> Open Positions
             </p>
-            {paperTrades.length > 0 && (
-              <span className="text-[8px] text-primary font-mono font-bold">{paperTrades.length} entries</span>
+            {openPaperTrades.length > 0 && (
+              <span className="text-[8px] text-primary font-mono font-bold">{openPaperTrades.length} active</span>
             )}
           </div>
 
           {tradesLoading ? (
             <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
-          ) : paperTrades.length === 0 ? (
+          ) : openPaperTrades.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Activity size={24} className="mx-auto mb-2 opacity-20" />
-              <p className="text-xs font-mono uppercase">No trades yet</p>
-              <p className="text-[9px] text-muted-foreground/60 mt-1">Start the bot to begin paper trading</p>
+              <p className="text-xs font-mono uppercase">No open positions</p>
+              <p className="text-[9px] text-muted-foreground/60 mt-1">The three-position cap is enforced by the ledger</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {[...paperTrades].reverse().slice(0, 50).map((t: any) => (
+              {[...openPaperTrades].reverse().map((t: any) => (
                 <TradeCard key={t.id} t={t} />
               ))}
             </div>
           )}
         </div>
+
+        {/* Moonbags are displayed separately from cost-basis positions. */}
+        {moonbagTrades.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1">
+                <Flame size={8} className="text-purple-400" /> Moonbag Vault
+              </p>
+              <span className="text-[8px] text-purple-400 font-mono font-bold">{moonbagTrades.length} active</span>
+            </div>
+            <div className="space-y-2">
+              {[...moonbagTrades].reverse().map((t: any) => <TradeCard key={t.id} t={t} />)}
+            </div>
+          </div>
+        )}
+
+        {settledPaperTrades.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1">
+                <BarChart2 size={8} /> Settled Trade Log
+              </p>
+              <span className="text-[8px] text-muted-foreground font-mono font-bold">{settledPaperTrades.length} records</span>
+            </div>
+            <div className="space-y-2">
+              {[...settledPaperTrades].reverse().slice(0, 50).map((t: any) => <TradeCard key={t.id} t={t} />)}
+            </div>
+          </div>
+        )}
 
         {/* Daily compounding history section */}
         {!simLoading && sb && (
