@@ -6666,11 +6666,11 @@
     "exitMultiplier": null,
     "moonbagAmountUsd": null,
     "initialPositionSizeUsd": 84.116,
-    "currentPrice": 0.00009822,
-    "currentLiquidity": 25722.07,
-    "currentVolume5m": 36438.95,
-    "currentBuys5m": 290,
-    "currentSells5m": 225,
-    "lastLiveFetch": "2026-09-13T00:50:45.183Z"
+    "currentPrice": 0.0001169,
+    "currentLiquidity": 28287,
+    "currentVolume5m": 32177.89,
+    "currentBuys5m": 224,
+    "currentSells5m": 212,
+    "lastLiveFetch": "2026-09-13T00:53:45.192Z"
   }
 ]
