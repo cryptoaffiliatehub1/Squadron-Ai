@@ -201,6 +201,57 @@ function TradeCard({ t }: { t: any }) {
   );
 }
 
+function MoonbagCard({ t }: { t: any }) {
+  const entryPrice = Number(t.entryPrice) || 0;
+  const currentPrice = Number(t.currentPrice) || 0;
+  const multiplier = Number(t.currentMultiplier) || (entryPrice > 0 ? currentPrice / entryPrice : 0);
+  const valueUsd = Number(t.currentValueUsd ?? t.moonbagAmountUsd) || 0;
+  const priceAge = t.lastLiveFetch ? Math.max(0, (Date.now() - new Date(t.lastLiveFetch).getTime()) / 1000) : null;
+
+  return (
+    <div className="bg-card border border-purple-500/30 rounded-xl p-3 space-y-2">
+      <div className="flex items-start gap-2">
+        <TokenLogo logoUrl={t.logoUrl} symbol={t.tokenSymbol} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-bold text-[11px] uppercase truncate">{t.tokenSymbol}</span>
+            <span className="text-[7px] px-1.5 py-0.5 rounded border font-bold uppercase text-purple-400 border-purple-500/40 bg-purple-500/10">
+              ACTIVE MOONBAG
+            </span>
+          </div>
+          <p className="text-[8px] text-muted-foreground truncate mt-0.5">{t.tokenName}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className={`font-mono font-bold text-[11px] ${multiplier >= 1 ? "text-gains" : "text-losses"}`}>
+            {multiplier > 0 ? `${multiplier.toFixed(2)}×` : "—"}
+          </p>
+          <p className="text-[7.5px] text-muted-foreground">multiplier</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-[8px]">
+        <div className="rounded-lg bg-background/50 border border-border/40 px-2 py-1.5">
+          <p className="text-muted-foreground uppercase tracking-wider">Entry price</p>
+          <p className="font-mono text-foreground mt-0.5">${entryPrice > 0 ? entryPrice.toFixed(8) : "—"}</p>
+        </div>
+        <div className="rounded-lg bg-background/50 border border-border/40 px-2 py-1.5">
+          <p className="text-muted-foreground uppercase tracking-wider">Current price · live</p>
+          <p className="font-mono text-primary mt-0.5">${currentPrice > 0 ? currentPrice.toFixed(8) : "—"}</p>
+        </div>
+        <div className="rounded-lg bg-background/50 border border-border/40 px-2 py-1.5">
+          <p className="text-muted-foreground uppercase tracking-wider">Value</p>
+          <p className="font-mono text-gains font-bold mt-0.5">${valueUsd.toFixed(2)}</p>
+        </div>
+        <div className="rounded-lg bg-background/50 border border-border/40 px-2 py-1.5">
+          <p className="text-muted-foreground uppercase tracking-wider">Price source</p>
+          <p className="font-mono text-foreground mt-0.5">
+            {t.priceSource ?? "ledger"}{priceAge != null ? ` · ${Math.round(priceAge)}s` : ""}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub, color }: {
@@ -240,12 +291,20 @@ export default function Simulation() {
     refetchInterval: 30_000,
   });
 
+  const { data: moonbags, isLoading: moonbagsLoading } = useQuery({
+    queryKey: ["moonbags"],
+    queryFn: () => fetch("/api/moonbags").then(r => r.json()),
+    refetchInterval: 30_000,
+  });
+
   const sb = simBal as any;
   const rp = report as any;
   const paperTrades: any[] = (trades as any[]) ?? [];
   const openPaperTrades = paperTrades.filter((t) => t.status === "OPEN" || t.status === "PARTIAL EXIT");
-  const moonbagTrades = paperTrades.filter((t) => t.status === "MOONBAG");
-  const settledPaperTrades = paperTrades.filter((t) => !openPaperTrades.includes(t) && !moonbagTrades.includes(t));
+  // Use the enriched ledger response shared with Portfolio so current price,
+  // multiplier, value, and price age all use the same live-price calculation.
+  const moonbagTrades: any[] = (moonbags as any)?.positions ?? [];
+  const settledPaperTrades = paperTrades.filter((t) => t.status !== "OPEN" && t.status !== "PARTIAL EXIT" && t.status !== "MOONBAG");
 
   const winRate   = rp?.winRate ?? 0;
   const totalTrades = rp?.totalTrades ?? 0;
@@ -264,6 +323,7 @@ export default function Simulation() {
   const moonbagCount  = sb?.moonbagCount ?? 0;
   const baseCapital   = sb?.baseCapital ?? 100;
   const injectedCapital = sb?.injectedCapital ?? 0;
+  const capitalInjections: any[] = Array.isArray(sb?.injections) ? sb.injections : [];
   const startingCapital = sb?.startingCapital ?? baseCapital + injectedCapital;
   const realizedPnl = sb?.realizedPnl ?? totalPnL;
   const cashStatus = sb?.cashStatus ?? "FUNDED";
@@ -339,12 +399,21 @@ export default function Simulation() {
                 {cashStatus} — new paper entries are blocked until simulated cash is positive
               </p>
             )}
-             <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 pt-2 border-t border-border/40 text-[7px] uppercase tracking-wider">
+               <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 pt-2 border-t border-border/40 text-[7px] uppercase tracking-wider">
                <span className="text-muted-foreground">Base <b className="text-foreground font-mono">${baseCapital.toFixed(2)}</b></span>
-               <span className="text-muted-foreground">Injected <b className="text-primary font-mono">+${injectedCapital.toFixed(2)}</b></span>
+                {capitalInjections.length > 0 ? capitalInjections.map((injection) => (
+                  <span key={injection.id} className="text-muted-foreground">
+                    {injection.label} <b className="text-primary font-mono">+${Number(injection.amountUsd).toFixed(2)}</b>
+                  </span>
+                )) : (
+                  <span className="text-muted-foreground">Injected <b className="text-primary font-mono">+${injectedCapital.toFixed(2)}</b></span>
+                )}
                <span className="text-muted-foreground">Starting <b className="text-foreground font-mono">${startingCapital.toFixed(2)}</b></span>
                <span className="text-muted-foreground">Realized P&amp;L <b className={realizedPnl >= 0 ? "text-gains font-mono" : "text-losses font-mono"}>{realizedPnl >= 0 ? "+" : ""}${realizedPnl.toFixed(2)}</b></span>
              </div>
+              <p className="text-[7px] text-muted-foreground/60 mt-2">
+                Current balance = starting capital + realized P&amp;L
+              </p>
           </div>
         )}
 
@@ -447,7 +516,7 @@ export default function Simulation() {
             )}
           </div>
 
-          {tradesLoading ? (
+          {tradesLoading || moonbagsLoading ? (
             <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
           ) : openPaperTrades.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
@@ -464,20 +533,28 @@ export default function Simulation() {
           )}
         </div>
 
-        {/* Moonbags are displayed separately from cost-basis positions. */}
-        {moonbagTrades.length > 0 && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1">
-                <Flame size={8} className="text-purple-400" /> Moonbag Vault
-              </p>
-              <span className="text-[8px] text-purple-400 font-mono font-bold">{moonbagTrades.length} active</span>
-            </div>
-            <div className="space-y-2">
-              {[...moonbagTrades].reverse().map((t: any) => <TradeCard key={t.id} t={t} />)}
-            </div>
+        {/* Active moonbags are displayed as a dedicated section next to positions and settled trades. */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1">
+              <Flame size={8} className="text-purple-400" /> Active Moonbags
+            </p>
+            <span className="text-[8px] text-purple-400 font-mono font-bold">{moonbagTrades.length} active</span>
           </div>
-        )}
+          {tradesLoading ? (
+            <div className="space-y-2"><Skeleton className="h-36 rounded-xl" /></div>
+          ) : moonbagTrades.length === 0 ? (
+            <div className="text-center py-7 border border-purple-500/15 rounded-xl bg-purple-500/[0.02]">
+              <Flame size={22} className="mx-auto mb-2 text-purple-400/20" />
+              <p className="text-xs font-mono uppercase text-muted-foreground">No active moonbags</p>
+              <p className="text-[9px] text-muted-foreground/60 mt-1">Recovered-cost positions appear here after a moonbag exit</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {[...moonbagTrades].reverse().map((t: any) => <MoonbagCard key={t.id} t={t} />)}
+            </div>
+          )}
+        </div>
 
         {settledPaperTrades.length > 0 && (
           <div>

@@ -6,6 +6,7 @@ import {
   getSimBalanceFull,
   sellPaperTrade,
   applyOneTimeCapitalInjection,
+  applySecondCapitalInjection,
   getSimCapitalBreakdown,
   getPaperTradeLog,
   recordPaperTrade,
@@ -150,6 +151,15 @@ router.post("/sim/capital-injection", (_req, res) => {
   } catch (err) {
     logger.error({ err }, "POST /sim/capital-injection failed");
     res.status(500).json({ error: "Capital injection failed" });
+  }
+});
+
+router.post("/sim/capital-injection/second", (_req, res) => {
+  try {
+    res.json({ success: true, ...applySecondCapitalInjection(), balance: getSimBalanceFull() });
+  } catch (err) {
+    logger.error({ err }, "POST /sim/capital-injection/second failed");
+    res.status(500).json({ error: "Second capital injection failed" });
   }
 });
 

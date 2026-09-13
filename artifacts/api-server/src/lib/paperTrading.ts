@@ -122,6 +122,7 @@ const FAILED_REPORTS_DIR = path.join(DATA_DIR, "failed_reports");
 
 const BASE_SIM_CAPITAL_USD = 100;
 const ONE_TIME_INJECTION_USD = 900;
+const SECOND_INJECTION_USD = 1000;
 const MAX_OPEN_POSITIONS = 3;
 const MAX_MOONBAGS = 3;
 
@@ -331,58 +332,111 @@ export function getDailyCompoundData() {
 interface SimCapital {
   baseCapitalUsd: number;
   injectedCapitalUsd: number;
+  injections: CapitalInjection[];
   injectionKey: string | null;
   appliedAt: string | null;
 }
 
+interface CapitalInjection {
+  id: string;
+  label: string;
+  amountUsd: number;
+  appliedAt: string;
+}
+
 function getSimCapital(): SimCapital {
-  return readJson<SimCapital>(SIM_CAPITAL_FILE, {
+  const stored = readJson<Partial<SimCapital>>(SIM_CAPITAL_FILE, {
     baseCapitalUsd: BASE_SIM_CAPITAL_USD,
     injectedCapitalUsd: 0,
+    injections: [],
     injectionKey: null,
     appliedAt: null,
   });
+  const legacyInjection = stored.injectionKey && Number(stored.injectedCapitalUsd) > 0
+    ? [{
+      id: stored.injectionKey,
+      label: stored.injectionKey === "batch1-900-usd" ? "Existing $900 injection" : "Capital injection",
+      amountUsd: Number(stored.injectedCapitalUsd),
+      appliedAt: stored.appliedAt ?? new Date(0).toISOString(),
+    }]
+    : [];
+  const injections = Array.isArray(stored.injections) && stored.injections.length > 0
+    ? stored.injections
+    : legacyInjection;
+  const injectedCapitalUsd = injections.reduce((sum, injection) => sum + Number(injection.amountUsd || 0), 0);
+  return {
+    baseCapitalUsd: Number(stored.baseCapitalUsd) || BASE_SIM_CAPITAL_USD,
+    injectedCapitalUsd,
+    injections,
+    injectionKey: stored.injectionKey ?? injections.at(-1)?.id ?? null,
+    appliedAt: stored.appliedAt ?? injections.at(-1)?.appliedAt ?? null,
+  };
 }
 
-/** Apply the requested simulation funding exactly once. */
+function capitalInjectionResult(
+  capital: SimCapital,
+  applied: boolean,
+  alreadyApplied: boolean,
+): {
+  applied: boolean;
+  alreadyApplied: boolean;
+  baseCapitalUsd: number;
+  injectedCapitalUsd: number;
+  injections: CapitalInjection[];
+  totalStartingCapitalUsd: number;
+  appliedAt: string | null;
+} {
+  return {
+    applied,
+    alreadyApplied,
+    baseCapitalUsd: capital.baseCapitalUsd,
+    injectedCapitalUsd: capital.injectedCapitalUsd,
+    injections: capital.injections,
+    totalStartingCapitalUsd: capital.baseCapitalUsd + capital.injectedCapitalUsd,
+    appliedAt: capital.appliedAt,
+  };
+}
+
+function applyCapitalInjection(amountUsd: number, id: string, label: string): ReturnType<typeof capitalInjectionResult> {
+  const existing = getSimCapital();
+  if (existing.injections.some((injection) => injection.id === id)) {
+    return capitalInjectionResult(existing, false, true);
+  }
+
+  const appliedAt = new Date().toISOString();
+  const injections = [
+    ...existing.injections,
+    { id, label, amountUsd, appliedAt },
+  ];
+  const updated: SimCapital = {
+    ...existing,
+    injections,
+    injectedCapitalUsd: injections.reduce((sum, injection) => sum + injection.amountUsd, 0),
+    injectionKey: id,
+    appliedAt,
+  };
+  writeJson(SIM_CAPITAL_FILE, updated);
+  logger.info({ amountUsd, injectionKey: id }, "[SIM_CAPITAL] Capital injection applied");
+  console.log(`[SIM_CAPITAL] APPLIED $${amountUsd.toFixed(2)} injection (idempotency key: ${id})`);
+  return capitalInjectionResult(updated, true, false);
+}
+
+/** Apply the existing $900 simulation funding exactly once. */
 export function applyOneTimeCapitalInjection(): {
   applied: boolean;
   alreadyApplied: boolean;
   baseCapitalUsd: number;
   injectedCapitalUsd: number;
+  injections: CapitalInjection[];
   totalStartingCapitalUsd: number;
   appliedAt: string | null;
 } {
-  const existing = getSimCapital();
-  if (existing.injectionKey === "batch1-900-usd" && existing.injectedCapitalUsd === ONE_TIME_INJECTION_USD) {
-    return {
-      applied: false,
-      alreadyApplied: true,
-      baseCapitalUsd: existing.baseCapitalUsd,
-      injectedCapitalUsd: existing.injectedCapitalUsd,
-      totalStartingCapitalUsd: existing.baseCapitalUsd + existing.injectedCapitalUsd,
-      appliedAt: existing.appliedAt,
-    };
-  }
+  return applyCapitalInjection(ONE_TIME_INJECTION_USD, "batch1-900-usd", "Existing $900 injection");
+}
 
-  const appliedAt = new Date().toISOString();
-  const updated: SimCapital = {
-    baseCapitalUsd: existing.baseCapitalUsd || BASE_SIM_CAPITAL_USD,
-    injectedCapitalUsd: ONE_TIME_INJECTION_USD,
-    injectionKey: "batch1-900-usd",
-    appliedAt,
-  };
-  writeJson(SIM_CAPITAL_FILE, updated);
-  logger.info({ injectedCapitalUsd: ONE_TIME_INJECTION_USD, injectionKey: updated.injectionKey }, "[SIM_CAPITAL] One-time capital injection applied");
-  console.log(`[SIM_CAPITAL] APPLIED $${ONE_TIME_INJECTION_USD.toFixed(2)} injection (idempotency key: ${updated.injectionKey})`);
-  return {
-    applied: true,
-    alreadyApplied: false,
-    baseCapitalUsd: updated.baseCapitalUsd,
-    injectedCapitalUsd: updated.injectedCapitalUsd,
-    totalStartingCapitalUsd: updated.baseCapitalUsd + updated.injectedCapitalUsd,
-    appliedAt,
-  };
+/** Apply the fresh $1,000 simulation funding exactly once, without merging it into batch 1. */
+export function applySecondCapitalInjection() {
+  return applyCapitalInjection(SECOND_INJECTION_USD, "batch2-1000-usd", "Fresh $1,000 injection");
 }
 
 export function getSimCapitalBreakdown() {
@@ -390,6 +444,7 @@ export function getSimCapitalBreakdown() {
   return {
     baseCapitalUsd: capital.baseCapitalUsd,
     injectedCapitalUsd: capital.injectedCapitalUsd,
+    injections: capital.injections,
     totalStartingCapitalUsd: capital.baseCapitalUsd + capital.injectedCapitalUsd,
     injectionKey: capital.injectionKey,
     appliedAt: capital.appliedAt,
@@ -485,6 +540,7 @@ export function getSimBalanceFull() {
     simBalance:        Math.round(cash * 100) / 100,
     baseCapital:        Math.round(capital.baseCapitalUsd * 100) / 100,
     injectedCapital:    Math.round(capital.injectedCapitalUsd * 100) / 100,
+    injections:         capital.injections,
     startingCapital:    Math.round(START * 100) / 100,
     realizedPnl:        Math.round((cash - START) * 100) / 100,
     totalDeployed:     Math.round(totalDeployed * 100) / 100,

@@ -2639,5 +2639,138 @@
     "tokenSymbol": "revolve",
     "reason": "ENTRY BLOCKED — zero-value position",
     "timestamp": "2026-09-12T06:20:01.090Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:22:35.902Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:22:38.831Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:29:55.790Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:29:58.496Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "72GzhfdJq9aBWwqQiuDDjCq5TpKySjJhZxmxZ6h265px",
+    "tokenSymbol": "Bonkers",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:30:01.196Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:40:03.580Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:40:06.281Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "72GzhfdJq9aBWwqQiuDDjCq5TpKySjJhZxmxZ6h265px",
+    "tokenSymbol": "Bonkers",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:40:08.801Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T07:44:35.160Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "EUTipzFepgT9614RaCQaKcqL2NnJFDmvpTcZTrXYpump",
+    "tokenSymbol": "MPAIR",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T00:21:29.339Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "7McEWYQfbCc1m744nJUeJgvt78FiJTWWsgoCrUG4pump",
+    "tokenSymbol": "TripleC",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T00:21:32.065Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "DEbvZt2QRA8yqNj2Lvsn8JdWjTmZS4yajwpzYL4ypump",
+    "tokenSymbol": "CATFLIGHT",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T00:21:34.644Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "6zoe9bgB1yQUe3NpeKxuZcGsYsiGdAxWEN4vyQD2rx9f",
+    "tokenSymbol": "CAPY",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T00:26:12.432Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Both)",
+    "source": "manual-bulk-sell",
+    "scope": "BOTH",
+    "scopeLabel": "Both",
+    "sellPct": 100,
+    "affectedCount": 2,
+    "totalProceedsUsd": 231.83440048273707,
+    "totalPnlUsd": 27.79440048273706,
+    "positions": [
+      {
+        "tradeId": "pt_1789259175844_EUTipzFe",
+        "tokenSymbol": "MPAIR",
+        "status": "WIN",
+        "sellPrice": 0.00013,
+        "proceedsUsd": 140.88221797323135,
+        "pnlUsd": 27.526217973231354
+      },
+      {
+        "tradeId": "pt_1789259178909_GKPntZNr",
+        "tokenSymbol": "INFROGNITO",
+        "status": "WIN",
+        "sellPrice": 0.00004748,
+        "proceedsUsd": 90.95218250950572,
+        "pnlUsd": 0.26818250950570643
+      }
+    ],
+    "timestamp": "2026-09-13T00:26:58.263Z"
   }
 ]

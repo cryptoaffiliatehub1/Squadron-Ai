@@ -83,13 +83,22 @@
     },
     "2026-09-12": {
       "date": "2026-09-12",
-      "tokensScanned": 15,
-      "passedLiquidity": 12,
-      "passedRugCheck": 6,
-      "passedWalletChecks": 6,
-      "passedAllGates": 6,
+      "tokensScanned": 33,
+      "passedLiquidity": 24,
+      "passedRugCheck": 16,
+      "passedWalletChecks": 16,
+      "passedAllGates": 15,
       "actualEntries": 2
+    },
+    "2026-09-13": {
+      "date": "2026-09-13",
+      "tokensScanned": 13,
+      "passedLiquidity": 10,
+      "passedRugCheck": 10,
+      "passedWalletChecks": 10,
+      "passedAllGates": 9,
+      "actualEntries": 5
     }
   },
-  "lastUpdated": "2026-09-12T06:20:03.485Z"
+  "lastUpdated": "2026-09-13T00:27:23.640Z"
 }
