@@ -2788,5 +2788,34 @@
     "tokenSymbol": "INFROGNITO",
     "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
     "timestamp": "2026-09-13T00:37:32.031Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Both)",
+    "source": "manual-bulk-sell",
+    "scope": "BOTH",
+    "scopeLabel": "Both",
+    "sellPct": 100,
+    "affectedCount": 2,
+    "totalProceedsUsd": 177.04547733354573,
+    "totalPnlUsd": -2.752522666454283,
+    "positions": [
+      {
+        "tradeId": "pt_1789259238143_6zoe9bgB",
+        "tokenSymbol": "CAPY",
+        "status": "WIN",
+        "sellPrice": 0.0001536,
+        "proceedsUsd": 128.35692480674635,
+        "pnlUsd": 9.442924806746333
+      },
+      {
+        "tradeId": "pt_1789259849916_DEbvZt2Q",
+        "tokenSymbol": "CATFLIGHT",
+        "status": "LOSS",
+        "sellPrice": 0.0002611,
+        "proceedsUsd": 48.68855252679939,
+        "pnlUsd": -12.195447473200616
+      }
+    ],
+    "timestamp": "2026-09-13T00:40:09.121Z"
   }
 ]
