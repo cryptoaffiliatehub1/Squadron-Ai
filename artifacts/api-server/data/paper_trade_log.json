@@ -2772,5 +2772,21 @@
       }
     ],
     "timestamp": "2026-09-13T00:26:58.263Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "EUTipzFepgT9614RaCQaKcqL2NnJFDmvpTcZTrXYpump",
+    "tokenSymbol": "MPAIR",
+    "reason": "ENTRY BLOCKED — duplicate open position for EUTipzFepgT9614RaCQaKcqL2NnJFDmvpTcZTrXYpump",
+    "timestamp": "2026-09-13T00:37:26.605Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GKPntZNreVvWW8iCitaaH1BakpGLS4fQrQTXu7MGZBN1",
+    "tokenSymbol": "INFROGNITO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T00:37:32.031Z"
   }
 ]
