@@ -92,13 +92,13 @@
     },
     "2026-09-13": {
       "date": "2026-09-13",
-      "tokensScanned": 19,
-      "passedLiquidity": 16,
-      "passedRugCheck": 15,
-      "passedWalletChecks": 15,
-      "passedAllGates": 14,
-      "actualEntries": 7
+      "tokensScanned": 23,
+      "passedLiquidity": 20,
+      "passedRugCheck": 19,
+      "passedWalletChecks": 19,
+      "passedAllGates": 18,
+      "actualEntries": 9
     }
   },
-  "lastUpdated": "2026-09-13T00:47:21.467Z"
+  "lastUpdated": "2026-09-13T01:39:23.901Z"
 }

@@ -2817,5 +2817,13 @@
       }
     ],
     "timestamp": "2026-09-13T00:40:09.121Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T01:39:20.923Z"
   }
 ]
