@@ -492,7 +492,7 @@ export async function initializeOrchestrator(): Promise<void> {
   setInterval(() => cleanStaleRecords().catch(() => {}), 10 * 60 * 1000);
 
   startExitEngine();
-  console.log("EXIT ENGINE ACTIVE — 30s price checks, stored-price fallback, moonbag tier protection");
+  console.log("EXIT ENGINE ACTIVE — 30s base / 10s at 1.25×+ profit, stored-price fallback, moonbag tier protection");
   console.log("COMMAND 1 ACTIVE");
   console.log("BONDING CURVE FIX ACTIVE — source=BONDING skips liquidity/pair/buyers checks");
   console.log("TWO-TIER BUY THRESHOLD ACTIVE — <$500k: 5 buys | >$500k: 3 buys");

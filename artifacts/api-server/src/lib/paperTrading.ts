@@ -118,6 +118,7 @@ const WEIGHTS_FILE       = path.join(DATA_DIR, "weights_history.json");
 const DAILY_COMPOUND_FILE = path.join(DATA_DIR, "daily_compound.json");
 const SIM_CAPITAL_FILE     = path.join(DATA_DIR, "sim_capital.json");
 const PAPER_LOG_FILE       = path.join(DATA_DIR, "paper_trade_log.json");
+const PAPER_EXIT_AUDIT_FILE = path.join(DATA_DIR, "paper_exit_audit.jsonl");
 const FAILED_REPORTS_DIR = path.join(DATA_DIR, "failed_reports");
 
 const BASE_SIM_CAPITAL_USD = 100;
@@ -125,6 +126,10 @@ const ONE_TIME_INJECTION_USD = 900;
 const SECOND_INJECTION_USD = 1000;
 const MAX_OPEN_POSITIONS = 3;
 const MAX_MOONBAGS = 3;
+const BASE_EXIT_CHECK_INTERVAL_MS = 30_000;
+const PROFIT_EXIT_CHECK_INTERVAL_MS = 10_000;
+const PROFIT_PROTECTION_MULTIPLIER = 1.25;
+const MANUAL_PROFIT_REENTRY_COOLDOWN_MS = 30 * 60_000;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -271,6 +276,11 @@ export function getMoonbagTrades(): PaperTrade[] {
   return getPaperTrades().filter((t) => t.status === "MOONBAG");
 }
 
+function isStopLossRecord(trade: PaperTrade): boolean {
+  return trade.status === "LOSS"
+    && (!trade.exitReason || trade.exitReason === "STOP LOSS");
+}
+
 function getLossProtection(mint: string): {
   allowed: boolean;
   reason: string | null;
@@ -278,7 +288,7 @@ function getLossProtection(mint: string): {
   lossesToday: number;
 } {
   const today = getTodayUTC();
-  const losses = getPaperTrades().filter((t) => t.tokenMint === mint && t.status === "LOSS");
+  const losses = getPaperTrades().filter((t) => t.tokenMint === mint && isStopLossRecord(t));
   const lossesToday = losses.filter((t) => (t.exitTimestamp ?? t.timestamp).startsWith(today)).length;
   const totalLosses = losses.length;
   if (totalLosses >= 3) {
@@ -289,15 +299,49 @@ function getLossProtection(mint: string): {
       lossesToday,
     };
   }
-  if (lossesToday >= 2) {
+  if (lossesToday >= 1) {
+    const nextUtcDay = new Date(`${today}T00:00:00.000Z`);
+    nextUtcDay.setUTCDate(nextUtcDay.getUTCDate() + 1);
     return {
       allowed: false,
-      reason: `DAILY RE-ENTRY BLOCK — ${mint} reached ${lossesToday} losses on ${today} UTC`,
+      reason: `LOSS COOLDOWN — ${mint} had a stop-loss on ${today} UTC; blocked until ${nextUtcDay.toISOString()}`,
       totalLosses,
       lossesToday,
     };
   }
   return { allowed: true, reason: null, totalLosses, lossesToday };
+}
+
+function getProfitReentryProtection(mint: string): {
+  allowed: boolean;
+  reason: string | null;
+  remainingMs: number;
+} {
+  const now = Date.now();
+  const latestProfitExit = getPaperTrades()
+    .filter((t) =>
+      t.tokenMint === mint
+      && (
+        (typeof t.exitReason === "string" && t.exitReason.startsWith("MANUAL EXIT"))
+        || (t.manualSellPct != null && (t.status === "WIN" || t.status === "PARTIAL EXIT" || t.status === "MOONBAG EXIT"))
+      )
+      && Number(t.pnlUsd) > 0
+      && t.exitTimestamp,
+    )
+    .map((t) => new Date(t.exitTimestamp as string).getTime())
+    .filter((timestamp) => Number.isFinite(timestamp))
+    .reduce((latest, timestamp) => Math.max(latest, timestamp), 0);
+
+  if (!latestProfitExit) return { allowed: true, reason: null, remainingMs: 0 };
+  const remainingMs = MANUAL_PROFIT_REENTRY_COOLDOWN_MS - (now - latestProfitExit);
+  if (remainingMs <= 0) return { allowed: true, reason: null, remainingMs: 0 };
+
+  const remainingMinutes = Math.ceil(remainingMs / 60_000);
+  return {
+    allowed: false,
+    reason: `PROFIT COOLDOWN — ${mint} manual profit-take cooldown has ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"} remaining`,
+    remainingMs,
+  };
 }
 
 // ── C2: daily compound tracker ────────────────────────────────────────────────
@@ -459,6 +503,15 @@ function recordPaperEvent(event: Record<string, unknown>): Record<string, unknow
   return entry;
 }
 
+function recordExitAudit(event: Record<string, unknown>): void {
+  ensureDir(DATA_DIR);
+  fs.appendFileSync(
+    PAPER_EXIT_AUDIT_FILE,
+    `${JSON.stringify({ ...event, timestamp: new Date().toISOString() })}\n`,
+    "utf-8",
+  );
+}
+
 export function getPaperTradeLog(limit = 50): Record<string, unknown>[] {
   return readJson<Record<string, unknown>[]>(PAPER_LOG_FILE, []).slice(-limit).reverse();
 }
@@ -602,6 +655,7 @@ export function recordPaperTrade(
     recordPaperEvent({
       action: "PAPER ENTRY BLOCKED",
       source: "loss-protection",
+      cooldownType: "loss-cooldown",
       tokenMint: trade.tokenMint,
       tokenSymbol: trade.tokenSymbol,
       reason: protection.reason,
@@ -610,6 +664,21 @@ export function recordPaperTrade(
     });
     logger.warn({ mint: trade.tokenMint, reason: protection.reason }, "[SIM] Loss protection blocked paper entry");
     return { accepted: false, reason: protection.reason ?? "Loss protection blocked entry" };
+  }
+
+  const profitProtection = getProfitReentryProtection(trade.tokenMint);
+  if (!profitProtection.allowed) {
+    recordPaperEvent({
+      action: "PAPER ENTRY BLOCKED",
+      source: "profit-protection",
+      cooldownType: "profit-cooldown",
+      tokenMint: trade.tokenMint,
+      tokenSymbol: trade.tokenSymbol,
+      reason: profitProtection.reason,
+      remainingMs: profitProtection.remainingMs,
+    });
+    logger.warn({ mint: trade.tokenMint, reason: profitProtection.reason }, "[SIM] Profit cooldown blocked paper entry");
+    return { accepted: false, reason: profitProtection.reason ?? "Profit cooldown blocked entry" };
   }
 
   if (hasOpenPaperTrade(trade.tokenMint)) {
@@ -721,6 +790,8 @@ export async function bulkSellPaperTrades(scope: BulkSellScope, sellPct: number)
   const fraction = sellPct / 100;
   const positions: BulkSellResult["positions"] = [];
   const now = new Date().toISOString();
+  const scopeLabel = BULK_SCOPE_LABELS[scope];
+  const action = `MANUAL EXIT — BULK (${scopeLabel})`;
 
   for (const { raw, index, status } of selected) {
     const existing = { ...raw, status } as PaperTrade;
@@ -751,6 +822,7 @@ export async function bulkSellPaperTrades(scope: BulkSellScope, sellPct: number)
         pnlUsd: previousPnl + pnlUsd,
         pnlSol: (previousPnl + pnlUsd) / 150,
         manualSellPct: sellPct,
+        exitReason: action,
         exitPrice: sellPrice,
         exitMultiplier: multiplier,
         exitTimestamp: sellPct === 100 ? now : existing.exitTimestamp,
@@ -776,6 +848,7 @@ export async function bulkSellPaperTrades(scope: BulkSellScope, sellPct: number)
         pnlSol: (previousPnl + pnlUsd) / 150,
         realizedProceedsUsd: (existing.realizedProceedsUsd ?? 0) + proceedsUsd,
         manualSellPct: sellPct,
+        exitReason: action,
         exitTimestamp: now,
       };
     }
@@ -795,8 +868,6 @@ export async function bulkSellPaperTrades(scope: BulkSellScope, sellPct: number)
 
   const totalProceedsUsd = positions.reduce((sum, position) => sum + position.proceedsUsd, 0);
   const totalPnlUsd = positions.reduce((sum, position) => sum + position.pnlUsd, 0);
-  const scopeLabel = BULK_SCOPE_LABELS[scope];
-  const action = `MANUAL EXIT — BULK (${scopeLabel})`;
   const logEntry = recordPaperEvent({
     action,
     source: "manual-bulk-sell",
@@ -833,7 +904,9 @@ export async function sellPaperTrade(tradeId: string, sellPct: number, requested
   const index = all.findIndex((t) => t.id === tradeId);
   if (index === -1) throw new Error("Paper trade not found");
   const existing = { ...all[index], status: resolveStatus(all[index]) } as PaperTrade;
-  if (existing.status !== "OPEN") throw new Error(`Paper trade is not open (status: ${existing.status})`);
+  if (existing.status !== "OPEN" && existing.status !== "PARTIAL EXIT") {
+    throw new Error(`Paper trade is not open (status: ${existing.status})`);
+  }
   if (!Number.isFinite(existing.entryPrice) || existing.entryPrice <= 0) throw new Error("Paper trade has no valid entry price");
 
   const live = Number.isFinite(requestedPrice) && (requestedPrice as number) > 0
@@ -843,33 +916,40 @@ export async function sellPaperTrade(tradeId: string, sellPct: number, requested
     ? requestedPrice as number
     : live?.price ?? existing.currentPrice ?? existing.entryPrice;
   const fraction = sellPct / 100;
-  const proceedsUsd = existing.positionSizeUsd * (sellPrice / existing.entryPrice) * fraction;
-  const costUsd = existing.positionSizeUsd * fraction;
+  const currentCostUsd = existing.positionSizeUsd;
+  const currentAmountSol = existing.amountSol;
+  const proceedsUsd = currentCostUsd * (sellPrice / existing.entryPrice) * fraction;
+  const costUsd = currentCostUsd * fraction;
   const pnlUsd = proceedsUsd - costUsd;
+  const totalPnlUsd = (existing.pnlUsd ?? 0) + pnlUsd;
+  const totalProceedsUsd = (existing.realizedProceedsUsd ?? 0) + proceedsUsd;
   const now = new Date().toISOString();
+  const action = "MANUAL EXIT — INDIVIDUAL";
+  const fullyClosed = sellPct === 100;
   const closed = {
     ...all[index],
-    status: sellPct === 100 ? (pnlUsd >= 0 ? "WIN" : "LOSS") : "PARTIAL EXIT",
+    status: fullyClosed ? (totalPnlUsd >= 0 ? "WIN" : "LOSS") : "PARTIAL EXIT",
     exitPrice: sellPrice,
     exitMultiplier: sellPrice / existing.entryPrice,
-    pnlUsd,
-    pnlSol: pnlUsd / 150,
-    realizedProceedsUsd: proceedsUsd,
+    pnlUsd: totalPnlUsd,
+    pnlSol: totalPnlUsd / 150,
+    realizedProceedsUsd: totalProceedsUsd,
     manualSellPct: sellPct,
     exitTimestamp: now,
     currentPrice: sellPrice,
-    ...(sellPct === 100 && pnlUsd < 0 ? { lossAmount: pnlUsd } : {}),
-    ...(sellPct < 100 ? {
-      positionSizeUsd: existing.positionSizeUsd * (1 - fraction),
-      amountSol: existing.amountSol * (1 - fraction),
-      remainingPositionSol: existing.amountSol * (1 - fraction),
+    exitReason: action,
+    ...(fullyClosed && totalPnlUsd < 0 ? { lossAmount: totalPnlUsd } : {}),
+    ...(!fullyClosed ? {
+      positionSizeUsd: currentCostUsd * (1 - fraction),
+      amountSol: currentAmountSol * (1 - fraction),
+      remainingPositionSol: currentAmountSol * (1 - fraction),
     } : {}),
   };
   all[index] = closed;
   writeJson(PAPER_TRADES_FILE, all);
 
   const logEntry = recordPaperEvent({
-    action: "SELL",
+    action,
     source: "manual-paper-sell",
     tradeId,
     tokenMint: existing.tokenMint,
@@ -878,9 +958,11 @@ export async function sellPaperTrade(tradeId: string, sellPct: number, requested
     sellPrice,
     proceedsUsd,
     pnlUsd,
+    totalPnlUsd,
     status: closed.status,
   });
-  console.log(`[SIM] SELL ${existing.tokenSymbol} — ${sellPct}% at $${sellPrice.toFixed(8)} — proceeds $${proceedsUsd.toFixed(2)} — P&L ${pnlUsd >= 0 ? "+" : ""}$${pnlUsd.toFixed(2)}`);
+  logger.info({ tradeId, tokenMint: existing.tokenMint, tokenSymbol: existing.tokenSymbol, sellPct, sellPrice, proceedsUsd, pnlUsd, totalPnlUsd }, action);
+  console.log(`[SIM] ${action} — ${existing.tokenSymbol} — ${sellPct}% at $${sellPrice.toFixed(8)} — proceeds $${proceedsUsd.toFixed(2)} — P&L ${pnlUsd >= 0 ? "+" : ""}$${pnlUsd.toFixed(2)}`);
 
   return {
     trade: { ...closed, status: resolveStatus(closed) } as PaperTrade,
@@ -958,6 +1040,21 @@ const moonbagPriceHistory = new Map<string, number[]>();
 
 // ── C2: exit engine — full 6-step implementation ─────────────────────────────
 let exitEngineInterval: ReturnType<typeof setInterval> | null = null;
+let exitEngineTimer: ReturnType<typeof setTimeout> | null = null;
+let exitCheckInFlight = false;
+
+function getExitCheckIntervalMs(): number {
+  const hasDeeplyProfitablePosition = getOpenTrades().some((trade) => {
+    const currentPrice = Number(trade.currentPrice);
+    return Number.isFinite(currentPrice)
+      && currentPrice > 0
+      && trade.entryPrice > 0
+      && currentPrice / trade.entryPrice >= PROFIT_PROTECTION_MULTIPLIER;
+  });
+  return hasDeeplyProfitablePosition
+    ? PROFIT_EXIT_CHECK_INTERVAL_MS
+    : BASE_EXIT_CHECK_INTERVAL_MS;
+}
 
 async function runExitCheck(): Promise<void> {
   // ── Step 1: fetch live data for all OPEN trades and store ─────────────────
@@ -1003,6 +1100,24 @@ async function runExitCheck(): Promise<void> {
     const multiplier    = currentPrice / trade.entryPrice;
     const targetPrice   = trade.targetPrice  || trade.entryPrice * 2.5;
     const stopLossPrice = trade.stopLoss     || trade.entryPrice * 0.7;
+
+    recordExitAudit({
+      event: "EXIT_CHECK",
+      tradeId: trade.id,
+      tokenMint: trade.tokenMint,
+      tokenSymbol: trade.tokenSymbol,
+      source: live ? "DexScreener" : "stored-fallback",
+      price: currentPrice,
+      entryPrice: trade.entryPrice,
+      stopLossPrice,
+      multiplier,
+      liquidityUsd: effectiveLive.liquidityUsd,
+      volume5m: effectiveLive.volume5m,
+      buyTxns5m: effectiveLive.buyTxns5m,
+      sellTxns5m: effectiveLive.sellTxns5m,
+      checkIntervalMs: getExitCheckIntervalMs(),
+      stopLossTriggered: currentPrice <= stopLossPrice,
+    });
 
     // ── Step 2: Golden exit — 2.5× reached ───────────────────────────────
     if (currentPrice >= targetPrice) {
@@ -1096,6 +1211,7 @@ async function runExitCheck(): Promise<void> {
         status:         "LOSS",
         exitPrice:      currentPrice,
         exitMultiplier: multiplier,
+         exitReason:     "STOP LOSS",
         lossAmount,
         pnlUsd:         lossAmount,
         pnlSol:         lossAmount / 150,
@@ -1158,15 +1274,31 @@ async function runExitCheck(): Promise<void> {
 }
 
 export function startExitEngine(): void {
-  if (exitEngineInterval) return;
-  exitEngineInterval = setInterval(() => {
-    runExitCheck().catch((e) => logger.warn({ e }, "[EXIT_ENGINE] Price check error"));
-  }, 30_000);
+  if (exitEngineTimer || exitEngineInterval) return;
+  const queueNextCheck = (delayMs: number) => {
+    exitEngineTimer = setTimeout(async () => {
+      exitEngineTimer = null;
+      if (!exitCheckInFlight) {
+        exitCheckInFlight = true;
+        try {
+          await runExitCheck();
+        } catch (e) {
+          logger.warn({ e }, "[EXIT_ENGINE] Price check error");
+        } finally {
+          exitCheckInFlight = false;
+        }
+      }
+      if (exitEngineTimer === null) queueNextCheck(getExitCheckIntervalMs());
+    }, delayMs);
+  };
+  queueNextCheck(0);
   startMoonbagMonitor();
-  console.log("EXIT ENGINE ACTIVE — checking prices every 30s, moonbag tier protection active");
+  console.log("EXIT ENGINE ACTIVE — checking prices every 30s base / 10s at 1.25×+ profit, moonbag tier protection active");
+  console.log("PROFIT PROTECTION ACTIVE — deep-profit positions use 10s exit checks");
 }
 
 export function stopExitEngine(): void {
+  if (exitEngineTimer) { clearTimeout(exitEngineTimer); exitEngineTimer = null; }
   if (exitEngineInterval) { clearInterval(exitEngineInterval); exitEngineInterval = null; }
   stopMoonbagMonitor();
 }

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useTradingMode } from "@/contexts/trading-mode";
 import { BulkSellControl } from "@/components/bulk-sell-control";
+import { IndividualSellControl } from "@/components/individual-sell-control";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -195,8 +196,13 @@ function TradeCard({ t }: { t: any }) {
         {t.regime && <span className="text-muted-foreground/60 uppercase">{t.regime}</span>}
       </div>
 
-      {/* Row 3: social icons */}
-      <SocialRow mint={t.tokenMint} links={t.socialLinks} />
+      {/* Row 3: social icons + immediate individual exit for active positions */}
+      <div className="flex items-center justify-between gap-2">
+        <SocialRow mint={t.tokenMint} links={t.socialLinks} />
+        {(t.status === "OPEN" || t.status === "PARTIAL EXIT") && (
+          <IndividualSellControl tradeId={t.id} tokenSymbol={t.tokenSymbol} />
+        )}
+      </div>
     </div>
   );
 }

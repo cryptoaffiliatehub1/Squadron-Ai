@@ -2825,5 +2825,114 @@
     "tokenSymbol": "HOBBES",
     "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
     "timestamp": "2026-09-13T01:39:20.923Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "ENTRY BLOCKED — duplicate open position for 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "timestamp": "2026-09-13T01:41:05.883Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T01:41:09.517Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Both)",
+    "source": "manual-bulk-sell",
+    "scope": "BOTH",
+    "scopeLabel": "Both",
+    "sellPct": 100,
+    "affectedCount": 3,
+    "totalProceedsUsd": 199.17118578622177,
+    "totalPnlUsd": 39.76118578622173,
+    "positions": [
+      {
+        "tradeId": "pt_1789260438476_EUTipzFe",
+        "tokenSymbol": "MPAIR",
+        "status": "WIN",
+        "sellPrice": 0.0001818,
+        "proceedsUsd": 138.39175384615385,
+        "pnlUsd": 54.27575384615385
+      },
+      {
+        "tradeId": "pt_1789263517637_GaBdgBaD",
+        "tokenSymbol": "MCAT",
+        "status": "WIN",
+        "sellPrice": 0.0002052,
+        "proceedsUsd": 11.827089337175794,
+        "pnlUsd": 1.827089337175794
+      },
+      {
+        "tradeId": "pt_1789263557350_33HJnfrG",
+        "tokenSymbol": "ㅤ",
+        "status": "LOSS",
+        "sellPrice": 0.00004044,
+        "proceedsUsd": 48.9523426028921,
+        "pnlUsd": -16.34165739710791
+      }
+    ],
+    "timestamp": "2026-09-13T01:41:17.493Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "profit-protection",
+    "cooldownType": "profit-cooldown",
+    "tokenMint": "GaBdgBaDCcBsPuWrc8HJ9eX1vLBvAMmrGtjGR3eNpump",
+    "tokenSymbol": "MCAT",
+    "reason": "PROFIT COOLDOWN — GaBdgBaDCcBsPuWrc8HJ9eX1vLBvAMmrGtjGR3eNpump manual profit-take cooldown has 18 minutes remaining",
+    "remainingMs": 1022396,
+    "timestamp": "2026-09-13T01:54:15.049Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T01:54:18.778Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — duplicate open position for DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "timestamp": "2026-09-13T01:54:22.036Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T01:54:52.243Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "tokenSymbol": "PUMPCHAN",
+    "reason": "ENTRY BLOCKED — duplicate open position for BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "timestamp": "2026-09-13T01:54:55.457Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — duplicate open position for DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "timestamp": "2026-09-13T01:54:56.294Z"
   }
 ]
