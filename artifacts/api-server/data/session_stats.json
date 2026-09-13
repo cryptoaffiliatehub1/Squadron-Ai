@@ -8,6 +8,6 @@
   "rugsMissed": 0,
   "jitoTipsPaidSol": 0,
   "jitoTipCount": 0,
-  "circuitBreakerTriggers": 0,
+  "circuitBreakerTriggers": 1,
   "conservativeModeTriggers": 0
 }
