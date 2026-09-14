@@ -98,6 +98,9 @@ export interface SimBalance {
   injectedCapitalUsd: number;
   startingBalanceUsd: number;
   currentBalanceUsd: number;
+  markToMarketBalanceUsd: number;
+  openPositionValueUsd: number;
+  moonbagValueUsd: number;
   lockedInOpenUsd: number;
   realizedPnlUsd: number;
   pnlPct: number;
@@ -542,11 +545,43 @@ function computeSimCash(): number {
   return cash;
 }
 
+function calculateOpenPositionValue(trades: PaperTrade[]): number {
+  return trades
+    .filter((trade) => trade.status === "OPEN" || trade.status === "PARTIAL EXIT")
+    .reduce((sum, trade) => {
+      const costBasis = Number(trade.positionSizeUsd);
+      const entryPrice = Number(trade.entryPrice);
+      const currentPrice = Number(trade.currentPrice);
+      if (!Number.isFinite(costBasis) || costBasis <= 0) return sum;
+      if (!Number.isFinite(entryPrice) || entryPrice <= 0 || !Number.isFinite(currentPrice) || currentPrice <= 0) {
+        return sum + costBasis;
+      }
+      return sum + costBasis * (currentPrice / entryPrice);
+    }, 0);
+}
+
+function calculateMoonbagValue(trades: PaperTrade[]): number {
+  return trades
+    .filter((trade) => trade.status === "MOONBAG")
+    .reduce((sum, trade) => {
+      const currentPrice = Number(trade.currentPrice);
+      const entryPrice = Number(trade.entryPrice);
+      const heldSol = Number(trade.remainingPositionSol ?? trade.amountSol ?? 0);
+      if (Number.isFinite(currentPrice) && currentPrice > 0 && Number.isFinite(entryPrice) && entryPrice > 0 && heldSol > 0) {
+        return sum + heldSol * 150 * (currentPrice / entryPrice);
+      }
+      return sum + (Number(trade.moonbagAmountUsd ?? trade.pnlUsd ?? 0) || 0);
+    }, 0);
+}
+
 export function getSimBalance(): SimBalance {
   const capital = getSimCapital();
   const START = capital.baseCapitalUsd + capital.injectedCapitalUsd;
   const cash = computeSimCash();
   const trades = getPaperTrades();
+  const openPositionValueUsd = calculateOpenPositionValue(trades);
+  const moonbagValueUsd = calculateMoonbagValue(trades);
+  const markToMarketBalanceUsd = cash + openPositionValueUsd + moonbagValueUsd;
   const lockedInOpenUsd = trades.filter(t => t.status === "OPEN" || t.status === "PARTIAL EXIT")
     .reduce((s, t) => s + t.positionSizeUsd, 0);
   const realizedPnlUsd = cash - START;
@@ -556,6 +591,9 @@ export function getSimBalance(): SimBalance {
     injectedCapitalUsd: capital.injectedCapitalUsd,
     startingBalanceUsd: START,
     currentBalanceUsd: Math.round(cash * 100) / 100,
+    markToMarketBalanceUsd: Math.round(markToMarketBalanceUsd * 100) / 100,
+    openPositionValueUsd: Math.round(openPositionValueUsd * 100) / 100,
+    moonbagValueUsd: Math.round(moonbagValueUsd * 100) / 100,
     lockedInOpenUsd: Math.round(lockedInOpenUsd * 100) / 100,
     realizedPnlUsd: Math.round(realizedPnlUsd * 100) / 100,
     pnlPct: Math.round(pnlPct * 100) / 100,
@@ -571,35 +609,34 @@ export function getSimBalanceFull() {
   const moonbagTrades = trades.filter(t => t.status === "MOONBAG");
 
   const totalDeployed = openTrades.reduce((s, t) => s + t.positionSizeUsd, 0);
-
-  const moonbagTotalValue = moonbagTrades.reduce((s, t) => {
-    const cp = t.currentPrice;
-    const ep = t.entryPrice;
-    if (cp && ep > 0) {
-      const mult = cp / ep;
-      const rs = t.remainingPositionSol ?? t.amountSol * 0.5;
-      return s + rs * 150 * mult;
-    }
-    return s + (t.moonbagAmountUsd ?? t.pnlUsd ?? 0);
-  }, 0);
-
   const START = capital.baseCapitalUsd + capital.injectedCapitalUsd;
+  const openPositionValue = calculateOpenPositionValue(trades);
+  const moonbagTotalValue = calculateMoonbagValue(trades);
+  const markToMarketBalance = cash + openPositionValue + moonbagTotalValue;
+  const realizedPnl = cash - START;
+  const markToMarketPnl = markToMarketBalance - START;
   const dc = loadOrInitDailyCompound(cash);
-  const todayPnL = cash - dc.startBalance;
-  const aboveTarget = cash > 0 && dc.dailyTarget > 0 && todayPnL >= dc.dailyTarget;
+  const todayPnL = markToMarketBalance - dc.startBalance;
+  const aboveTarget = markToMarketBalance > 0 && dc.dailyTarget > 0 && todayPnL >= dc.dailyTarget;
   const dailyProgressPct = dc.dailyTarget > 0 ? (todayPnL / dc.dailyTarget) * 100 : 0;
 
   return {
-    simBalance:        Math.round(cash * 100) / 100,
+    // simBalance is the wallet-style headline: available cash plus live value
+    // of every open position and moonbag.
+    simBalance:        Math.round(markToMarketBalance * 100) / 100,
+    markToMarketBalance: Math.round(markToMarketBalance * 100) / 100,
+    cashBalance:       Math.round(cash * 100) / 100,
     baseCapital:        Math.round(capital.baseCapitalUsd * 100) / 100,
     injectedCapital:    Math.round(capital.injectedCapitalUsd * 100) / 100,
     injections:         capital.injections,
     startingCapital:    Math.round(START * 100) / 100,
-    realizedPnl:        Math.round((cash - START) * 100) / 100,
+    realizedPnl:        Math.round(realizedPnl * 100) / 100,
+    markToMarketPnl:    Math.round(markToMarketPnl * 100) / 100,
     totalDeployed:     Math.round(totalDeployed * 100) / 100,
-    totalValue:        Math.round((cash + totalDeployed + moonbagTotalValue) * 100) / 100,
-    totalPnL:          Math.round((cash - START) * 100) / 100,
-    returnPct:         Math.round(((cash - START) / START) * 10000) / 100,
+    openPositionValue: Math.round(openPositionValue * 100) / 100,
+    totalValue:        Math.round(markToMarketBalance * 100) / 100,
+    totalPnL:          Math.round(markToMarketPnl * 100) / 100,
+    returnPct:         Math.round((markToMarketPnl / START) * 10000) / 100,
     openPositions:     openTrades.length,
     moonbagCount:      moonbagTrades.length,
     moonbagTotalValue: Math.round(moonbagTotalValue * 100) / 100,

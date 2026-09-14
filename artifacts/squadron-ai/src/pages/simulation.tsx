@@ -282,7 +282,7 @@ export default function Simulation() {
   const { data: simBal, isLoading: simLoading } = useQuery({
     queryKey: ["sim-balance"],
     queryFn: () => fetch("/api/sim/balance").then(r => r.json()),
-    refetchInterval: 30_000,
+    refetchInterval: 10_000,
   });
 
   const { data: report, isLoading: reportLoading } = useQuery({
@@ -294,7 +294,7 @@ export default function Simulation() {
   const { data: trades, isLoading: tradesLoading } = useQuery({
     queryKey: ["paper-trades"],
     queryFn: () => fetch("/api/paper/trades").then(r => r.json()),
-    refetchInterval: 30_000,
+    refetchInterval: 10_000,
   });
 
   const { data: moonbags, isLoading: moonbagsLoading } = useQuery({
@@ -322,9 +322,12 @@ export default function Simulation() {
   const dailyTarget   = sb?.dailyTarget ?? 0;
   const aboveTarget   = sb?.aboveTarget ?? false;
   const progressPct   = sb?.dailyProgressPct ?? 0;
-  const simBalance    = sb?.simBalance ?? 100;
-  const totalPnL      = sb?.totalPnL ?? 0;
+  const simBalance    = sb?.markToMarketBalance ?? sb?.simBalance ?? 100;
+  const totalPnL      = sb?.markToMarketPnl ?? sb?.totalPnL ?? 0;
   const returnPct     = sb?.returnPct ?? 0;
+  const cashBalance   = sb?.cashBalance ?? sb?.simBalance ?? 0;
+  const openPositionValue = sb?.openPositionValue ?? 0;
+  const moonbagValue  = sb?.moonbagTotalValue ?? 0;
   const openPositions = sb?.openPositions ?? 0;
   const moonbagCount  = sb?.moonbagCount ?? 0;
   const baseCapital   = sb?.baseCapital ?? 100;
@@ -377,7 +380,7 @@ export default function Simulation() {
         ) : (
           <div className={`${panelCls} p-4`}>
               <div className="flex items-center justify-between mb-2">
-              <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em]">Sim Balance</p>
+              <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em]">Sim Balance · Mark-to-Market</p>
               <div className="flex items-center gap-2">
                 {openPositions > 0 && (
                   <span className="text-[7.5px] text-primary border border-primary/30 rounded px-1.5 py-0.5 font-bold">
@@ -415,10 +418,13 @@ export default function Simulation() {
                   <span className="text-muted-foreground">Injected <b className="text-primary font-mono">+${injectedCapital.toFixed(2)}</b></span>
                 )}
                <span className="text-muted-foreground">Starting <b className="text-foreground font-mono">${startingCapital.toFixed(2)}</b></span>
-               <span className="text-muted-foreground">Realized P&amp;L <b className={realizedPnl >= 0 ? "text-gains font-mono" : "text-losses font-mono"}>{realizedPnl >= 0 ? "+" : ""}${realizedPnl.toFixed(2)}</b></span>
+                <span className="text-muted-foreground">Cash available <b className="text-foreground font-mono">${cashBalance.toFixed(2)}</b></span>
+                <span className="text-muted-foreground">Open value <b className="text-primary font-mono">${openPositionValue.toFixed(2)}</b></span>
+                <span className="text-muted-foreground">Moonbag value <b className="text-purple-400 font-mono">${moonbagValue.toFixed(2)}</b></span>
+                <span className="text-muted-foreground">Realized P&amp;L <b className={realizedPnl >= 0 ? "text-gains font-mono" : "text-losses font-mono"}>{realizedPnl >= 0 ? "+" : ""}${realizedPnl.toFixed(2)}</b></span>
              </div>
               <p className="text-[7px] text-muted-foreground/60 mt-2">
-                Current balance = starting capital + realized P&amp;L
+                 Headline balance = cash + live open-position value + live moonbag value
               </p>
           </div>
         )}
