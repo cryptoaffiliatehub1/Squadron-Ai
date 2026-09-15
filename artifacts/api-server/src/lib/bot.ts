@@ -18,6 +18,7 @@ import { recordSkippedToken } from "./sessionStats";
 import {
   addCapitalInjection,
   getPaperTrades,
+  getCapitalSummary,
   getMoonbagTrades,
   getSimBalanceFull,
   noRecentPaperTrades,
@@ -505,6 +506,10 @@ export async function resetPaperTradingAndRestartScanner(startingCapitalUsd = 10
   logger.warn("[RESET] scanner stopped confirmed — beginning paper ledger wipe");
 
   const wipe = resetPaperLedgerData();
+  await db.delete(detectedTokensTable);
+  await db.delete(skippedTokensTable);
+  seenMints.clear();
+  logger.info("[RESET] radar detected/skipped history cleared");
   if (!wipe.verifiedEmpty || getPaperTrades().length !== 0 || getMoonbagTrades().length !== 0) {
     throw new Error("Reset aborted: paper ledger is not empty after wipe");
   }
@@ -531,6 +536,7 @@ export async function resetPaperTradingAndRestartScanner(startingCapitalUsd = 10
     ledgerEmptyBeforeRestart: true,
     ledgerCountAfterRestart: getPaperTrades().length,
     balance: getSimBalanceFull(),
+    capital: getCapitalSummary(),
     bot: getBotState(),
     scanner: getScannerState(),
   };

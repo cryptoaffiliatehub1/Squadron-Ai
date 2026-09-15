@@ -114188,9 +114188,42 @@ var init_tradingMode = __esm({
   }
 });
 
+// src/lib/dexMetrics.ts
+function recordDexScreenerCall(kind) {
+  calls.push({ at: Date.now(), kind });
+  prune();
+}
+function prune() {
+  const cutoff = Date.now() - WINDOW_MS;
+  while (calls.length && calls[0].at < cutoff) calls.shift();
+}
+function getDexScreenerMetrics() {
+  prune();
+  const byKind = calls.reduce((out, call) => {
+    out[call.kind] = (out[call.kind] ?? 0) + 1;
+    return out;
+  }, {});
+  return {
+    windowSeconds: 60,
+    callsLastMinute: calls.length,
+    byKind,
+    rateLimitReference: "DexScreener public API limits are endpoint-dependent; this reports observed local volume.",
+    sampledAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+var calls, WINDOW_MS;
+var init_dexMetrics = __esm({
+  "src/lib/dexMetrics.ts"() {
+    "use strict";
+    calls = [];
+    WINDOW_MS = 6e4;
+  }
+});
+
 // src/lib/moonbagVault.ts
 async function fetchMoonbagLiveData(mint) {
   try {
+    recordDexScreenerCall("paper-moonbag");
     const resp = await axios_default.get(
       `https://api.dexscreener.com/latest/dex/tokens/${mint}`,
       { timeout: 6e3 }
@@ -114287,6 +114320,11 @@ function stopMoonbagMonitor() {
 function getMoonbags() {
   return [...vault.values()];
 }
+function clearMoonbags() {
+  vault.clear();
+  monitorState.clear();
+  logger.info("MOONBAG VAULT CLEARED \u2014 reset verification complete");
+}
 function getTotalMoonbagValueSol() {
   let total = 0;
   for (const pos of vault.values()) total += pos.currentValueSol;
@@ -114305,6 +114343,7 @@ var init_moonbagVault = __esm({
     "use strict";
     init_axios2();
     init_logger();
+    init_dexMetrics();
     vault = /* @__PURE__ */ new Map();
     monitorState = /* @__PURE__ */ new Map();
     moonbagMonitorInterval = null;
@@ -114315,8 +114354,10 @@ var init_moonbagVault = __esm({
 var paperTrading_exports = {};
 __export(paperTrading_exports, {
   addCapitalInjection: () => addCapitalInjection,
+  arePaperTradeWritesAllowed: () => arePaperTradeWritesAllowed,
   bulkSellPaperTrades: () => bulkSellPaperTrades,
   generateDailyReport: () => generateDailyReport,
+  getBaseCapitalUsd: () => getBaseCapitalUsd,
   getCapitalSummary: () => getCapitalSummary,
   getDailyCompoundData: () => getDailyCompoundData,
   getMoonbagTrades: () => getMoonbagTrades,
@@ -114334,8 +114375,11 @@ __export(paperTrading_exports, {
   readDailyReport: () => readDailyReport,
   readWeightsHistory: () => readWeightsHistory,
   recordPaperTrade: () => recordPaperTrade,
+  resetPaperLedgerData: () => resetPaperLedgerData,
   saveFailedReport: () => saveFailedReport,
   sellPaperTrade: () => sellPaperTrade,
+  setBaseCapitalUsd: () => setBaseCapitalUsd,
+  setPaperTradeWritesAllowed: () => setPaperTradeWritesAllowed,
   startExitEngine: () => startExitEngine,
   stopExitEngine: () => stopExitEngine
 });
@@ -114391,7 +114435,11 @@ function hasOpenPaperTrade(mint) {
 }
 function getPaperTrades() {
   const raw = readJson2(PAPER_TRADES_FILE, []);
-  return raw.map((t) => ({ ...t, status: resolveStatus(t) }));
+  return raw.map((t) => ({
+    ...t,
+    status: resolveStatus(t),
+    entryTimestamp: t.entryTimestamp ?? t.timestamp
+  }));
 }
 function finiteNumber(value, fallback = 0) {
   const n = Number(value);
@@ -114400,10 +114448,32 @@ function finiteNumber(value, fallback = 0) {
 function getCapitalInjections() {
   return readJson2(CAPITAL_INJECTIONS_FILE, []).filter((i) => finiteNumber(i.amountUsd) > 0);
 }
+function getBaseCapitalUsd() {
+  const config3 = readJson2(CAPITAL_CONFIG_FILE, null);
+  const raw = config3?.baseCapitalUsd;
+  if (raw === void 0 || raw === null) return DEFAULT_BASE_CAPITAL_USD;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_BASE_CAPITAL_USD;
+}
+function setBaseCapitalUsd(baseCapitalUsd) {
+  if (!Number.isFinite(baseCapitalUsd) || baseCapitalUsd < 0) {
+    throw new Error("baseCapitalUsd must be a non-negative number");
+  }
+  writeJson(CAPITAL_CONFIG_FILE, { baseCapitalUsd: Math.round(baseCapitalUsd * 100) / 100 });
+  logger.info({ baseCapitalUsd }, "[SIM] Base capital configured");
+  return getBaseCapitalUsd();
+}
+function setPaperTradeWritesAllowed(allowed) {
+  paperWritesAllowed = allowed;
+  logger.info({ allowed }, `[RESET_GUARD] paper position writes ${allowed ? "enabled" : "blocked"}`);
+}
+function arePaperTradeWritesAllowed() {
+  return paperWritesAllowed;
+}
 function getCapitalSummary() {
   const injections = getCapitalInjections();
   return {
-    baseBalanceUsd: BASE_SIM_BALANCE_USD,
+    baseBalanceUsd: getBaseCapitalUsd(),
     injectedUsd: injections.reduce((sum, i) => sum + finiteNumber(i.amountUsd), 0),
     injections
   };
@@ -114532,7 +114602,7 @@ function getDailyCompoundData() {
 function computeSimCash() {
   const trades = getPaperTrades();
   const capital = getCapitalSummary();
-  let cash = BASE_SIM_BALANCE_USD + capital.injectedUsd;
+  let cash = capital.baseBalanceUsd + capital.injectedUsd;
   for (const t of trades) {
     if (t.status !== "MOONBAG" && t.status !== "MOONBAG EXIT") {
       cash -= finiteNumber(t.positionSizeUsd);
@@ -114548,7 +114618,7 @@ function getSimBalance() {
   const capital = getCapitalSummary();
   const { allTime } = getPaperStats();
   const lockedInOpenUsd = trades.filter((t) => t.status === "OPEN").reduce((s, t) => s + finiteNumber(t.remainingPositionUsd, finiteNumber(t.positionSizeUsd)), 0);
-  const startingCapitalUsd = BASE_SIM_BALANCE_USD + capital.injectedUsd;
+  const startingCapitalUsd = capital.baseBalanceUsd + capital.injectedUsd;
   const realizedPnlUsd = allTime.totalPnlUsd;
   const pnlPct = startingCapitalUsd > 0 ? realizedPnlUsd / startingCapitalUsd * 100 : 0;
   return {
@@ -114586,7 +114656,7 @@ function getSimBalanceFull() {
   const todayPnL = stats.today.totalPnlUsd;
   const aboveTarget = todayPnL >= dc.dailyTarget;
   const dailyProgressPct = dc.dailyTarget > 0 ? todayPnL / dc.dailyTarget * 100 : 0;
-  const startingCapitalUsd = BASE_SIM_BALANCE_USD + capital.injectedUsd;
+  const startingCapitalUsd = capital.baseBalanceUsd + capital.injectedUsd;
   return {
     simBalance: Math.round(cash * 100) / 100,
     cashBalance: Math.round(cash * 100) / 100,
@@ -114613,6 +114683,10 @@ function getSimBalanceFull() {
 }
 function recordPaperTrade(trade) {
   ensureDir3(DATA_DIR3);
+  if (!paperWritesAllowed) {
+    logger.warn({ symbol: trade.tokenSymbol }, "[RESET_GUARD] paper trade rejected while reset is not verified");
+    return;
+  }
   if (hasOpenPaperTrade(trade.tokenMint)) {
     console.log(`DUPLICATE TRADE SKIPPED \u2014 ${trade.tokenName}`);
     return;
@@ -114635,7 +114709,8 @@ function recordPaperTrade(trade) {
     remainingPositionUsd: trade.positionSizeUsd,
     realizedProceedsUsd: 0,
     realizedCostBasisUsd: 0,
-    exitTimestamp: null
+    exitTimestamp: null,
+    entryTimestamp: trade.timestamp
   };
   const trades = readJson2(PAPER_TRADES_FILE, []);
   trades.push(full);
@@ -114649,6 +114724,7 @@ function recordPaperTrade(trade) {
 }
 async function fetchLiveData(mint) {
   try {
+    recordDexScreenerCall("paper-exit");
     const resp = await axios_default.get(
       `https://api.dexscreener.com/latest/dex/tokens/${mint}`,
       { timeout: 8e3 }
@@ -114705,6 +114781,25 @@ async function runExitCheck() {
     const multiplier = currentPrice / trade.entryPrice;
     const targetPrice = trade.targetPrice || trade.entryPrice * 2.5;
     const stopLossPrice = trade.stopLoss || trade.entryPrice * 0.7;
+    if (multiplier <= 0.85 && currentPrice > stopLossPrice) {
+      const previous = downsideAccelerationAt.get(trade.id) ?? 0;
+      if (Date.now() - previous >= 3e4) {
+        downsideAccelerationAt.set(trade.id, Date.now());
+        console.log(
+          `[DOWNSIDE_ACCELERATION] ${trade.tokenSymbol} reached ${(multiplier * 100).toFixed(1)}% of entry \u2014 next check in 3s`
+        );
+        await new Promise((resolve2) => setTimeout(resolve2, 3e3));
+        const accelerated = await fetchLiveData(trade.tokenMint);
+        if (accelerated) {
+          effectiveLive = accelerated;
+          console.log(
+            `[DOWNSIDE_ACCELERATION] ${trade.tokenSymbol} 3s check caught ${(accelerated.price / trade.entryPrice * 100).toFixed(1)}% of entry at $${accelerated.price.toFixed(8)}`
+          );
+        } else {
+          console.log(`[DOWNSIDE_ACCELERATION] ${trade.tokenSymbol} 3s check unavailable \u2014 retaining prior live price`);
+        }
+      }
+    }
     if (currentPrice >= targetPrice) {
       const halfSoldProceeds = 0.5 * trade.positionSizeUsd * multiplier;
       const halfSoldProfit = halfSoldProceeds - trade.positionSizeUsd * 0.5;
@@ -114744,6 +114839,7 @@ async function runExitCheck() {
         positionSizeUsd: 0,
         // C2: cost basis $0
         remainingPositionUsd: 0,
+        originalEntryUsd: trade.positionSizeUsd,
         remainingPositionSol: trade.amountSol * 0.5,
         remainingCostBasis: 0,
         realizedProceedsUsd: 0,
@@ -114949,6 +115045,7 @@ function sellPaperTrade(id, percentage) {
       amountSol: row.amountSol,
       positionSizeUsd: 0,
       remainingPositionUsd: 0,
+      originalEntryUsd: positionCost,
       remainingPositionSol: row.amountSol,
       remainingCostBasis: 0,
       realizedProceedsUsd: 0,
@@ -115020,13 +115117,55 @@ function generateDailyReport() {
     allTime: stats.allTime,
     today: stats.today,
     capitalInjectedUsd: getCapitalSummary().injectedUsd,
-    startingCapitalUsd: BASE_SIM_BALANCE_USD + getCapitalSummary().injectedUsd
+    startingCapitalUsd: getCapitalSummary().baseBalanceUsd + getCapitalSummary().injectedUsd
   };
   writeJson(DAILY_REPORT_FILE, report);
   return report;
 }
 function readDailyReport() {
   return readJson2(DAILY_REPORT_FILE, null);
+}
+function resetPaperLedgerData() {
+  const previousTradeCount = getPaperTrades().length;
+  const clearedFiles = [];
+  writeJson(PAPER_TRADES_FILE, []);
+  clearedFiles.push(path4.basename(PAPER_TRADES_FILE));
+  writeJson(CAPITAL_INJECTIONS_FILE, []);
+  clearedFiles.push(path4.basename(CAPITAL_INJECTIONS_FILE));
+  setBaseCapitalUsd(0);
+  for (const file2 of [DAILY_REPORT_FILE, DAILY_COMPOUND_FILE, path4.join(DATA_DIR3, "session_stats.json"), path4.join(DATA_DIR3, "scan_stats.json"), path4.join(DATA_DIR3, "notification_errors.json")]) {
+    if (fs3.existsSync(file2)) {
+      fs3.unlinkSync(file2);
+      clearedFiles.push(path4.basename(file2));
+    }
+  }
+  for (const name of fs3.existsSync(DATA_DIR3) ? fs3.readdirSync(DATA_DIR3) : []) {
+    if (/^paper_trades.*\.json$/i.test(name) && name !== path4.basename(PAPER_TRADES_FILE)) {
+      fs3.unlinkSync(path4.join(DATA_DIR3, name));
+      clearedFiles.push(name);
+    }
+  }
+  for (const dirName of ["daily_reports", "failed_reports"]) {
+    const dir = path4.join(DATA_DIR3, dirName);
+    if (!fs3.existsSync(dir)) continue;
+    for (const name of fs3.readdirSync(dir)) {
+      fs3.unlinkSync(path4.join(dir, name));
+      clearedFiles.push(`${dirName}/${name}`);
+    }
+  }
+  for (const name of ["exit_audit.json", "exit_audits.json"]) {
+    const file2 = path4.join(DATA_DIR3, name);
+    if (fs3.existsSync(file2)) {
+      fs3.unlinkSync(file2);
+      clearedFiles.push(name);
+    }
+  }
+  clearMoonbags();
+  downsideAccelerationAt.clear();
+  const verifiedEmpty = getPaperTrades().length === 0 && getMoonbagTrades().length === 0;
+  if (!verifiedEmpty) throw new Error("Paper ledger verification failed after wipe");
+  logger.info({ previousTradeCount, clearedFiles }, "[RESET] paper ledger empty after wipe");
+  return { previousTradeCount, clearedFiles, verifiedEmpty };
 }
 function logWeightChange(change) {
   const history = readJson2(WEIGHTS_FILE, []);
@@ -115041,13 +115180,14 @@ function saveFailedReport(name, content) {
   fs3.writeFileSync(path4.join(FAILED_REPORTS_DIR, `report_${name}.txt`), content, "utf-8");
   logger.info({ name }, "Failed report saved to disk");
 }
-var DATA_DIR3, PAPER_TRADES_FILE, DAILY_REPORT_FILE, WEIGHTS_FILE, DAILY_COMPOUND_FILE, FAILED_REPORTS_DIR, CAPITAL_INJECTIONS_FILE, BASE_SIM_BALANCE_USD, REFERENCE_SOL_PRICE_USD, moonbagPriceHistory, exitEngineInterval;
+var DATA_DIR3, PAPER_TRADES_FILE, DAILY_REPORT_FILE, WEIGHTS_FILE, DAILY_COMPOUND_FILE, FAILED_REPORTS_DIR, CAPITAL_INJECTIONS_FILE, DEFAULT_BASE_CAPITAL_USD, REFERENCE_SOL_PRICE_USD, CAPITAL_CONFIG_FILE, paperWritesAllowed, moonbagPriceHistory, downsideAccelerationAt, exitEngineInterval;
 var init_paperTrading = __esm({
   "src/lib/paperTrading.ts"() {
     "use strict";
     init_axios2();
     init_logger();
     init_moonbagVault();
+    init_dexMetrics();
     DATA_DIR3 = path4.resolve(process.cwd(), "data");
     PAPER_TRADES_FILE = path4.join(DATA_DIR3, "paper_trades.json");
     DAILY_REPORT_FILE = path4.join(DATA_DIR3, "daily_report.json");
@@ -115055,9 +115195,12 @@ var init_paperTrading = __esm({
     DAILY_COMPOUND_FILE = path4.join(DATA_DIR3, "daily_compound.json");
     FAILED_REPORTS_DIR = path4.join(DATA_DIR3, "failed_reports");
     CAPITAL_INJECTIONS_FILE = path4.join(DATA_DIR3, "capital_injections.json");
-    BASE_SIM_BALANCE_USD = 100;
+    DEFAULT_BASE_CAPITAL_USD = 100;
     REFERENCE_SOL_PRICE_USD = 150;
+    CAPITAL_CONFIG_FILE = path4.join(DATA_DIR3, "capital_config.json");
+    paperWritesAllowed = true;
     moonbagPriceHistory = /* @__PURE__ */ new Map();
+    downsideAccelerationAt = /* @__PURE__ */ new Map();
     exitEngineInterval = null;
   }
 });
@@ -149559,7 +149702,7 @@ var require_authTypes = __commonJS({
       instance._solution = { accountSid, domainSid };
       instance._uri = `/Accounts/${accountSid}/SIP/Domains/${domainSid}/Auth.json`;
       Object.defineProperty(instance, "calls", {
-        get: function calls() {
+        get: function calls2() {
           if (!instance._calls) {
             instance._calls = (0, authTypeCalls_1.AuthTypeCallsListInstance)(instance._version, instance._solution.accountSid, instance._solution.domainSid);
           }
@@ -315842,6 +315985,10 @@ init_drizzle_orm();
 init_axios2();
 init_logger();
 var RUGCHECK_BASE = "https://api.rugcheck.xyz/v1";
+var RUGCHECK_REJECTION_RULE = "Reject only when RugCheck reports a hard security risk; low normalized scores are GOOD and are not rejected by score threshold.";
+function isHardRisk(risk) {
+  return /rug|honeypot|scam|malicious|blacklist|freeze|mint authority|transfer fee|unlocked liquidity|lp unlock|ownership/i.test(risk);
+}
 var RUGCHECK_MIN_INTERVAL_MS = 500;
 var rugCheckQueue = [];
 var rugCheckProcessing = false;
@@ -315877,21 +316024,21 @@ async function _doFetch(tokenMint) {
       return { data: null, statusCode: resp.status };
     }
     const data = resp.data;
-    const score = data?.score ?? 0;
+    const score = Number(data?.score ?? 0);
     const risks = (data?.risks ?? []).map(
       (r) => (r.name?.trim() || r.description?.trim() || "").replace(/\.$/, "")
     ).filter((r) => r.length > 0);
-    if (risks.length === 0 && score < 300) {
-      risks.push("RugCheck risk detected \u2014 verify manually");
-    }
+    const hardRisks = risks.filter(isHardRisk);
+    const normalizedScore = data?.score_normalised ?? data?.score_normalized ?? "unknown";
     const topHolderPct = (data?.topHolders ?? []).slice(0, 10).reduce((sum, h) => sum + (h.pct ?? 0), 0) * 100;
     return {
       statusCode: resp.status,
       data: {
         score,
-        rating: data?.score_normalised ?? "unknown",
+        rating: String(normalizedScore),
         risks,
-        isRugged: score < 300 || risks.some((r) => /rug|honeypot|scam/i.test(r)),
+        hardRisks,
+        isRugged: hardRisks.length > 0,
         topHolderPct,
         holderCount: data?.totalHolders ?? 0
       }
@@ -315928,7 +316075,7 @@ async function checkTokenSafety(tokenMint) {
   }
   return {
     score: result.score,
-    isGood: !result.isRugged && result.score >= 400,
+    isGood: !result.isRugged,
     risks: result.risks,
     rawScore: result.score
   };
@@ -316474,9 +316621,14 @@ async function runRiskGate(token) {
     failureLabel = "RUGCHECK FAIL";
     reasons.push(`RugCheck: ${specificReasons}`);
     checks.rugcheck = false;
-    return { passed: false, score: 0, reasons, checks, failureLabel };
+    return { passed: false, score: 0, reasons, checks, failureLabel, rugcheckScore: rugData.score, rugcheckRating: rugData.rating };
   } else {
-    checks.rugcheck = `VERIFIED (score: ${rugData.score})`;
+    checks.rugcheck = `VERIFIED (raw: ${rugData.score}, normalized: ${rugData.rating})`;
+    logger.info(
+      { mint: token.tokenMint, rawScore: rugData.score, normalizedScore: rugData.rating, hardRisks: rugData.hardRisks },
+      "[RUGCHECK_PASS] low normalized score is valid; no hard security risk reported"
+    );
+    score -= 0;
   }
   const birdeye = await checkBirdeyeSecurity(token.tokenMint);
   if (!birdeye.safe) {
@@ -317065,7 +317217,9 @@ function logReadinessReport() {
 }
 
 // src/lib/scanner.ts
+init_dexMetrics();
 var state3 = {
+  running: false,
   activeSource: "dexscreener",
   dexScreenerRateLimited: false,
   dexScreenerRateLimitedUntil: null,
@@ -317135,6 +317289,7 @@ function buildToken(tokenAddress, pair, iconUrl, profile) {
 }
 async function fetchBestPair(tokenAddress) {
   try {
+    recordDexScreenerCall("scanner");
     const resp = await axios_default.get(
       `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
       { headers: getRotatedHeaders(), timeout: 8e3 }
@@ -317155,6 +317310,7 @@ async function fetchPairsForAddresses(addresses) {
   for (let i = 0; i < addresses.length; i += 30) chunks.push(addresses.slice(i, i + 30));
   await Promise.allSettled(
     chunks.map(async (chunk) => {
+      recordDexScreenerCall("scanner");
       const resp = await axios_default.get(
         `https://api.dexscreener.com/latest/dex/tokens/${chunk.join(",")}`,
         { headers: getRotatedHeaders(), timeout: 12e3 }
@@ -317174,6 +317330,7 @@ async function fetchPairsForAddresses(addresses) {
 }
 async function searchFallbackParser() {
   try {
+    recordDexScreenerCall("scanner");
     const resp = await axios_default.get(
       "https://api.dexscreener.com/latest/dex/search?q=solana&order=h6_volume",
       { headers: getRotatedHeaders(), timeout: 1e4 }
@@ -317185,6 +317342,7 @@ async function searchFallbackParser() {
 }
 async function scanDexScreener() {
   try {
+    recordDexScreenerCall("scanner");
     const profileResp = await axios_default.get(
       "https://api.dexscreener.com/token-profiles/latest/v1",
       { headers: getRotatedHeaders(), timeout: 1e4 }
@@ -317281,6 +317439,7 @@ async function scanBirdeye() {
 }
 async function probeDexScreener() {
   try {
+    recordDexScreenerCall("scanner");
     const resp = await axios_default.get("https://api.dexscreener.com/token-profiles/latest/v1", {
       headers: getRotatedHeaders(),
       timeout: 8e3,
@@ -317293,7 +317452,7 @@ async function probeDexScreener() {
   }
 }
 function connectPumpFun() {
-  if (pumpFunWs) return;
+  if (!state3.running || pumpFunWs) return;
   try {
     const WebSocket = globalThis.WebSocket ?? require_ws();
     const ws = new WebSocket("wss://pumpportal.fun/api/data");
@@ -317352,12 +317511,12 @@ function connectPumpFun() {
       if (state3.wsReconnectAttempts > 3 && state3.activeSource === "pumpfun") {
         failover("birdeye", "Pump.fun WebSocket failed repeatedly");
       }
-      setTimeout(() => connectPumpFun(), Math.min(5e3 * state3.wsReconnectAttempts, 3e4));
+      if (state3.running) setTimeout(() => connectPumpFun(), Math.min(5e3 * state3.wsReconnectAttempts, 3e4));
     };
     ws.onclose = () => {
       state3.pumpFunConnected = false;
       pumpFunWs = null;
-      setTimeout(() => connectPumpFun(), 5e3);
+      if (state3.running) setTimeout(() => connectPumpFun(), 5e3);
     };
     pumpFunWs = ws;
   } catch (err) {
@@ -317366,6 +317525,7 @@ function connectPumpFun() {
   }
 }
 async function runScanCycle() {
+  if (!state3.running) return;
   let tokens = [];
   if (state3.dexScreenerRateLimited && state3.dexScreenerRateLimitedUntil && Date.now() > state3.dexScreenerRateLimitedUntil.getTime()) {
     state3.dexScreenerRateLimited = false;
@@ -317385,9 +317545,9 @@ async function runScanCycle() {
   if (tokens.length > 0) {
     state3.lastTokenCount = tokens.length;
   }
-  if (onToken) {
+  if (state3.running && onToken) {
     for (const token of tokens) {
-      if (token.tokenMint) {
+      if (state3.running && token.tokenMint) {
         await onToken(token).catch(
           (err) => logger.error({ err, mint: token.tokenMint }, "Scanner: token callback error")
         );
@@ -317415,6 +317575,7 @@ function scheduleDailyReset() {
 }
 function startTripleRadarScanner(callback) {
   if (scanInterval) return;
+  state3.running = true;
   onToken = callback;
   runScanCycle().catch((e) => logger.error({ e }, "Scanner: initial cycle failed"));
   scanInterval = setInterval(
@@ -317461,7 +317622,13 @@ function stopTripleRadarScanner() {
     clearTimeout(dailyResetTimeout);
     dailyResetTimeout = null;
   }
+  state3.running = false;
+  const ws = pumpFunWs;
   pumpFunWs = null;
+  try {
+    ws?.close?.();
+  } catch {
+  }
   setScannerOnline(false);
   logger.info("[SCANNER] Triple-radar scanner stopped");
 }
@@ -317649,6 +317816,7 @@ var state6 = {
   lastActivity: null
 };
 var seenMints = /* @__PURE__ */ new Set();
+var resetSequenceReady = true;
 var RUG_SIGNALS = [
   "rugcheck",
   "freeze",
@@ -317903,7 +318071,7 @@ async function handleDiscoveredToken(rawToken) {
       tokenName,
       logoUrl,
       reason: riskResult.reasons.join("; "),
-      safetyScore: String(riskResult.score),
+      safetyScore: String(riskResult.rugcheckScore ?? riskResult.score),
       liquidityUsd: String(liquidityUsd ?? 0),
       marketCap
     }).catch(() => {
@@ -317924,6 +318092,10 @@ async function handleDiscoveredToken(rawToken) {
     const scoreThreshold = relaxed ? 60 : isBonding ? 65 : 70;
     if (probabilityScore < scoreThreshold) {
       logger.info({ mint, probabilityScore, scoreThreshold }, "[SIM] Score below threshold \u2014 skipped");
+      return;
+    }
+    if (isPaperMode() && (!state6.isRunning || !resetSequenceReady)) {
+      logger.info({ mint, resetSequenceReady, botRunning: state6.isRunning }, "[RESET_GUARD] scanner result not converted into a paper position");
       return;
     }
     let positionSizeUsd = tier === "SAFE" ? 20 : tier === "BONDING" ? 2 : 10;
@@ -318031,10 +318203,15 @@ function getBotState() {
 }
 function startBot() {
   if (state6.isRunning) return;
+  if (!resetSequenceReady) {
+    logger.warn("Trading bot start blocked \u2014 reset sequence has not completed verification");
+    return;
+  }
   state6.isRunning = true;
   state6.lastActivity = /* @__PURE__ */ new Date();
   seenMints.clear();
   classifyRegime();
+  if (!getScannerState().running) startTripleRadarScanner(handleDiscoveredToken);
   startWatchdog(handleDiscoveredToken);
   startFeedbackLoop();
   logger.info("Trading bot started \u2014 watchdog and feedback loop active");
@@ -318052,6 +318229,54 @@ function restartScanner() {
     startTripleRadarScanner(handleDiscoveredToken);
     console.log("AUTO-RESTART \u2014 scanner restarted successfully");
   }, 1500);
+}
+async function resetPaperTradingAndRestartScanner(startingCapitalUsd = 1e3) {
+  if (!isPaperMode()) throw new Error("Full paper reset is available only in simulation mode");
+  if (!Number.isFinite(startingCapitalUsd) || startingCapitalUsd <= 0) {
+    throw new Error("startingCapitalUsd must be a positive number");
+  }
+  resetSequenceReady = false;
+  setPaperTradeWritesAllowed(false);
+  stopBot();
+  stopExitEngine();
+  stopTripleRadarScanner();
+  if (getScannerState().running) {
+    throw new Error("Reset aborted: scanner did not confirm stopped");
+  }
+  logger.warn("[RESET] scanner stopped confirmed \u2014 beginning paper ledger wipe");
+  const wipe = resetPaperLedgerData();
+  await db.delete(detectedTokensTable);
+  await db.delete(skippedTokensTable);
+  seenMints.clear();
+  logger.info("[RESET] radar detected/skipped history cleared");
+  if (!wipe.verifiedEmpty || getPaperTrades().length !== 0 || getMoonbagTrades().length !== 0) {
+    throw new Error("Reset aborted: paper ledger is not empty after wipe");
+  }
+  logger.info("[RESET] ledger empty confirmed before scanner restart");
+  setBaseCapitalUsd(0);
+  const injection = addCapitalInjection(startingCapitalUsd, "single starting capital after verified reset");
+  const balance = getSimBalanceFull();
+  if (balance.totalEquity !== startingCapitalUsd || balance.openPositions !== 0 || balance.moonbagCount !== 0) {
+    throw new Error(`Reset verification failed: expected $${startingCapitalUsd} empty equity ledger`);
+  }
+  resetSequenceReady = true;
+  setPaperTradeWritesAllowed(true);
+  startTripleRadarScanner(handleDiscoveredToken);
+  logger.info(
+    { scannerRunning: getScannerState().running, ledgerCount: getPaperTrades().length, totalEquity: balance.totalEquity },
+    "[RESET] verified reset complete \u2014 scanner restarted with bot stopped; paper writes require bot start"
+  );
+  return {
+    wipe,
+    injection,
+    scannerStoppedBeforeWipe: true,
+    ledgerEmptyBeforeRestart: true,
+    ledgerCountAfterRestart: getPaperTrades().length,
+    balance: getSimBalanceFull(),
+    capital: getCapitalSummary(),
+    bot: getBotState(),
+    scanner: getScannerState()
+  };
 }
 async function initializeOrchestrator() {
   loadTradingMode();
@@ -318122,6 +318347,9 @@ init_marketRegime();
 init_walletWatcher();
 init_feedbackLoop();
 init_logger();
+init_src();
+init_drizzle_orm();
+init_dexMetrics();
 var router5 = (0, import_express5.Router)();
 router5.get("/bot/status", (_req, res) => {
   const state7 = getBotState();
@@ -318213,6 +318441,30 @@ router5.get("/watchdog/status", (_req, res) => {
 router5.get("/weights", (_req, res) => {
   res.json({ weights: getWeights(), systemAtRisk: isSystemAtRisk() });
 });
+router5.get("/rugcheck/audit", async (_req, res) => {
+  try {
+    const rows = await db.select({
+      tokenMint: skippedTokensTable.tokenMint,
+      tokenSymbol: skippedTokensTable.tokenSymbol,
+      tokenName: skippedTokensTable.tokenName,
+      reason: skippedTokensTable.reason,
+      rawScore: skippedTokensTable.safetyScore,
+      detectedAt: skippedTokensTable.detectedAt
+    }).from(skippedTokensTable).where(ilike(skippedTokensTable.reason, "%RugCheck%")).orderBy(desc(skippedTokensTable.detectedAt)).limit(15);
+    return res.json({
+      rejectionRule: RUGCHECK_REJECTION_RULE,
+      normalizedScoreDirection: "low normalized score = GOOD",
+      count: rows.length,
+      tokens: rows.map((row) => ({ ...row, rawScore: row.rawScore === null ? null : Number(row.rawScore), detectedAt: row.detectedAt.toISOString() }))
+    });
+  } catch (err) {
+    logger.error({ err }, "GET /rugcheck/audit failed");
+    return res.status(500).json({ error: "RugCheck audit failed" });
+  }
+});
+router5.get("/test/dexscreener-metrics", (_req, res) => {
+  return res.json(getDexScreenerMetrics());
+});
 router5.post("/bot/restart", (_req, res) => {
   logger.info("BOT RESTART requested via API \u2014 restarting scanner");
   restartScanner();
@@ -318224,6 +318476,16 @@ router5.post("/bot/restart", (_req, res) => {
     isRunning: state7.isRunning,
     scannerOnline: scanner.lastSuccessfulScan !== null
   });
+});
+router5.post("/system/reset-paper", async (req, res) => {
+  try {
+    const startingCapitalUsd = req.body?.startingCapitalUsd === void 0 ? 1e3 : Number(req.body.startingCapitalUsd);
+    return res.json(await resetPaperTradingAndRestartScanner(startingCapitalUsd));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Paper reset failed";
+    logger.error({ err }, "POST /system/reset-paper failed");
+    return res.status(400).json({ error: message });
+  }
 });
 router5.get("/scan-stats", (_req, res) => {
   res.json(getScanStats());

@@ -66,6 +66,7 @@ export interface PaperTrade {
   remainingPositionSol?: number | null;
   remainingCostBasis?: number;
   remainingPositionUsd?: number | null;
+  originalEntryUsd?: number | null;
   moonbagCreatedAt?: string | null;
   realizedProceedsUsd?: number;
   realizedCostBasisUsd?: number;
@@ -702,6 +703,7 @@ async function runExitCheck(): Promise<void> {
         amountSol:           trade.amountSol * 0.5,
         positionSizeUsd:     0,             // C2: cost basis $0
         remainingPositionUsd: 0,
+        originalEntryUsd: trade.positionSizeUsd,
         remainingPositionSol: trade.amountSol * 0.5,
         remainingCostBasis:  0,
         realizedProceedsUsd: 0,
@@ -948,6 +950,7 @@ export function sellPaperTrade(id: string, percentage: number): PaperTrade[] {
       amountSol: row.amountSol,
       positionSizeUsd: 0,
       remainingPositionUsd: 0,
+      originalEntryUsd: positionCost,
       remainingPositionSol: row.amountSol,
       remainingCostBasis: 0,
       realizedProceedsUsd: 0,

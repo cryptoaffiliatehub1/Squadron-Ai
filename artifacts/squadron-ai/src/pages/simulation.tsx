@@ -200,6 +200,9 @@ function TradeCard({ t, sellable = false }: { t: any; sellable?: boolean }) {
         <SocialRow mint={t.tokenMint} links={t.socialLinks} />
         {sellable && <PaperSellControls id={t.id} scope={t.status === "MOONBAG" ? "moonbags" : "open"} />}
       </div>
+      <p className="text-[7px] text-muted-foreground/60 font-mono">
+        Entry: {t.entryTimestamp ? new Date(t.entryTimestamp).toLocaleString() : "—"} · Exit: {t.exitTimestamp ? new Date(t.exitTimestamp).toLocaleString() : "OPEN"}
+      </p>
     </div>
   );
 }

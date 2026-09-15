@@ -14,6 +14,7 @@ import { getScanStats } from "../lib/scanStats";
 import { db, skippedTokensTable } from "@workspace/db";
 import { desc, ilike } from "drizzle-orm";
 import { RUGCHECK_REJECTION_RULE } from "../lib/rugcheck";
+import { getDexScreenerMetrics } from "../lib/dexMetrics";
 
 const router = Router();
 
@@ -149,6 +150,10 @@ router.get("/rugcheck/audit", async (_req, res) => {
     logger.error({ err }, "GET /rugcheck/audit failed");
     return res.status(500).json({ error: "RugCheck audit failed" });
   }
+});
+
+router.get("/test/dexscreener-metrics", (_req, res) => {
+  return res.json(getDexScreenerMetrics());
 });
 
 // C1: POST /api/bot/restart — re-initialises scanner without stopping the bot

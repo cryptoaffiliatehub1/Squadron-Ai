@@ -111,7 +111,9 @@ export default function History() {
                   <p className="text-[9px] text-muted-foreground">
                     {entry.status === "OPEN" ? "Position remains open" : entry.status === "MOONBAG" ? "Zero-cost vault position" : "Realized exit"}
                   </p>
-                  <p className="text-[9px] text-muted-foreground mt-1">{new Date(entry.timestamp).toLocaleString()}</p>
+                  <p className="text-[9px] text-muted-foreground mt-1">
+                    Entry: {new Date(entry.entryTimestamp ?? entry.timestamp).toLocaleString()} · Exit: {entry.exitTimestamp ? new Date(entry.exitTimestamp).toLocaleString() : "OPEN"}
+                  </p>
                 </CardContent>
               </Card>
             ))}

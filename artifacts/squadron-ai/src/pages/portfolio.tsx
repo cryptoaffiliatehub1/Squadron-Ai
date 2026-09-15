@@ -132,9 +132,12 @@ export default function Portfolio() {
                 const currentPrice    = safeNum(m.currentPrice);
                 const multiplier      = safeNum(m.currentMultiplier, 1);
                  const currentValueSol = safeNum(m.currentValueSol, safeNum(m.currentValueUsd) / 150);
-                 const originalCostUsd = safeNum(m.originalCostUsd, safeNum(m.positionSizeUsd));
+                 const originalCostUsd = safeNum(m.originalEntryUsd, safeNum(m.originalCostUsd, safeNum(m.positionSizeUsd)));
                 const tokensHeld      = safeNum(m.tokensHeld);
-                const enteredAt       = m.enteredAt ? new Date(m.enteredAt).toLocaleString() : "—";
+                 const enteredAt       = m.entryTimestamp
+                   ? new Date(m.entryTimestamp).toLocaleString()
+                   : (m.enteredAt ? new Date(m.enteredAt).toLocaleString() : "—");
+                 const createdAt        = m.moonbagCreatedAt ? new Date(m.moonbagCreatedAt).toLocaleString() : "—";
                 const dexUrl = `https://dexscreener.com/solana/${m.tokenMint ?? ""}`;
 
                 return (
@@ -183,16 +186,16 @@ export default function Portfolio() {
                         <div className="space-y-1">
                           <p className="text-[7.5px] text-muted-foreground uppercase tracking-wider font-bold">Trade History</p>
                           <div className="bg-card/60 rounded-lg p-2 space-y-1.5 text-[8.5px]">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Original entry</span>
-                              <span className="font-mono text-white">{fmtPrice(originalBuyPrice)}</span>
+                             <div className="flex justify-between">
+                               <span className="text-muted-foreground">Original entry price</span>
+                               <span className="font-mono text-white">{fmtPrice(goldenExitPrice > 0 ? originalBuyPrice : goldenExitPrice)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Golden exit at (2.5×)</span>
                               <span className="font-mono text-gains">{fmtPrice(goldenExitPrice)}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Capital invested</span>
+                               <span className="text-muted-foreground">Original entry amount</span>
                               <span className="font-mono">{originalCostUsd > 0 ? `$${originalCostUsd.toFixed(2)}` : "—"}</span>
                             </div>
                             <div className="flex justify-between">
@@ -211,8 +214,8 @@ export default function Portfolio() {
                               <span className="font-mono">{tokensHeld > 0 ? tokensHeld.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">Moonbag entry price</span>
-                              <span className="font-mono text-primary">{fmtPrice(goldenExitPrice)}</span>
+                               <span className="text-muted-foreground">Moonbag entry price</span>
+                               <span className="font-mono text-primary">{fmtPrice(m.entryPrice)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Current price</span>
@@ -239,7 +242,7 @@ export default function Portfolio() {
 
                         {/* Timestamps */}
                         <p className="text-[7.5px] text-muted-foreground/50 font-mono">
-                          Moonbag created: {enteredAt}
+                           Entry: {enteredAt} · Moonbag created: {createdAt} · Exit: {m.exitTimestamp ? new Date(m.exitTimestamp).toLocaleString() : "OPEN"}
                         </p>
 
                         {/* DexScreener link */}
