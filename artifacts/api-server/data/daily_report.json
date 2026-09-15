@@ -1,18 +1,42 @@
 {
-  "date": "2026-07-07",
-  "totalTrades": 23,
-  "openTrades": 23,
+  "date": "2026-09-14",
+  "totalTrades": 0,
+  "openTrades": 1,
   "wins": 0,
   "losses": 0,
   "winRate": 0,
   "avgWinSol": 0,
   "avgLossSol": 0,
+  "avgWinUsd": 0,
+  "avgLossUsd": 0,
   "expectancy": 0,
-  "topFailureReason": "none",
+  "topFailureReason": "N/A",
   "totalPnlSol": 0,
   "totalPnlUsd": 0,
-  "simBalanceUsd": -160,
+  "simBalanceUsd": 73.33,
   "biggestWin": null,
   "biggestLoss": null,
-  "isPaperMode": true
+  "isPaperMode": true,
+  "allTime": {
+    "totalTrades": 1,
+    "wins": 1,
+    "losses": 0,
+    "winRate": 1,
+    "avgWinUsd": 8.3298392732355,
+    "avgLossUsd": 0,
+    "expectancyUsd": 8.3298392732355,
+    "totalPnlUsd": 8.3298392732355
+  },
+  "today": {
+    "totalTrades": 0,
+    "wins": 0,
+    "losses": 0,
+    "winRate": 0,
+    "avgWinUsd": 0,
+    "avgLossUsd": 0,
+    "expectancyUsd": 0,
+    "totalPnlUsd": 0
+  },
+  "capitalInjectedUsd": 0,
+  "startingCapitalUsd": 100
 }

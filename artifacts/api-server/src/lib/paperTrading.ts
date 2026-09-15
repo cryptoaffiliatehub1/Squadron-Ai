@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import axios from "axios";
 import { logger } from "./logger";
-import { startMoonbagMonitor, stopMoonbagMonitor } from "./moonbagVault";
+import { clearMoonbags, startMoonbagMonitor, stopMoonbagMonitor } from "./moonbagVault";
+import { recordDexScreenerCall } from "./dexMetrics";
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ export interface PaperTrade {
   probabilityScore: number;
   regime: string;
   timestamp: string;
+  entryTimestamp?: string;
   exitTimestamp: string | null;
   relaxedMode?: boolean;
   // C1: entry signal fields
@@ -55,6 +57,7 @@ export interface PaperTrade {
   currentBuys5m?: number | null;
   currentSells5m?: number | null;
   lastLiveFetch?: string | null;
+  downsideAccelerationAt?: string | null;
   // C2: partial exit tracking
   halfSoldAt?: number | null;
   halfSoldProfit?: number | null;
@@ -62,9 +65,23 @@ export interface PaperTrade {
   // C2: moonbag fields
   remainingPositionSol?: number | null;
   remainingCostBasis?: number;
+  remainingPositionUsd?: number | null;
   moonbagCreatedAt?: string | null;
+  realizedProceedsUsd?: number;
+  realizedCostBasisUsd?: number;
   // C2: loss tracking
   lossAmount?: number | null;
+}
+
+export interface TradeStats {
+  totalTrades: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  avgWinUsd: number;
+  avgLossUsd: number;
+  expectancyUsd: number;
+  totalPnlUsd: number;
 }
 
 export interface DailyReport {
@@ -83,9 +100,13 @@ export interface DailyReport {
   totalPnlSol: number;
   totalPnlUsd: number;
   simBalanceUsd: number;
-  biggestWin: { tokenSymbol: string; multiplier: number; pnlUsd: number } | null;
-  biggestLoss: { tokenSymbol: string; pnlUsd: number; reason: string } | null;
+  biggestWin: { tokenSymbol: string; multiplier: number; pnlUsd: number; pnlSol: number } | null;
+  biggestLoss: { tokenSymbol: string; pnlUsd: number; pnlSol: number; reason: string } | null;
   isPaperMode: boolean;
+  allTime: TradeStats;
+  today: TradeStats;
+  capitalInjectedUsd: number;
+  startingCapitalUsd: number;
 }
 
 export interface SimBalance {
@@ -102,6 +123,13 @@ interface DailyCompound {
   dailyTarget: number;
 }
 
+interface CapitalInjection {
+  id: string;
+  amountUsd: number;
+  note?: string;
+  timestamp: string;
+}
+
 // ── File paths ────────────────────────────────────────────────────────────────
 
 const DATA_DIR           = path.resolve(process.cwd(), "data");
@@ -110,6 +138,11 @@ const DAILY_REPORT_FILE  = path.join(DATA_DIR, "daily_report.json");
 const WEIGHTS_FILE       = path.join(DATA_DIR, "weights_history.json");
 const DAILY_COMPOUND_FILE = path.join(DATA_DIR, "daily_compound.json");
 const FAILED_REPORTS_DIR = path.join(DATA_DIR, "failed_reports");
+const CAPITAL_INJECTIONS_FILE = path.join(DATA_DIR, "capital_injections.json");
+const DEFAULT_BASE_CAPITAL_USD = 100;
+const REFERENCE_SOL_PRICE_USD = 150;
+const CAPITAL_CONFIG_FILE = path.join(DATA_DIR, "capital_config.json");
+let paperWritesAllowed = true;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -167,7 +200,183 @@ export function hasOpenPaperTrade(mint: string): boolean {
 // ── Read helpers ──────────────────────────────────────────────────────────────
 export function getPaperTrades(): PaperTrade[] {
   const raw = readJson<any[]>(PAPER_TRADES_FILE, []);
-  return raw.map((t) => ({ ...t, status: resolveStatus(t) })) as PaperTrade[];
+  return raw.map((t) => ({
+    ...t,
+    status: resolveStatus(t),
+    entryTimestamp: t.entryTimestamp ?? t.timestamp,
+  })) as PaperTrade[];
+}
+
+function finiteNumber(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function getCapitalInjections(): CapitalInjection[] {
+  return readJson<CapitalInjection[]>(CAPITAL_INJECTIONS_FILE, [])
+    .filter((i) => finiteNumber(i.amountUsd) > 0);
+}
+
+export function getBaseCapitalUsd(): number {
+  const config = readJson<{ baseCapitalUsd?: unknown } | null>(CAPITAL_CONFIG_FILE, null);
+  const raw = config?.baseCapitalUsd;
+  // Explicitly distinguish a valid zero from an absent value. Zero is a real
+  // configured base and must not fall back to the legacy $100 default.
+  if (raw === undefined || raw === null) return DEFAULT_BASE_CAPITAL_USD;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_BASE_CAPITAL_USD;
+}
+
+export function setBaseCapitalUsd(baseCapitalUsd: number): number {
+  if (!Number.isFinite(baseCapitalUsd) || baseCapitalUsd < 0) {
+    throw new Error("baseCapitalUsd must be a non-negative number");
+  }
+  writeJson(CAPITAL_CONFIG_FILE, { baseCapitalUsd: Math.round(baseCapitalUsd * 100) / 100 });
+  logger.info({ baseCapitalUsd }, "[SIM] Base capital configured");
+  return getBaseCapitalUsd();
+}
+
+export function setPaperTradeWritesAllowed(allowed: boolean): void {
+  paperWritesAllowed = allowed;
+  logger.info({ allowed }, `[RESET_GUARD] paper position writes ${allowed ? "enabled" : "blocked"}`);
+}
+
+export function arePaperTradeWritesAllowed(): boolean {
+  return paperWritesAllowed;
+}
+
+export function getCapitalSummary() {
+  const injections = getCapitalInjections();
+  return {
+    baseBalanceUsd: getBaseCapitalUsd(),
+    injectedUsd: injections.reduce((sum, i) => sum + finiteNumber(i.amountUsd), 0),
+    injections,
+  };
+}
+
+export function addCapitalInjection(amountUsd: number, note?: string): CapitalInjection {
+  if (!isPaperMode()) {
+    throw new Error("Capital injection is available only in simulation mode");
+  }
+  if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
+    throw new Error("amountUsd must be a positive number");
+  }
+  const injection: CapitalInjection = {
+    id: `ci_${Date.now()}`,
+    amountUsd: Math.round(amountUsd * 100) / 100,
+    note: note?.trim() || undefined,
+    timestamp: new Date().toISOString(),
+  };
+  const injections = getCapitalInjections();
+  injections.push(injection);
+  writeJson(CAPITAL_INJECTIONS_FILE, injections);
+  logger.info({ amountUsd: injection.amountUsd }, "[SIM] Capital injected");
+  return injection;
+}
+
+export interface RealizedLeg {
+  tradeId: string;
+  tokenMint: string;
+  tokenSymbol: string;
+  status: PaperTrade["status"];
+  proceedsUsd: number;
+  costBasisUsd: number;
+  pnlUsd: number;
+  pnlSol: number;
+  timestamp: string;
+  reason: string;
+}
+
+/**
+ * Normalize old and new paper records into actual realized exit legs.
+ * Older records used halfSoldProfit for sale proceeds, so those records are
+ * handled here without rewriting the user's ledger.
+ */
+export function getRealizedLegs(trades = getPaperTrades()): RealizedLeg[] {
+  const legs: RealizedLeg[] = [];
+  for (const trade of trades) {
+    const status = resolveStatus(trade);
+    const positionCost = finiteNumber(trade.positionSizeUsd);
+    let proceeds = finiteNumber(trade.realizedProceedsUsd, NaN);
+    let costBasis = finiteNumber(trade.realizedCostBasisUsd, NaN);
+    let reason = status === "LOSS" ? "Stop loss" : "Paper exit";
+
+    if (status === "MOONBAG") {
+      if (!Number.isFinite(proceeds) || proceeds <= 0) continue;
+      costBasis = 0;
+      reason = "Moonbag sale";
+    } else if (status === "MOONBAG EXIT") {
+      proceeds = Number.isFinite(proceeds) ? proceeds : finiteNumber(trade.pnlUsd);
+      costBasis = 0;
+      reason = "Moonbag exit";
+    } else if (status === "PARTIAL EXIT") {
+      proceeds = Number.isFinite(proceeds)
+        ? proceeds
+        : finiteNumber(trade.halfSoldProfit, positionCost * 0.5 * finiteNumber(trade.exitMultiplier));
+      costBasis = Number.isFinite(costBasis) ? costBasis : positionCost * 0.5;
+      reason = "Golden partial exit";
+    } else if (status === "LOSS") {
+      const multiplier = finiteNumber(
+        trade.exitMultiplier,
+        trade.entryPrice > 0 && trade.exitPrice ? trade.exitPrice / trade.entryPrice : 0,
+      );
+      proceeds = Number.isFinite(proceeds) ? proceeds : positionCost * multiplier;
+      costBasis = Number.isFinite(costBasis) ? costBasis : positionCost;
+    } else if (status === "WIN") {
+      const pnl = finiteNumber(trade.pnlUsd);
+      proceeds = Number.isFinite(proceeds) ? proceeds : positionCost + pnl;
+      costBasis = Number.isFinite(costBasis) ? costBasis : positionCost;
+      reason = "Take profit";
+    } else if (status === "OPEN" && Number.isFinite(proceeds) && proceeds > 0) {
+      costBasis = Number.isFinite(costBasis) ? costBasis : 0;
+      reason = "Manual partial exit";
+    } else {
+      continue;
+    }
+
+    const pnlUsd = proceeds - costBasis;
+    legs.push({
+      tradeId: trade.id,
+      tokenMint: trade.tokenMint,
+      tokenSymbol: trade.tokenSymbol,
+      status,
+      proceedsUsd: Math.max(0, proceeds),
+      costBasisUsd: Math.max(0, costBasis),
+      pnlUsd,
+      pnlSol: pnlUsd / REFERENCE_SOL_PRICE_USD,
+      timestamp: trade.exitTimestamp ?? trade.timestamp,
+      reason,
+    });
+  }
+  return legs;
+}
+
+function summarizeLegs(legs: RealizedLeg[]): TradeStats {
+  const wins = legs.filter((leg) => leg.pnlUsd > 0);
+  const losses = legs.filter((leg) => leg.pnlUsd < 0);
+  const totalTrades = wins.length + losses.length;
+  const avgWinUsd = wins.length ? wins.reduce((sum, leg) => sum + leg.pnlUsd, 0) / wins.length : 0;
+  const avgLossUsd = losses.length
+    ? Math.abs(losses.reduce((sum, leg) => sum + leg.pnlUsd, 0) / losses.length)
+    : 0;
+  const winRate = totalTrades ? wins.length / totalTrades : 0;
+  return {
+    totalTrades,
+    wins: wins.length,
+    losses: losses.length,
+    winRate,
+    avgWinUsd,
+    avgLossUsd,
+    expectancyUsd: winRate * avgWinUsd - (1 - winRate) * avgLossUsd,
+    totalPnlUsd: legs.reduce((sum, leg) => sum + leg.pnlUsd, 0),
+  };
+}
+
+export function getPaperStats() {
+  const legs = getRealizedLegs();
+  const today = getTodayUTC();
+  const todayLegs = legs.filter((leg) => leg.timestamp.startsWith(today));
+  return { allTime: summarizeLegs(legs), today: summarizeLegs(todayLegs), legs };
 }
 
 export function getOpenTrades(): PaperTrade[] {
@@ -202,34 +411,34 @@ export function getDailyCompoundData() {
 }
 
 // ── C2: sim balance calculation ───────────────────────────────────────────────
-// "Subtract positionSizeUsd after every entry. Add back halfSoldProfit for wins. Add back $0 for losses."
+// Cash = contributed capital - every buy cost + every actual sale proceeds.
 
 function computeSimCash(): number {
-  const START = 100;
   const trades = getPaperTrades();
-  let cash = START;
+  const capital = getCapitalSummary();
+  let cash = capital.baseBalanceUsd + capital.injectedUsd;
   for (const t of trades) {
-    if (t.status === "MOONBAG" || t.status === "MOONBAG EXIT") continue; // cost basis $0
-    cash -= t.positionSizeUsd; // subtract entry
-    if (t.status === "PARTIAL EXIT" || t.status === "WIN") {
-      cash += (t.halfSoldProfit ?? t.pnlUsd ?? 0); // add back proceeds
+    if (t.status !== "MOONBAG" && t.status !== "MOONBAG EXIT") {
+      cash -= finiteNumber(t.positionSizeUsd);
     }
-    // LOSS: add back $0 — full position lost
-    // OPEN: still deployed, no proceeds yet
+    const leg = getRealizedLegs([t])[0];
+    if (leg) cash += leg.proceedsUsd;
   }
-  return cash;
+  return Math.max(0, cash);
 }
 
 export function getSimBalance(): SimBalance {
-  const START = 100;
   const cash = computeSimCash();
   const trades = getPaperTrades();
+  const capital = getCapitalSummary();
+  const { allTime } = getPaperStats();
   const lockedInOpenUsd = trades.filter(t => t.status === "OPEN")
-    .reduce((s, t) => s + t.positionSizeUsd, 0);
-  const realizedPnlUsd = cash - START;
-  const pnlPct = ((cash - START) / START) * 100;
+    .reduce((s, t) => s + finiteNumber(t.remainingPositionUsd, finiteNumber(t.positionSizeUsd)), 0);
+  const startingCapitalUsd = capital.baseBalanceUsd + capital.injectedUsd;
+  const realizedPnlUsd = allTime.totalPnlUsd;
+  const pnlPct = startingCapitalUsd > 0 ? (realizedPnlUsd / startingCapitalUsd) * 100 : 0;
   return {
-    startingBalanceUsd: START,
+    startingBalanceUsd: startingCapitalUsd,
     currentBalanceUsd: Math.round(cash * 100) / 100,
     lockedInOpenUsd: Math.round(lockedInOpenUsd * 100) / 100,
     realizedPnlUsd: Math.round(realizedPnlUsd * 100) / 100,
@@ -241,10 +450,17 @@ export function getSimBalance(): SimBalance {
 export function getSimBalanceFull() {
   const cash = computeSimCash();
   const trades = getPaperTrades();
+  const capital = getCapitalSummary();
+  const stats = getPaperStats();
   const openTrades   = trades.filter(t => t.status === "OPEN");
   const moonbagTrades = trades.filter(t => t.status === "MOONBAG");
 
-  const totalDeployed = openTrades.reduce((s, t) => s + t.positionSizeUsd, 0);
+  const openPositionValue = openTrades.reduce((sum, t) => {
+    const current = finiteNumber(t.currentPrice, t.entryPrice);
+    const multiplier = t.entryPrice > 0 ? current / t.entryPrice : 1;
+    const remainingCost = finiteNumber(t.remainingPositionUsd, finiteNumber(t.positionSizeUsd));
+    return sum + remainingCost * multiplier;
+  }, 0);
 
   const moonbagTotalValue = moonbagTrades.reduce((s, t) => {
     const cp = t.currentPrice;
@@ -252,26 +468,34 @@ export function getSimBalanceFull() {
     if (cp && ep > 0) {
       const mult = cp / ep;
       const rs = t.remainingPositionSol ?? t.amountSol * 0.5;
-      return s + rs * 150 * mult;
+      return s + rs * REFERENCE_SOL_PRICE_USD * mult;
     }
     return s + (t.moonbagAmountUsd ?? t.pnlUsd ?? 0);
   }, 0);
 
-  const START = 100;
   const dc = loadOrInitDailyCompound(cash);
-  const todayPnL = cash - dc.startBalance;
+  const todayPnL = stats.today.totalPnlUsd;
   const aboveTarget = todayPnL >= dc.dailyTarget;
   const dailyProgressPct = dc.dailyTarget > 0 ? (todayPnL / dc.dailyTarget) * 100 : 0;
+  const startingCapitalUsd = capital.baseBalanceUsd + capital.injectedUsd;
 
   return {
     simBalance:        Math.round(cash * 100) / 100,
-    totalDeployed:     Math.round(totalDeployed * 100) / 100,
-    totalValue:        Math.round((cash + totalDeployed + moonbagTotalValue) * 100) / 100,
-    totalPnL:          Math.round((cash - START) * 100) / 100,
-    returnPct:         Math.round(((cash - START) / START) * 10000) / 100,
+    cashBalance:       Math.round(cash * 100) / 100,
+    totalDeployed:     Math.round(openPositionValue * 100) / 100,
+    openPositionValue: Math.round(openPositionValue * 100) / 100,
+    totalValue:        Math.round((cash + openPositionValue + moonbagTotalValue) * 100) / 100,
+    totalEquity:       Math.round((cash + openPositionValue + moonbagTotalValue) * 100) / 100,
+    totalPnL:          Math.round(stats.allTime.totalPnlUsd * 100) / 100,
+    returnPct:         Math.round((stats.allTime.totalPnlUsd / startingCapitalUsd) * 10000) / 100,
     openPositions:     openTrades.length,
     moonbagCount:      moonbagTrades.length,
     moonbagTotalValue: Math.round(moonbagTotalValue * 100) / 100,
+    moonbagValueUsd:   Math.round(moonbagTotalValue * 100) / 100,
+    capitalInjectedUsd: Math.round(capital.injectedUsd * 100) / 100,
+    startingCapitalUsd: Math.round(startingCapitalUsd * 100) / 100,
+    realizedPnlUsd:    Math.round(stats.allTime.totalPnlUsd * 100) / 100,
+    todayRealizedPnlUsd: Math.round(stats.today.totalPnlUsd * 100) / 100,
     todayStartBalance: dc.startBalance,
     dailyTarget:       dc.dailyTarget,
     todayPnL:          Math.round(todayPnL * 100) / 100,
@@ -285,6 +509,11 @@ export function recordPaperTrade(
   trade: Omit<PaperTrade, "status" | "targetPrice" | "stopLoss" | "exitMultiplier" | "moonbagAmountUsd"> & { entryPrice: number },
 ): void {
   ensureDir(DATA_DIR);
+
+  if (!paperWritesAllowed) {
+    logger.warn({ symbol: trade.tokenSymbol }, "[RESET_GUARD] paper trade rejected while reset is not verified");
+    return;
+  }
 
   if (hasOpenPaperTrade(trade.tokenMint)) {
     console.log(`DUPLICATE TRADE SKIPPED — ${trade.tokenName}`);
@@ -308,7 +537,11 @@ export function recordPaperTrade(
     pnlSol:           null,
     pnlUsd:           null,
     moonbagAmountUsd: null,
+    remainingPositionUsd: trade.positionSizeUsd,
+    realizedProceedsUsd: 0,
+    realizedCostBasisUsd: 0,
     exitTimestamp:    null,
+    entryTimestamp:   trade.timestamp,
   } as PaperTrade;
 
   const trades = readJson<any[]>(PAPER_TRADES_FILE, []);
@@ -328,6 +561,7 @@ async function fetchLiveData(mint: string): Promise<{
   price: number; liquidityUsd: number; volume5m: number; buyTxns5m: number; sellTxns5m: number;
 } | null> {
   try {
+    recordDexScreenerCall("paper-exit");
     const resp = await axios.get<{ pairs?: any[] }>(
       `https://api.dexscreener.com/latest/dex/tokens/${mint}`,
       { timeout: 8_000 },
@@ -351,6 +585,7 @@ async function fetchLiveData(mint: string): Promise<{
 
 // ── In-memory moonbag price history for tier-3 lower-lows check ─────────────
 const moonbagPriceHistory = new Map<string, number[]>();
+const downsideAccelerationAt = new Map<string, number>();
 
 // ── C2: exit engine — full 6-step implementation ─────────────────────────────
 let exitEngineInterval: ReturnType<typeof setInterval> | null = null;
@@ -400,6 +635,29 @@ async function runExitCheck(): Promise<void> {
     const targetPrice   = trade.targetPrice  || trade.entryPrice * 2.5;
     const stopLossPrice = trade.stopLoss     || trade.entryPrice * 0.7;
 
+    // Downside acceleration: once a live position reaches -15%, take a
+    // second DexScreener reading after exactly 3 seconds before the normal
+    // 30-second exit cycle can miss a fast collapse.
+    if (multiplier <= 0.85 && currentPrice > stopLossPrice) {
+      const previous = downsideAccelerationAt.get(trade.id) ?? 0;
+      if (Date.now() - previous >= 30_000) {
+        downsideAccelerationAt.set(trade.id, Date.now());
+        console.log(
+          `[DOWNSIDE_ACCELERATION] ${trade.tokenSymbol} reached ${(multiplier * 100).toFixed(1)}% of entry — next check in 3s`,
+        );
+        await new Promise<void>((resolve) => setTimeout(resolve, 3_000));
+        const accelerated = await fetchLiveData(trade.tokenMint);
+        if (accelerated) {
+          effectiveLive = accelerated;
+          console.log(
+            `[DOWNSIDE_ACCELERATION] ${trade.tokenSymbol} 3s check caught ${(accelerated.price / trade.entryPrice * 100).toFixed(1)}% of entry at $${accelerated.price.toFixed(8)}`,
+          );
+        } else {
+          console.log(`[DOWNSIDE_ACCELERATION] ${trade.tokenSymbol} 3s check unavailable — retaining prior live price`);
+        }
+      }
+    }
+
     // ── Step 2: Golden exit — 2.5× reached ───────────────────────────────
     if (currentPrice >= targetPrice) {
       const halfSoldProceeds = 0.5 * trade.positionSizeUsd * multiplier;
@@ -423,6 +681,9 @@ async function runExitCheck(): Promise<void> {
         halfSoldAt:       currentPrice,
         halfSoldProfit:   halfSoldProceeds,  // full proceeds from 50% sold
         halfSoldTime:     now,
+        remainingPositionUsd: trade.positionSizeUsd * 0.5,
+        realizedProceedsUsd: halfSoldProceeds,
+        realizedCostBasisUsd: trade.positionSizeUsd * 0.5,
         pnlUsd:           halfSoldProfit,    // net profit on sold half
         pnlSol:           halfSoldProfit / 150,
         exitTimestamp:    now,
@@ -440,8 +701,11 @@ async function runExitCheck(): Promise<void> {
         status:              "MOONBAG",
         amountSol:           trade.amountSol * 0.5,
         positionSizeUsd:     0,             // C2: cost basis $0
+        remainingPositionUsd: 0,
         remainingPositionSol: trade.amountSol * 0.5,
         remainingCostBasis:  0,
+        realizedProceedsUsd: 0,
+        realizedCostBasisUsd: 0,
         tier:                trade.tier,
         entryPrice:          trade.entryPrice,
         targetPrice:         null,
@@ -493,6 +757,9 @@ async function runExitCheck(): Promise<void> {
         exitPrice:      currentPrice,
         exitMultiplier: multiplier,
         lossAmount,
+        remainingPositionUsd: 0,
+        realizedProceedsUsd: trade.positionSizeUsd * multiplier,
+        realizedCostBasisUsd: trade.positionSizeUsd,
         pnlUsd:         lossAmount,
         pnlSol:         lossAmount / 150,
         exitTimestamp:  now,
@@ -585,78 +852,191 @@ export async function getMoonbagsWithPrices(): Promise<Array<PaperTrade & {
         ? cp / mb.entryPrice : null;
       const rs = mb.remainingPositionSol ?? mb.amountSol * 0.5;
       const currentValueUsd = cp != null
-        ? rs * 150 * (currentMultiplier ?? 1) : mb.moonbagAmountUsd;
+         ? rs * REFERENCE_SOL_PRICE_USD * (currentMultiplier ?? 1) : mb.moonbagAmountUsd;
       return { ...mb, currentPrice: cp, currentMultiplier, currentValueUsd, delisted };
     }),
   );
 }
 
-// ── Daily report ──────────────────────────────────────────────────────────────
+function currentPriceForTrade(trade: PaperTrade): number {
+  return finiteNumber(trade.currentPrice, finiteNumber(trade.entryPrice));
+}
+
+function moonbagValueAtPrice(trade: PaperTrade, price: number): number {
+  const multiplier = trade.entryPrice > 0 ? price / trade.entryPrice : 1;
+  return finiteNumber(trade.remainingPositionSol, trade.amountSol * 0.5)
+    * REFERENCE_SOL_PRICE_USD * multiplier;
+}
+
+export function sellPaperTrade(id: string, percentage: number): PaperTrade[] {
+  if (!isPaperMode()) throw new Error("Paper selling is available only in simulation mode");
+  if (!Number.isFinite(percentage) || ![25, 50, 75, 100].includes(percentage)) {
+    throw new Error("percentage must be 25, 50, 75, or 100");
+  }
+
+  const all = readJson<any[]>(PAPER_TRADES_FILE, []);
+  const row = all.find((t) => t.id === id);
+  if (!row) throw new Error("Paper position not found");
+  const trade = { ...row, status: resolveStatus(row) } as PaperTrade;
+  const fraction = percentage / 100;
+  const now = new Date().toISOString();
+
+  if (trade.status === "MOONBAG") {
+    const price = currentPriceForTrade(trade);
+    const currentValue = moonbagValueAtPrice(trade, price);
+    const proceeds = currentValue * fraction;
+    const remainingSol = finiteNumber(trade.remainingPositionSol, trade.amountSol * 0.5) * (1 - fraction);
+    row.realizedProceedsUsd = finiteNumber(row.realizedProceedsUsd) + proceeds;
+    row.realizedCostBasisUsd = 0;
+    row.amountSol = remainingSol;
+    row.remainingPositionSol = remainingSol;
+    row.currentPrice = price;
+    row.lastSaleTimestamp = now;
+    row.pnlUsd = row.realizedProceedsUsd;
+    row.pnlSol = row.pnlUsd / REFERENCE_SOL_PRICE_USD;
+    if (percentage === 100) {
+      row.status = "MOONBAG EXIT";
+      row.exitPrice = price;
+      row.exitTimestamp = now;
+    }
+    writeJson(PAPER_TRADES_FILE, all);
+    return getPaperTrades();
+  }
+
+  if (trade.status !== "OPEN") {
+    throw new Error("Only OPEN positions and MOONBAG positions can be sold");
+  }
+
+  const price = currentPriceForTrade(trade);
+  const multiplier = trade.entryPrice > 0 ? price / trade.entryPrice : 0;
+  const positionCost = finiteNumber(trade.positionSizeUsd);
+  const proceeds = positionCost * multiplier * fraction;
+  const costSold = positionCost * fraction;
+  const realizedProceeds = finiteNumber(row.realizedProceedsUsd) + proceeds;
+  const realizedCost = finiteNumber(row.realizedCostBasisUsd) + costSold;
+  const remainingFraction = 1 - fraction;
+
+  row.realizedProceedsUsd = realizedProceeds;
+  row.realizedCostBasisUsd = realizedCost;
+  row.currentPrice = price;
+  row.lastSaleTimestamp = now;
+  row.remainingPositionUsd = positionCost * remainingFraction;
+  row.amountSol = finiteNumber(row.amountSol) * remainingFraction;
+  row.pnlUsd = realizedProceeds - realizedCost;
+  row.pnlSol = row.pnlUsd / REFERENCE_SOL_PRICE_USD;
+
+  const capitalRecovered = realizedProceeds >= positionCost - 0.000001;
+  if (percentage === 100) {
+    row.status = row.pnlUsd > 0 ? "WIN" : "LOSS";
+    row.exitPrice = price;
+    row.exitMultiplier = multiplier;
+    row.exitTimestamp = now;
+    row.lossAmount = row.pnlUsd < 0 ? row.pnlUsd : null;
+  } else if (capitalRecovered) {
+    row.status = "PARTIAL EXIT";
+    row.exitPrice = price;
+    row.exitMultiplier = multiplier;
+    row.exitTimestamp = now;
+    row.halfSoldAt = price;
+    row.halfSoldProfit = realizedProceeds;
+    row.halfSoldTime = now;
+
+    const moonbagEntry: any = {
+      ...row,
+      id: `mb_${row.id}`,
+      status: "MOONBAG",
+      amountSol: row.amountSol,
+      positionSizeUsd: 0,
+      remainingPositionUsd: 0,
+      remainingPositionSol: row.amountSol,
+      remainingCostBasis: 0,
+      realizedProceedsUsd: 0,
+      realizedCostBasisUsd: 0,
+      entryPrice: row.entryPrice,
+      currentPrice: price,
+      currentMultiplier: multiplier,
+      currentValueUsd: row.amountSol * REFERENCE_SOL_PRICE_USD * multiplier,
+      moonbagAmountUsd: row.amountSol * REFERENCE_SOL_PRICE_USD * multiplier,
+      moonbagCreatedAt: now,
+      exitPrice: null,
+      exitTimestamp: null,
+      pnlUsd: row.amountSol * REFERENCE_SOL_PRICE_USD * multiplier,
+      pnlSol: (row.amountSol * REFERENCE_SOL_PRICE_USD * multiplier) / REFERENCE_SOL_PRICE_USD,
+      timestamp: now,
+    };
+    all.push(moonbagEntry);
+  }
+
+  writeJson(PAPER_TRADES_FILE, all);
+  return getPaperTrades();
+}
+
+export function bulkSellPaperTrades(
+  scope: "open" | "moonbags" | "all",
+  percentage: number,
+): { sold: string[]; errors: string[]; trades: PaperTrade[] } {
+  const trades = getPaperTrades().filter((trade) =>
+    scope === "open" ? trade.status === "OPEN"
+      : scope === "moonbags" ? trade.status === "MOONBAG"
+        : trade.status === "OPEN" || trade.status === "MOONBAG",
+  );
+  const sold: string[] = [];
+  const errors: string[] = [];
+  for (const trade of trades) {
+    try {
+      sellPaperTrade(trade.id, percentage);
+      sold.push(trade.id);
+    } catch (error) {
+      errors.push(`${trade.tokenSymbol}: ${error instanceof Error ? error.message : "sell failed"}`);
+    }
+  }
+  return { sold, errors, trades: getPaperTrades() };
+}
+
+// ── Daily and all-time report ─────────────────────────────────────────────────
 export function generateDailyReport(): DailyReport {
-  const today     = getTodayUTC();
+  const today = getTodayUTC();
   const allTrades = getPaperTrades();
-  const allToday  = allTrades.filter((t) => t.timestamp.startsWith(today));
-
-  const wins   = allToday.filter((t) => t.status === "WIN" || t.status === "PARTIAL EXIT");
-  const losses = allToday.filter((t) => t.status === "LOSS");
-  const open   = allToday.filter((t) => t.status === "OPEN");
-
-  const total = wins.length + losses.length;
-  const winRate = total > 0 ? wins.length / total : 0;
-
-  const avgWinSol  = wins.length > 0 ? wins.reduce((s, t) => s + (t.pnlSol ?? 0), 0) / wins.length : 0;
-  const avgLossSol = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + (t.pnlSol ?? 0), 0) / losses.length) : 0;
-  const avgWinUsd  = wins.length > 0 ? wins.reduce((s, t) => s + (t.pnlUsd ?? 0), 0) / wins.length : 0;
-  const avgLossUsd = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + (t.pnlUsd ?? 0), 0) / losses.length) : 0;
-  const expectancy = winRate * avgWinSol - (1 - winRate) * avgLossSol;
-
-  const totalPnlSol = allToday.reduce((s, t) => s + (t.pnlSol ?? 0), 0);
-  const totalPnlUsd = allToday.reduce((s, t) => s + (t.pnlUsd ?? 0), 0);
-
-  const reasonCounts: Record<string, number> = {};
-  allToday.filter((t) => t.status === "LOSS").forEach((t) => {
-    const r = t.holderGrowthPattern ?? "Unknown";
-    reasonCounts[r] = (reasonCounts[r] ?? 0) + 1;
-  });
-  const topFailureReason = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
-
-  const biggestWin = wins.length > 0
-    ? wins.sort((a, b) => (b.pnlUsd ?? 0) - (a.pnlUsd ?? 0)).map((t) => ({
-        tokenSymbol: t.tokenSymbol,
-        multiplier:  t.exitMultiplier ?? 0,
-        pnlUsd:      t.pnlUsd ?? 0,
-      }))[0] ?? null
-    : null;
-
-  const biggestLoss = losses.length > 0
-    ? losses.sort((a, b) => (a.pnlUsd ?? 0) - (b.pnlUsd ?? 0)).map((t) => ({
-        tokenSymbol: t.tokenSymbol,
-        pnlUsd:      t.pnlUsd ?? 0,
-        reason:      t.holderGrowthPattern ?? "Unknown",
-      }))[0] ?? null
-    : null;
-
+  const stats = getPaperStats();
+  const allToday = allTrades.filter((t) => t.timestamp.startsWith(today));
+  const todayLegs = stats.legs.filter((leg) => leg.timestamp.startsWith(today));
+  const todayStats = stats.today;
   const simBal = getSimBalance();
 
+  const biggestWinLeg = [...todayLegs].sort((a, b) => b.pnlUsd - a.pnlUsd)
+    .find((leg) => leg.pnlUsd > 0);
+  const biggestLossLeg = [...todayLegs].sort((a, b) => a.pnlUsd - b.pnlUsd)
+    .find((leg) => leg.pnlUsd < 0);
+
   const report: DailyReport = {
-    date:          today,
-    totalTrades:   allToday.length,
-    openTrades:    open.length,
-    wins:          wins.length,
-    losses:        losses.length,
-    winRate,
-    avgWinSol,
-    avgLossSol,
-    avgWinUsd,
-    avgLossUsd,
-    expectancy,
-    topFailureReason,
-    totalPnlSol,
-    totalPnlUsd,
+    date: today,
+    totalTrades: todayStats.totalTrades,
+    openTrades: allToday.filter((t) => t.status === "OPEN").length,
+    wins: todayStats.wins,
+    losses: todayStats.losses,
+    winRate: todayStats.winRate,
+    avgWinSol: todayStats.avgWinUsd / REFERENCE_SOL_PRICE_USD,
+    avgLossSol: todayStats.avgLossUsd / REFERENCE_SOL_PRICE_USD,
+    avgWinUsd: todayStats.avgWinUsd,
+    avgLossUsd: todayStats.avgLossUsd,
+    // Existing reporting consumers expect SOL here; the explicit stats objects
+    // below are the canonical USD values used by the simulation UI.
+    expectancy: todayStats.expectancyUsd / REFERENCE_SOL_PRICE_USD,
+    topFailureReason: biggestLossLeg?.reason ?? "N/A",
+    totalPnlSol: todayStats.totalPnlUsd / REFERENCE_SOL_PRICE_USD,
+    totalPnlUsd: todayStats.totalPnlUsd,
     simBalanceUsd: simBal.currentBalanceUsd,
-    biggestWin,
-    biggestLoss,
+    biggestWin: biggestWinLeg
+      ? { tokenSymbol: biggestWinLeg.tokenSymbol, multiplier: 0, pnlUsd: biggestWinLeg.pnlUsd, pnlSol: biggestWinLeg.pnlSol }
+      : null,
+    biggestLoss: biggestLossLeg
+      ? { tokenSymbol: biggestLossLeg.tokenSymbol, pnlUsd: biggestLossLeg.pnlUsd, pnlSol: biggestLossLeg.pnlSol, reason: biggestLossLeg.reason }
+      : null,
     isPaperMode: isPaperMode(),
+    allTime: stats.allTime,
+    today: stats.today,
+    capitalInjectedUsd: getCapitalSummary().injectedUsd,
+    startingCapitalUsd: getCapitalSummary().baseBalanceUsd + getCapitalSummary().injectedUsd,
   };
 
   writeJson(DAILY_REPORT_FILE, report);
@@ -665,6 +1045,59 @@ export function generateDailyReport(): DailyReport {
 
 export function readDailyReport(): DailyReport | null {
   return readJson<DailyReport | null>(DAILY_REPORT_FILE, null);
+}
+
+export function resetPaperLedgerData(): {
+  previousTradeCount: number;
+  clearedFiles: string[];
+  verifiedEmpty: boolean;
+} {
+  const previousTradeCount = getPaperTrades().length;
+  const clearedFiles: string[] = [];
+
+  writeJson(PAPER_TRADES_FILE, []);
+  clearedFiles.push(path.basename(PAPER_TRADES_FILE));
+  writeJson(CAPITAL_INJECTIONS_FILE, []);
+  clearedFiles.push(path.basename(CAPITAL_INJECTIONS_FILE));
+  setBaseCapitalUsd(0);
+
+  for (const file of [DAILY_REPORT_FILE, DAILY_COMPOUND_FILE, path.join(DATA_DIR, "session_stats.json"), path.join(DATA_DIR, "scan_stats.json"), path.join(DATA_DIR, "notification_errors.json")]) {
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+      clearedFiles.push(path.basename(file));
+    }
+  }
+
+  for (const name of fs.existsSync(DATA_DIR) ? fs.readdirSync(DATA_DIR) : []) {
+    if (/^paper_trades.*\.json$/i.test(name) && name !== path.basename(PAPER_TRADES_FILE)) {
+      fs.unlinkSync(path.join(DATA_DIR, name));
+      clearedFiles.push(name);
+    }
+  }
+
+  for (const dirName of ["daily_reports", "failed_reports"]) {
+    const dir = path.join(DATA_DIR, dirName);
+    if (!fs.existsSync(dir)) continue;
+    for (const name of fs.readdirSync(dir)) {
+      fs.unlinkSync(path.join(dir, name));
+      clearedFiles.push(`${dirName}/${name}`);
+    }
+  }
+
+  for (const name of ["exit_audit.json", "exit_audits.json"]) {
+    const file = path.join(DATA_DIR, name);
+    if (fs.existsSync(file)) {
+      fs.unlinkSync(file);
+      clearedFiles.push(name);
+    }
+  }
+
+  clearMoonbags();
+  downsideAccelerationAt.clear();
+  const verifiedEmpty = getPaperTrades().length === 0 && getMoonbagTrades().length === 0;
+  if (!verifiedEmpty) throw new Error("Paper ledger verification failed after wipe");
+  logger.info({ previousTradeCount, clearedFiles }, "[RESET] paper ledger empty after wipe");
+  return { previousTradeCount, clearedFiles, verifiedEmpty };
 }
 
 export function logWeightChange(change: {

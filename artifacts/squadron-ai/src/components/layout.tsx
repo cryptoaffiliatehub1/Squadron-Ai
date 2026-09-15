@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/simulation", label: "Sim",       icon: BookOpen },
   { href: "/portfolio",  label: "Portfolio", icon: Briefcase },
   { href: "/alerts",     label: "Alerts",    icon: Bell },
+  { href: "/history",    label: "History",   icon: BookOpen },
 ];
 
 interface LayoutProps {

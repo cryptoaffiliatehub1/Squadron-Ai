@@ -7,6 +7,7 @@ export interface RugCheckResult {
   score: number;
   rating: string;
   risks: string[];
+  hardRisks: string[];
   isRugged: boolean;
   topHolderPct: number;
   holderCount: number;
@@ -22,6 +23,13 @@ export interface TokenSafetyResult {
   isGood: boolean;
   risks: string[];
   rawScore: number;
+}
+
+export const RUGCHECK_REJECTION_RULE =
+  "Reject only when RugCheck reports a hard security risk; low normalized scores are GOOD and are not rejected by score threshold.";
+
+function isHardRisk(risk: string): boolean {
+  return /rug|honeypot|scam|malicious|blacklist|freeze|mint authority|transfer fee|unlocked liquidity|lp unlock|ownership/i.test(risk);
 }
 
 // ── Rate limiter — max 2 req/sec (below the 3/sec platform limit) ─────────────
@@ -72,7 +80,7 @@ async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
     }
 
     const data = resp.data;
-    const score = data?.score ?? 0;
+    const score = Number(data?.score ?? 0);
 
     const risks: string[] = (data?.risks ?? [])
       .map((r: { name?: string; description?: string }) =>
@@ -80,9 +88,8 @@ async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
       )
       .filter((r: string) => r.length > 0);
 
-    if (risks.length === 0 && score < 300) {
-      risks.push("RugCheck risk detected — verify manually");
-    }
+    const hardRisks = risks.filter(isHardRisk);
+    const normalizedScore = data?.score_normalised ?? data?.score_normalized ?? "unknown";
 
     const topHolderPct =
       (data?.topHolders ?? [])
@@ -93,9 +100,10 @@ async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
       statusCode: resp.status,
       data: {
         score,
-        rating: data?.score_normalised ?? "unknown",
+        rating: String(normalizedScore),
         risks,
-        isRugged: score < 300 || risks.some((r: string) => /rug|honeypot|scam/i.test(r)),
+        hardRisks,
+        isRugged: hardRisks.length > 0,
         topHolderPct,
         holderCount: data?.totalHolders ?? 0,
       },
@@ -141,7 +149,7 @@ export async function checkTokenSafety(tokenMint: string): Promise<TokenSafetyRe
   }
   return {
     score: result.score,
-    isGood: !result.isRugged && result.score >= 400,
+    isGood: !result.isRugged,
     risks: result.risks,
     rawScore: result.score,
   };

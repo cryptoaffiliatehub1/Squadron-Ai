@@ -15,7 +15,7 @@ router.get("/tokens/skipped", async (req, res) => {
       .orderBy(desc(skippedTokensTable.detectedAt))
       .limit(isNaN(limit) ? 50 : limit);
 
-    res.json(tokens.map((t) => ({
+    return res.json(tokens.map((t) => ({
       ...t,
       liquidityUsd: t.liquidityUsd !== null && t.liquidityUsd !== undefined
         ? Number(t.liquidityUsd)
@@ -30,7 +30,7 @@ router.get("/tokens/skipped", async (req, res) => {
     })));
   } catch (err) {
     logger.error({ err }, "GET /tokens/skipped failed");
-    res.status(500).json({ error: "Internal server error" });
+     return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -44,7 +44,7 @@ router.get("/tokens/recent", async (req, res) => {
       .orderBy(desc(detectedTokensTable.detectedAt))
       .limit(isNaN(limit) ? 20 : limit);
 
-    res.json(
+    return res.json(
       tokens.map((t) => ({
         ...t,
         failureLabel: t.failureLabel ?? null,          // Fix 3: specific badge
@@ -59,7 +59,7 @@ router.get("/tokens/recent", async (req, res) => {
     );
   } catch (err) {
     logger.error({ err }, "GET /tokens/recent failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -69,10 +69,10 @@ router.post("/tokens/check-safety", async (req, res) => {
     if (!tokenMint) return res.status(400).json({ error: "tokenMint is required" });
 
     const result = await checkTokenSafety(tokenMint);
-    res.json({ tokenMint, ...result });
+     return res.json({ tokenMint, ...result });
   } catch (err) {
     logger.error({ err }, "POST /tokens/check-safety failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

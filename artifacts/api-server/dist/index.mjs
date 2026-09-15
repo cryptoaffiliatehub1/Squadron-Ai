@@ -114314,12 +114314,17 @@ var init_moonbagVault = __esm({
 // src/lib/paperTrading.ts
 var paperTrading_exports = {};
 __export(paperTrading_exports, {
+  addCapitalInjection: () => addCapitalInjection,
+  bulkSellPaperTrades: () => bulkSellPaperTrades,
   generateDailyReport: () => generateDailyReport,
+  getCapitalSummary: () => getCapitalSummary,
   getDailyCompoundData: () => getDailyCompoundData,
   getMoonbagTrades: () => getMoonbagTrades,
   getMoonbagsWithPrices: () => getMoonbagsWithPrices,
   getOpenTrades: () => getOpenTrades,
+  getPaperStats: () => getPaperStats,
   getPaperTrades: () => getPaperTrades,
+  getRealizedLegs: () => getRealizedLegs,
   getSimBalance: () => getSimBalance,
   getSimBalanceFull: () => getSimBalanceFull,
   hasOpenPaperTrade: () => hasOpenPaperTrade,
@@ -114330,6 +114335,7 @@ __export(paperTrading_exports, {
   readWeightsHistory: () => readWeightsHistory,
   recordPaperTrade: () => recordPaperTrade,
   saveFailedReport: () => saveFailedReport,
+  sellPaperTrade: () => sellPaperTrade,
   startExitEngine: () => startExitEngine,
   stopExitEngine: () => stopExitEngine
 });
@@ -114387,6 +114393,118 @@ function getPaperTrades() {
   const raw = readJson2(PAPER_TRADES_FILE, []);
   return raw.map((t) => ({ ...t, status: resolveStatus(t) }));
 }
+function finiteNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+function getCapitalInjections() {
+  return readJson2(CAPITAL_INJECTIONS_FILE, []).filter((i) => finiteNumber(i.amountUsd) > 0);
+}
+function getCapitalSummary() {
+  const injections = getCapitalInjections();
+  return {
+    baseBalanceUsd: BASE_SIM_BALANCE_USD,
+    injectedUsd: injections.reduce((sum, i) => sum + finiteNumber(i.amountUsd), 0),
+    injections
+  };
+}
+function addCapitalInjection(amountUsd, note) {
+  if (!isPaperMode2()) {
+    throw new Error("Capital injection is available only in simulation mode");
+  }
+  if (!Number.isFinite(amountUsd) || amountUsd <= 0) {
+    throw new Error("amountUsd must be a positive number");
+  }
+  const injection = {
+    id: `ci_${Date.now()}`,
+    amountUsd: Math.round(amountUsd * 100) / 100,
+    note: note?.trim() || void 0,
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  const injections = getCapitalInjections();
+  injections.push(injection);
+  writeJson(CAPITAL_INJECTIONS_FILE, injections);
+  logger.info({ amountUsd: injection.amountUsd }, "[SIM] Capital injected");
+  return injection;
+}
+function getRealizedLegs(trades = getPaperTrades()) {
+  const legs = [];
+  for (const trade of trades) {
+    const status = resolveStatus(trade);
+    const positionCost = finiteNumber(trade.positionSizeUsd);
+    let proceeds = finiteNumber(trade.realizedProceedsUsd, NaN);
+    let costBasis = finiteNumber(trade.realizedCostBasisUsd, NaN);
+    let reason = status === "LOSS" ? "Stop loss" : "Paper exit";
+    if (status === "MOONBAG") {
+      if (!Number.isFinite(proceeds) || proceeds <= 0) continue;
+      costBasis = 0;
+      reason = "Moonbag sale";
+    } else if (status === "MOONBAG EXIT") {
+      proceeds = Number.isFinite(proceeds) ? proceeds : finiteNumber(trade.pnlUsd);
+      costBasis = 0;
+      reason = "Moonbag exit";
+    } else if (status === "PARTIAL EXIT") {
+      proceeds = Number.isFinite(proceeds) ? proceeds : finiteNumber(trade.halfSoldProfit, positionCost * 0.5 * finiteNumber(trade.exitMultiplier));
+      costBasis = Number.isFinite(costBasis) ? costBasis : positionCost * 0.5;
+      reason = "Golden partial exit";
+    } else if (status === "LOSS") {
+      const multiplier = finiteNumber(
+        trade.exitMultiplier,
+        trade.entryPrice > 0 && trade.exitPrice ? trade.exitPrice / trade.entryPrice : 0
+      );
+      proceeds = Number.isFinite(proceeds) ? proceeds : positionCost * multiplier;
+      costBasis = Number.isFinite(costBasis) ? costBasis : positionCost;
+    } else if (status === "WIN") {
+      const pnl = finiteNumber(trade.pnlUsd);
+      proceeds = Number.isFinite(proceeds) ? proceeds : positionCost + pnl;
+      costBasis = Number.isFinite(costBasis) ? costBasis : positionCost;
+      reason = "Take profit";
+    } else if (status === "OPEN" && Number.isFinite(proceeds) && proceeds > 0) {
+      costBasis = Number.isFinite(costBasis) ? costBasis : 0;
+      reason = "Manual partial exit";
+    } else {
+      continue;
+    }
+    const pnlUsd = proceeds - costBasis;
+    legs.push({
+      tradeId: trade.id,
+      tokenMint: trade.tokenMint,
+      tokenSymbol: trade.tokenSymbol,
+      status,
+      proceedsUsd: Math.max(0, proceeds),
+      costBasisUsd: Math.max(0, costBasis),
+      pnlUsd,
+      pnlSol: pnlUsd / REFERENCE_SOL_PRICE_USD,
+      timestamp: trade.exitTimestamp ?? trade.timestamp,
+      reason
+    });
+  }
+  return legs;
+}
+function summarizeLegs(legs) {
+  const wins = legs.filter((leg) => leg.pnlUsd > 0);
+  const losses = legs.filter((leg) => leg.pnlUsd < 0);
+  const totalTrades = wins.length + losses.length;
+  const avgWinUsd = wins.length ? wins.reduce((sum, leg) => sum + leg.pnlUsd, 0) / wins.length : 0;
+  const avgLossUsd = losses.length ? Math.abs(losses.reduce((sum, leg) => sum + leg.pnlUsd, 0) / losses.length) : 0;
+  const winRate = totalTrades ? wins.length / totalTrades : 0;
+  return {
+    totalTrades,
+    wins: wins.length,
+    losses: losses.length,
+    winRate,
+    avgWinUsd,
+    avgLossUsd,
+    expectancyUsd: winRate * avgWinUsd - (1 - winRate) * avgLossUsd,
+    totalPnlUsd: legs.reduce((sum, leg) => sum + leg.pnlUsd, 0)
+  };
+}
+function getPaperStats() {
+  const legs = getRealizedLegs();
+  const today = getTodayUTC();
+  const todayLegs = legs.filter((leg) => leg.timestamp.startsWith(today));
+  return { allTime: summarizeLegs(legs), today: summarizeLegs(todayLegs), legs };
+}
 function getOpenTrades() {
   return getPaperTrades().filter((t) => t.status === "OPEN");
 }
@@ -114412,27 +114530,29 @@ function getDailyCompoundData() {
   return loadOrInitDailyCompound(simBal);
 }
 function computeSimCash() {
-  const START = 100;
   const trades = getPaperTrades();
-  let cash = START;
+  const capital = getCapitalSummary();
+  let cash = BASE_SIM_BALANCE_USD + capital.injectedUsd;
   for (const t of trades) {
-    if (t.status === "MOONBAG" || t.status === "MOONBAG EXIT") continue;
-    cash -= t.positionSizeUsd;
-    if (t.status === "PARTIAL EXIT" || t.status === "WIN") {
-      cash += t.halfSoldProfit ?? t.pnlUsd ?? 0;
+    if (t.status !== "MOONBAG" && t.status !== "MOONBAG EXIT") {
+      cash -= finiteNumber(t.positionSizeUsd);
     }
+    const leg = getRealizedLegs([t])[0];
+    if (leg) cash += leg.proceedsUsd;
   }
-  return cash;
+  return Math.max(0, cash);
 }
 function getSimBalance() {
-  const START = 100;
   const cash = computeSimCash();
   const trades = getPaperTrades();
-  const lockedInOpenUsd = trades.filter((t) => t.status === "OPEN").reduce((s, t) => s + t.positionSizeUsd, 0);
-  const realizedPnlUsd = cash - START;
-  const pnlPct = (cash - START) / START * 100;
+  const capital = getCapitalSummary();
+  const { allTime } = getPaperStats();
+  const lockedInOpenUsd = trades.filter((t) => t.status === "OPEN").reduce((s, t) => s + finiteNumber(t.remainingPositionUsd, finiteNumber(t.positionSizeUsd)), 0);
+  const startingCapitalUsd = BASE_SIM_BALANCE_USD + capital.injectedUsd;
+  const realizedPnlUsd = allTime.totalPnlUsd;
+  const pnlPct = startingCapitalUsd > 0 ? realizedPnlUsd / startingCapitalUsd * 100 : 0;
   return {
-    startingBalanceUsd: START,
+    startingBalanceUsd: startingCapitalUsd,
     currentBalanceUsd: Math.round(cash * 100) / 100,
     lockedInOpenUsd: Math.round(lockedInOpenUsd * 100) / 100,
     realizedPnlUsd: Math.round(realizedPnlUsd * 100) / 100,
@@ -114442,33 +114562,48 @@ function getSimBalance() {
 function getSimBalanceFull() {
   const cash = computeSimCash();
   const trades = getPaperTrades();
+  const capital = getCapitalSummary();
+  const stats = getPaperStats();
   const openTrades = trades.filter((t) => t.status === "OPEN");
   const moonbagTrades = trades.filter((t) => t.status === "MOONBAG");
-  const totalDeployed = openTrades.reduce((s, t) => s + t.positionSizeUsd, 0);
+  const openPositionValue = openTrades.reduce((sum, t) => {
+    const current = finiteNumber(t.currentPrice, t.entryPrice);
+    const multiplier = t.entryPrice > 0 ? current / t.entryPrice : 1;
+    const remainingCost = finiteNumber(t.remainingPositionUsd, finiteNumber(t.positionSizeUsd));
+    return sum + remainingCost * multiplier;
+  }, 0);
   const moonbagTotalValue = moonbagTrades.reduce((s, t) => {
     const cp = t.currentPrice;
     const ep = t.entryPrice;
     if (cp && ep > 0) {
       const mult = cp / ep;
       const rs = t.remainingPositionSol ?? t.amountSol * 0.5;
-      return s + rs * 150 * mult;
+      return s + rs * REFERENCE_SOL_PRICE_USD * mult;
     }
     return s + (t.moonbagAmountUsd ?? t.pnlUsd ?? 0);
   }, 0);
-  const START = 100;
   const dc = loadOrInitDailyCompound(cash);
-  const todayPnL = cash - dc.startBalance;
+  const todayPnL = stats.today.totalPnlUsd;
   const aboveTarget = todayPnL >= dc.dailyTarget;
   const dailyProgressPct = dc.dailyTarget > 0 ? todayPnL / dc.dailyTarget * 100 : 0;
+  const startingCapitalUsd = BASE_SIM_BALANCE_USD + capital.injectedUsd;
   return {
     simBalance: Math.round(cash * 100) / 100,
-    totalDeployed: Math.round(totalDeployed * 100) / 100,
-    totalValue: Math.round((cash + totalDeployed + moonbagTotalValue) * 100) / 100,
-    totalPnL: Math.round((cash - START) * 100) / 100,
-    returnPct: Math.round((cash - START) / START * 1e4) / 100,
+    cashBalance: Math.round(cash * 100) / 100,
+    totalDeployed: Math.round(openPositionValue * 100) / 100,
+    openPositionValue: Math.round(openPositionValue * 100) / 100,
+    totalValue: Math.round((cash + openPositionValue + moonbagTotalValue) * 100) / 100,
+    totalEquity: Math.round((cash + openPositionValue + moonbagTotalValue) * 100) / 100,
+    totalPnL: Math.round(stats.allTime.totalPnlUsd * 100) / 100,
+    returnPct: Math.round(stats.allTime.totalPnlUsd / startingCapitalUsd * 1e4) / 100,
     openPositions: openTrades.length,
     moonbagCount: moonbagTrades.length,
     moonbagTotalValue: Math.round(moonbagTotalValue * 100) / 100,
+    moonbagValueUsd: Math.round(moonbagTotalValue * 100) / 100,
+    capitalInjectedUsd: Math.round(capital.injectedUsd * 100) / 100,
+    startingCapitalUsd: Math.round(startingCapitalUsd * 100) / 100,
+    realizedPnlUsd: Math.round(stats.allTime.totalPnlUsd * 100) / 100,
+    todayRealizedPnlUsd: Math.round(stats.today.totalPnlUsd * 100) / 100,
     todayStartBalance: dc.startBalance,
     dailyTarget: dc.dailyTarget,
     todayPnL: Math.round(todayPnL * 100) / 100,
@@ -114497,6 +114632,9 @@ function recordPaperTrade(trade) {
     pnlSol: null,
     pnlUsd: null,
     moonbagAmountUsd: null,
+    remainingPositionUsd: trade.positionSizeUsd,
+    realizedProceedsUsd: 0,
+    realizedCostBasisUsd: 0,
     exitTimestamp: null
   };
   const trades = readJson2(PAPER_TRADES_FILE, []);
@@ -114585,6 +114723,9 @@ async function runExitCheck() {
         halfSoldProfit: halfSoldProceeds,
         // full proceeds from 50% sold
         halfSoldTime: now,
+        remainingPositionUsd: trade.positionSizeUsd * 0.5,
+        realizedProceedsUsd: halfSoldProceeds,
+        realizedCostBasisUsd: trade.positionSizeUsd * 0.5,
         pnlUsd: halfSoldProfit,
         // net profit on sold half
         pnlSol: halfSoldProfit / 150,
@@ -114602,8 +114743,11 @@ async function runExitCheck() {
         amountSol: trade.amountSol * 0.5,
         positionSizeUsd: 0,
         // C2: cost basis $0
+        remainingPositionUsd: 0,
         remainingPositionSol: trade.amountSol * 0.5,
         remainingCostBasis: 0,
+        realizedProceedsUsd: 0,
+        realizedCostBasisUsd: 0,
         tier: trade.tier,
         entryPrice: trade.entryPrice,
         targetPrice: null,
@@ -114649,6 +114793,9 @@ async function runExitCheck() {
         exitPrice: currentPrice,
         exitMultiplier: multiplier,
         lossAmount,
+        remainingPositionUsd: 0,
+        realizedProceedsUsd: trade.positionSizeUsd * multiplier,
+        realizedCostBasisUsd: trade.positionSizeUsd,
         pnlUsd: lossAmount,
         pnlSol: lossAmount / 150,
         exitTimestamp: now
@@ -114717,63 +114864,163 @@ async function getMoonbagsWithPrices() {
       const delisted = cp === null;
       const currentMultiplier = cp != null && mb.entryPrice > 0 ? cp / mb.entryPrice : null;
       const rs = mb.remainingPositionSol ?? mb.amountSol * 0.5;
-      const currentValueUsd = cp != null ? rs * 150 * (currentMultiplier ?? 1) : mb.moonbagAmountUsd;
+      const currentValueUsd = cp != null ? rs * REFERENCE_SOL_PRICE_USD * (currentMultiplier ?? 1) : mb.moonbagAmountUsd;
       return { ...mb, currentPrice: cp, currentMultiplier, currentValueUsd, delisted };
     })
   );
 }
+function currentPriceForTrade(trade) {
+  return finiteNumber(trade.currentPrice, finiteNumber(trade.entryPrice));
+}
+function moonbagValueAtPrice(trade, price) {
+  const multiplier = trade.entryPrice > 0 ? price / trade.entryPrice : 1;
+  return finiteNumber(trade.remainingPositionSol, trade.amountSol * 0.5) * REFERENCE_SOL_PRICE_USD * multiplier;
+}
+function sellPaperTrade(id, percentage) {
+  if (!isPaperMode2()) throw new Error("Paper selling is available only in simulation mode");
+  if (!Number.isFinite(percentage) || ![25, 50, 75, 100].includes(percentage)) {
+    throw new Error("percentage must be 25, 50, 75, or 100");
+  }
+  const all3 = readJson2(PAPER_TRADES_FILE, []);
+  const row = all3.find((t) => t.id === id);
+  if (!row) throw new Error("Paper position not found");
+  const trade = { ...row, status: resolveStatus(row) };
+  const fraction = percentage / 100;
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  if (trade.status === "MOONBAG") {
+    const price2 = currentPriceForTrade(trade);
+    const currentValue = moonbagValueAtPrice(trade, price2);
+    const proceeds2 = currentValue * fraction;
+    const remainingSol = finiteNumber(trade.remainingPositionSol, trade.amountSol * 0.5) * (1 - fraction);
+    row.realizedProceedsUsd = finiteNumber(row.realizedProceedsUsd) + proceeds2;
+    row.realizedCostBasisUsd = 0;
+    row.amountSol = remainingSol;
+    row.remainingPositionSol = remainingSol;
+    row.currentPrice = price2;
+    row.lastSaleTimestamp = now;
+    row.pnlUsd = row.realizedProceedsUsd;
+    row.pnlSol = row.pnlUsd / REFERENCE_SOL_PRICE_USD;
+    if (percentage === 100) {
+      row.status = "MOONBAG EXIT";
+      row.exitPrice = price2;
+      row.exitTimestamp = now;
+    }
+    writeJson(PAPER_TRADES_FILE, all3);
+    return getPaperTrades();
+  }
+  if (trade.status !== "OPEN") {
+    throw new Error("Only OPEN positions and MOONBAG positions can be sold");
+  }
+  const price = currentPriceForTrade(trade);
+  const multiplier = trade.entryPrice > 0 ? price / trade.entryPrice : 0;
+  const positionCost = finiteNumber(trade.positionSizeUsd);
+  const proceeds = positionCost * multiplier * fraction;
+  const costSold = positionCost * fraction;
+  const realizedProceeds = finiteNumber(row.realizedProceedsUsd) + proceeds;
+  const realizedCost = finiteNumber(row.realizedCostBasisUsd) + costSold;
+  const remainingFraction = 1 - fraction;
+  row.realizedProceedsUsd = realizedProceeds;
+  row.realizedCostBasisUsd = realizedCost;
+  row.currentPrice = price;
+  row.lastSaleTimestamp = now;
+  row.remainingPositionUsd = positionCost * remainingFraction;
+  row.amountSol = finiteNumber(row.amountSol) * remainingFraction;
+  row.pnlUsd = realizedProceeds - realizedCost;
+  row.pnlSol = row.pnlUsd / REFERENCE_SOL_PRICE_USD;
+  const capitalRecovered = realizedProceeds >= positionCost - 1e-6;
+  if (percentage === 100) {
+    row.status = row.pnlUsd > 0 ? "WIN" : "LOSS";
+    row.exitPrice = price;
+    row.exitMultiplier = multiplier;
+    row.exitTimestamp = now;
+    row.lossAmount = row.pnlUsd < 0 ? row.pnlUsd : null;
+  } else if (capitalRecovered) {
+    row.status = "PARTIAL EXIT";
+    row.exitPrice = price;
+    row.exitMultiplier = multiplier;
+    row.exitTimestamp = now;
+    row.halfSoldAt = price;
+    row.halfSoldProfit = realizedProceeds;
+    row.halfSoldTime = now;
+    const moonbagEntry = {
+      ...row,
+      id: `mb_${row.id}`,
+      status: "MOONBAG",
+      amountSol: row.amountSol,
+      positionSizeUsd: 0,
+      remainingPositionUsd: 0,
+      remainingPositionSol: row.amountSol,
+      remainingCostBasis: 0,
+      realizedProceedsUsd: 0,
+      realizedCostBasisUsd: 0,
+      entryPrice: row.entryPrice,
+      currentPrice: price,
+      currentMultiplier: multiplier,
+      currentValueUsd: row.amountSol * REFERENCE_SOL_PRICE_USD * multiplier,
+      moonbagAmountUsd: row.amountSol * REFERENCE_SOL_PRICE_USD * multiplier,
+      moonbagCreatedAt: now,
+      exitPrice: null,
+      exitTimestamp: null,
+      pnlUsd: row.amountSol * REFERENCE_SOL_PRICE_USD * multiplier,
+      pnlSol: row.amountSol * REFERENCE_SOL_PRICE_USD * multiplier / REFERENCE_SOL_PRICE_USD,
+      timestamp: now
+    };
+    all3.push(moonbagEntry);
+  }
+  writeJson(PAPER_TRADES_FILE, all3);
+  return getPaperTrades();
+}
+function bulkSellPaperTrades(scope, percentage) {
+  const trades = getPaperTrades().filter(
+    (trade) => scope === "open" ? trade.status === "OPEN" : scope === "moonbags" ? trade.status === "MOONBAG" : trade.status === "OPEN" || trade.status === "MOONBAG"
+  );
+  const sold = [];
+  const errors = [];
+  for (const trade of trades) {
+    try {
+      sellPaperTrade(trade.id, percentage);
+      sold.push(trade.id);
+    } catch (error40) {
+      errors.push(`${trade.tokenSymbol}: ${error40 instanceof Error ? error40.message : "sell failed"}`);
+    }
+  }
+  return { sold, errors, trades: getPaperTrades() };
+}
 function generateDailyReport() {
   const today = getTodayUTC();
   const allTrades = getPaperTrades();
+  const stats = getPaperStats();
   const allToday = allTrades.filter((t) => t.timestamp.startsWith(today));
-  const wins = allToday.filter((t) => t.status === "WIN" || t.status === "PARTIAL EXIT");
-  const losses = allToday.filter((t) => t.status === "LOSS");
-  const open = allToday.filter((t) => t.status === "OPEN");
-  const total = wins.length + losses.length;
-  const winRate = total > 0 ? wins.length / total : 0;
-  const avgWinSol = wins.length > 0 ? wins.reduce((s, t) => s + (t.pnlSol ?? 0), 0) / wins.length : 0;
-  const avgLossSol = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + (t.pnlSol ?? 0), 0) / losses.length) : 0;
-  const avgWinUsd = wins.length > 0 ? wins.reduce((s, t) => s + (t.pnlUsd ?? 0), 0) / wins.length : 0;
-  const avgLossUsd = losses.length > 0 ? Math.abs(losses.reduce((s, t) => s + (t.pnlUsd ?? 0), 0) / losses.length) : 0;
-  const expectancy = winRate * avgWinSol - (1 - winRate) * avgLossSol;
-  const totalPnlSol = allToday.reduce((s, t) => s + (t.pnlSol ?? 0), 0);
-  const totalPnlUsd = allToday.reduce((s, t) => s + (t.pnlUsd ?? 0), 0);
-  const reasonCounts = {};
-  allToday.filter((t) => t.status === "LOSS").forEach((t) => {
-    const r = t.holderGrowthPattern ?? "Unknown";
-    reasonCounts[r] = (reasonCounts[r] ?? 0) + 1;
-  });
-  const topFailureReason = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
-  const biggestWin = wins.length > 0 ? wins.sort((a, b) => (b.pnlUsd ?? 0) - (a.pnlUsd ?? 0)).map((t) => ({
-    tokenSymbol: t.tokenSymbol,
-    multiplier: t.exitMultiplier ?? 0,
-    pnlUsd: t.pnlUsd ?? 0
-  }))[0] ?? null : null;
-  const biggestLoss = losses.length > 0 ? losses.sort((a, b) => (a.pnlUsd ?? 0) - (b.pnlUsd ?? 0)).map((t) => ({
-    tokenSymbol: t.tokenSymbol,
-    pnlUsd: t.pnlUsd ?? 0,
-    reason: t.holderGrowthPattern ?? "Unknown"
-  }))[0] ?? null : null;
+  const todayLegs = stats.legs.filter((leg) => leg.timestamp.startsWith(today));
+  const todayStats = stats.today;
   const simBal = getSimBalance();
+  const biggestWinLeg = [...todayLegs].sort((a, b) => b.pnlUsd - a.pnlUsd).find((leg) => leg.pnlUsd > 0);
+  const biggestLossLeg = [...todayLegs].sort((a, b) => a.pnlUsd - b.pnlUsd).find((leg) => leg.pnlUsd < 0);
   const report = {
     date: today,
-    totalTrades: allToday.length,
-    openTrades: open.length,
-    wins: wins.length,
-    losses: losses.length,
-    winRate,
-    avgWinSol,
-    avgLossSol,
-    avgWinUsd,
-    avgLossUsd,
-    expectancy,
-    topFailureReason,
-    totalPnlSol,
-    totalPnlUsd,
+    totalTrades: todayStats.totalTrades,
+    openTrades: allToday.filter((t) => t.status === "OPEN").length,
+    wins: todayStats.wins,
+    losses: todayStats.losses,
+    winRate: todayStats.winRate,
+    avgWinSol: todayStats.avgWinUsd / REFERENCE_SOL_PRICE_USD,
+    avgLossSol: todayStats.avgLossUsd / REFERENCE_SOL_PRICE_USD,
+    avgWinUsd: todayStats.avgWinUsd,
+    avgLossUsd: todayStats.avgLossUsd,
+    // Existing reporting consumers expect SOL here; the explicit stats objects
+    // below are the canonical USD values used by the simulation UI.
+    expectancy: todayStats.expectancyUsd / REFERENCE_SOL_PRICE_USD,
+    topFailureReason: biggestLossLeg?.reason ?? "N/A",
+    totalPnlSol: todayStats.totalPnlUsd / REFERENCE_SOL_PRICE_USD,
+    totalPnlUsd: todayStats.totalPnlUsd,
     simBalanceUsd: simBal.currentBalanceUsd,
-    biggestWin,
-    biggestLoss,
-    isPaperMode: isPaperMode2()
+    biggestWin: biggestWinLeg ? { tokenSymbol: biggestWinLeg.tokenSymbol, multiplier: 0, pnlUsd: biggestWinLeg.pnlUsd, pnlSol: biggestWinLeg.pnlSol } : null,
+    biggestLoss: biggestLossLeg ? { tokenSymbol: biggestLossLeg.tokenSymbol, pnlUsd: biggestLossLeg.pnlUsd, pnlSol: biggestLossLeg.pnlSol, reason: biggestLossLeg.reason } : null,
+    isPaperMode: isPaperMode2(),
+    allTime: stats.allTime,
+    today: stats.today,
+    capitalInjectedUsd: getCapitalSummary().injectedUsd,
+    startingCapitalUsd: BASE_SIM_BALANCE_USD + getCapitalSummary().injectedUsd
   };
   writeJson(DAILY_REPORT_FILE, report);
   return report;
@@ -114794,7 +115041,7 @@ function saveFailedReport(name, content) {
   fs3.writeFileSync(path4.join(FAILED_REPORTS_DIR, `report_${name}.txt`), content, "utf-8");
   logger.info({ name }, "Failed report saved to disk");
 }
-var DATA_DIR3, PAPER_TRADES_FILE, DAILY_REPORT_FILE, WEIGHTS_FILE, DAILY_COMPOUND_FILE, FAILED_REPORTS_DIR, moonbagPriceHistory, exitEngineInterval;
+var DATA_DIR3, PAPER_TRADES_FILE, DAILY_REPORT_FILE, WEIGHTS_FILE, DAILY_COMPOUND_FILE, FAILED_REPORTS_DIR, CAPITAL_INJECTIONS_FILE, BASE_SIM_BALANCE_USD, REFERENCE_SOL_PRICE_USD, moonbagPriceHistory, exitEngineInterval;
 var init_paperTrading = __esm({
   "src/lib/paperTrading.ts"() {
     "use strict";
@@ -114807,6 +115054,9 @@ var init_paperTrading = __esm({
     WEIGHTS_FILE = path4.join(DATA_DIR3, "weights_history.json");
     DAILY_COMPOUND_FILE = path4.join(DATA_DIR3, "daily_compound.json");
     FAILED_REPORTS_DIR = path4.join(DATA_DIR3, "failed_reports");
+    CAPITAL_INJECTIONS_FILE = path4.join(DATA_DIR3, "capital_injections.json");
+    BASE_SIM_BALANCE_USD = 100;
+    REFERENCE_SOL_PRICE_USD = 150;
     moonbagPriceHistory = /* @__PURE__ */ new Map();
     exitEngineInterval = null;
   }
@@ -315437,20 +315687,20 @@ router2.get("/wallet/balance", async (_req, res) => {
       tokens: []
     };
     cache.set(CACHE_KEYS.WALLET_BALANCE, result, CACHE_TTL.WALLET_BALANCE);
-    res.json(result);
+    return res.json(result);
   } catch (err) {
     logger.error({ err }, "GET /wallet/balance failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 router2.get("/portfolio", async (_req, res) => {
   try {
     const walletAddress = getWalletPublicKey();
     if (!walletAddress) return res.json([]);
-    res.json([]);
+    return res.json([]);
   } catch (err) {
     logger.error({ err }, "GET /portfolio failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 var wallet_default = router2;
@@ -315477,10 +315727,10 @@ router3.get("/trades", async (req, res) => {
     const limit2 = parseInt(String(req.query.limit ?? "50"), 10);
     const offset = parseInt(String(req.query.offset ?? "0"), 10);
     const trades = await db.select().from(tradesTable).orderBy(desc(tradesTable.createdAt)).limit(isNaN(limit2) ? 50 : limit2).offset(isNaN(offset) ? 0 : offset);
-    res.json(trades.map(serializeTrade));
+    return res.json(trades.map(serializeTrade));
   } catch (err) {
     logger.error({ err }, "GET /trades failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 router3.get("/trades/pnl", async (req, res) => {
@@ -315510,10 +315760,10 @@ router3.get("/trades/pnl", async (req, res) => {
       dailyTradesCount: dailyTrades.length
     };
     cache.set(CACHE_KEYS.PNL_SUMMARY, result, CACHE_TTL.PNL_SUMMARY);
-    res.json(result);
+    return res.json(result);
   } catch (err) {
     logger.error({ err }, "GET /trades/pnl failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 router3.patch("/trades/:id", async (req, res) => {
@@ -315527,10 +315777,10 @@ router3.patch("/trades/:id", async (req, res) => {
     }).where(eq(tradesTable.id, id)).returning();
     if (!updated) return res.status(404).json({ error: "Trade not found" });
     cache.invalidate(CACHE_KEYS.PNL_SUMMARY);
-    res.json(serializeTrade(updated));
+    return res.json(serializeTrade(updated));
   } catch (err) {
     logger.error({ err }, "PATCH /trades/:id failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 router3.get("/history", async (req, res) => {
@@ -315575,10 +315825,10 @@ router3.get("/history", async (req, res) => {
       timestamp: s.detectedAt.toISOString()
     }));
     const combined = [...tradeEntries, ...rejectedEntries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, limit2);
-    res.json(combined);
+    return res.json(combined);
   } catch (err) {
     logger.error({ err }, "GET /history failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 var trades_default = router3;
@@ -315691,7 +315941,7 @@ router4.get("/tokens/skipped", async (req, res) => {
   try {
     const limit2 = parseInt(String(req.query.limit ?? "50"), 10);
     const tokens = await db.select().from(skippedTokensTable).orderBy(desc(skippedTokensTable.detectedAt)).limit(isNaN(limit2) ? 50 : limit2);
-    res.json(tokens.map((t) => ({
+    return res.json(tokens.map((t) => ({
       ...t,
       liquidityUsd: t.liquidityUsd !== null && t.liquidityUsd !== void 0 ? Number(t.liquidityUsd) : null,
       marketCap: t.marketCap !== null && t.marketCap !== void 0 ? Number(t.marketCap) : null,
@@ -315700,14 +315950,14 @@ router4.get("/tokens/skipped", async (req, res) => {
     })));
   } catch (err) {
     logger.error({ err }, "GET /tokens/skipped failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 router4.get("/tokens/recent", async (req, res) => {
   try {
     const limit2 = parseInt(String(req.query.limit ?? "20"), 10);
     const tokens = await db.select().from(detectedTokensTable).where(ne(detectedTokensTable.safetyStatus, "risky")).orderBy(desc(detectedTokensTable.detectedAt)).limit(isNaN(limit2) ? 20 : limit2);
-    res.json(
+    return res.json(
       tokens.map((t) => ({
         ...t,
         failureLabel: t.failureLabel ?? null,
@@ -315724,7 +315974,7 @@ router4.get("/tokens/recent", async (req, res) => {
     );
   } catch (err) {
     logger.error({ err }, "GET /tokens/recent failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 router4.post("/tokens/check-safety", async (req, res) => {
@@ -315732,10 +315982,10 @@ router4.post("/tokens/check-safety", async (req, res) => {
     const { tokenMint } = req.body;
     if (!tokenMint) return res.status(400).json({ error: "tokenMint is required" });
     const result = await checkTokenSafety(tokenMint);
-    res.json({ tokenMint, ...result });
+    return res.json({ tokenMint, ...result });
   } catch (err) {
     logger.error({ err }, "POST /tokens/check-safety failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 var tokens_default = router4;
@@ -316633,6 +316883,8 @@ async function executeBuy(token, positionSize, probabilityScore, regime, filterD
       tokenName: token.tokenName,
       type: "buy",
       amountSol: positionSize.amountSol,
+      positionSizeUsd: positionSize.amountUsd,
+      tier: "MOON",
       entryPrice: token.priceUsd,
       exitPrice: null,
       pnlSol: null,
@@ -317718,7 +317970,12 @@ async function handleDiscoveredToken(rawToken) {
       entryVolume5m: volume5m,
       entryBuys5m: buyTxns5m,
       entrySells5m: sellTxns5m,
-      entryRegime: getRegime().regime
+      entryRegime: getRegime().regime,
+      status: "OPEN",
+      targetPrice: token.priceUsd * 2.5,
+      stopLoss: token.priceUsd * 0.7,
+      exitMultiplier: null,
+      moonbagAmountUsd: null
     };
     recordPaperTrade(pt);
     incrementGate("actualEntries");
@@ -317872,7 +318129,7 @@ router5.get("/bot/status", (_req, res) => {
   const circuit = getCircuitState();
   const scanner = getScannerState();
   const scannerOnline = scanner.lastSuccessfulScan !== null;
-  res.json({
+  return res.json({
     isRunning: state7.isRunning,
     scannerOnline,
     // Fix 8: true when triple-radar is scanning
@@ -317902,7 +318159,7 @@ router5.post("/bot/toggle", (req, res) => {
   }
   const state7 = getBotState();
   const scanner = getScannerState();
-  res.json({
+  return res.json({
     isRunning: state7.isRunning,
     scannerOnline: scanner.lastSuccessfulScan !== null,
     tradesExecutedToday: state7.tradesExecutedToday,
@@ -318086,7 +318343,7 @@ router6.get("/alerts", async (req, res) => {
     const alerts = await db.select().from(priceAlertsTable).orderBy(desc(priceAlertsTable.createdAt));
     const { getPriceCacheForAlerts: getPriceCacheForAlerts2 } = await Promise.resolve().then(() => (init_alertChecker(), alertChecker_exports));
     const priceMap = getPriceCacheForAlerts2();
-    res.json(
+    return res.json(
       alerts.map((a) => ({
         ...serializeAlert(a),
         currentPrice: priceMap[a.tokenMint] ?? null
@@ -318094,7 +318351,7 @@ router6.get("/alerts", async (req, res) => {
     );
   } catch (err) {
     logger.error({ err }, "GET /alerts failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 router6.post("/alerts", async (req, res) => {
@@ -318110,10 +318367,10 @@ router6.post("/alerts", async (req, res) => {
       targetPrice: String(targetPrice),
       direction
     }).returning();
-    res.status(201).json(serializeAlert(created));
+    return res.status(201).json(serializeAlert(created));
   } catch (err) {
     logger.error({ err }, "POST /alerts failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 router6.delete("/alerts/:id", async (req, res) => {
@@ -318121,10 +318378,10 @@ router6.delete("/alerts/:id", async (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
     await db.delete(priceAlertsTable).where(eq(priceAlertsTable.id, id));
-    res.json({ success: true });
+    return res.json({ success: true });
   } catch (err) {
     logger.error({ err }, "DELETE /alerts failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 var alerts_default = router6;
@@ -318179,9 +318436,59 @@ router8.get("/paper/trades", (_req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+router8.get("/paper/history", (_req, res) => {
+  try {
+    const stats = getPaperStats();
+    const trades = getPaperTrades().sort((a, b) => new Date(b.exitTimestamp ?? b.timestamp).getTime() - new Date(a.exitTimestamp ?? a.timestamp).getTime());
+    res.json({ trades, ...stats, capital: getCapitalSummary() });
+  } catch (err) {
+    logger.error({ err }, "GET /paper/history failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router8.get("/paper/moonbags", async (_req, res) => {
+  try {
+    res.json(await getMoonbagsWithPrices());
+  } catch (err) {
+    logger.error({ err }, "GET /paper/moonbags failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+router8.post("/paper/sell", (req, res) => {
+  try {
+    const percentage = Number(req.body?.percentage);
+    const scope = req.body?.scope;
+    if (req.body?.id) {
+      return res.json({
+        trades: sellPaperTrade(String(req.body.id), percentage),
+        sold: [String(req.body.id)],
+        errors: []
+      });
+    }
+    if (!scope || !["open", "moonbags", "all"].includes(scope)) {
+      return res.status(400).json({ error: "scope must be open, moonbags, or all" });
+    }
+    return res.json(bulkSellPaperTrades(scope, percentage));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Sell failed";
+    logger.warn({ err }, "POST /paper/sell failed");
+    return res.status(400).json({ error: message });
+  }
+});
+router8.post("/paper/capital-injection", (req, res) => {
+  try {
+    const injection = addCapitalInjection(Number(req.body?.amountUsd), req.body?.note);
+    res.json({ injection, capital: getCapitalSummary(), balance: getSimBalanceFull() });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Capital injection failed";
+    logger.warn({ err }, "POST /paper/capital-injection failed");
+    res.status(400).json({ error: message });
+  }
+});
 router8.get("/paper/report", (_req, res) => {
   try {
-    const report = readDailyReport() ?? generateDailyReport();
+    const stored = readDailyReport();
+    const report = stored?.allTime && stored?.today ? stored : generateDailyReport();
     res.json(report);
   } catch (err) {
     logger.error({ err }, "GET /paper/report failed");

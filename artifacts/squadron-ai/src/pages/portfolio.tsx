@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useTradingMode } from "@/contexts/trading-mode";
 import { useState } from "react";
+import { PaperSellControls } from "@/components/paper-sell-controls";
 
 export default function Portfolio() {
   const { isPaper } = useTradingMode();
@@ -23,8 +24,8 @@ export default function Portfolio() {
     refetchInterval: 15000,
   });
   const { data: moonbags, isLoading: moonbagsLoading } = useQuery({
-    queryKey: ["moonbags"],
-    queryFn: () => fetch("/api/moonbags").then(r => r.json()),
+    queryKey: [isPaper ? "paper-moonbags" : "moonbags"],
+    queryFn: () => fetch(isPaper ? "/api/paper/moonbags" : "/api/moonbags").then(r => r.json()),
     refetchInterval: 15000,
   });
 
@@ -45,8 +46,10 @@ export default function Portfolio() {
   const tokens       = (portfolio as any[]) ?? [];
   const solBalance   = safeNum((wallet as any)?.solBalance);
   const usdBalance   = safeNum((wallet as any)?.usdValue);
-  const moonbagList  = (moonbags as any)?.positions ?? [];
-  const vaultSol     = safeNum((moonbags as any)?.totalValueSol);
+  const moonbagList  = isPaper ? ((moonbags as any[]) ?? []) : ((moonbags as any)?.positions ?? []);
+  const vaultSol     = isPaper
+    ? moonbagList.reduce((sum: number, m: any) => sum + safeNum(m.currentValueUsd) / 150, 0)
+    : safeNum((moonbags as any)?.totalValueSol);
   const totalUsd     = tokens.reduce((sum: number, t: any) => sum + safeNum(t.usdValue), 0);
 
   const panelCls = "bg-card border border-border rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.25)]";
@@ -103,9 +106,9 @@ export default function Portfolio() {
               <Moon size={11} className="text-primary" />
               <span className={labelCls}>Moonbag Vault</span>
             </div>
-            <div className="text-right">
+             <div className="text-right">
               <p className="text-[10px] font-black font-mono text-primary">{vaultSol.toFixed(4)} SOL</p>
-              <p className="text-[7.5px] text-muted-foreground">50% post-exit bags</p>
+               <p className="text-[7.5px] text-muted-foreground">50% post-exit bags · zero cost basis</p>
             </div>
           </div>
 
@@ -119,7 +122,7 @@ export default function Portfolio() {
             </div>
           ) : (
             <div className="space-y-2">
-              {moonbagList.map((m: any) => {
+               {moonbagList.map((m: any) => {
                 const isExpanded = expandedMoonbag === m.id;
                 const tier = (m.protectionTier ?? "HOLD") as string;
                 // entryPrice is the golden-exit price (= 2.5× from original)
@@ -128,8 +131,8 @@ export default function Portfolio() {
                 const originalBuyPrice = goldenExitPrice > 0 ? goldenExitPrice / 2.5 : 0;
                 const currentPrice    = safeNum(m.currentPrice);
                 const multiplier      = safeNum(m.currentMultiplier, 1);
-                const currentValueSol = safeNum(m.currentValueSol);
-                const originalCostUsd = safeNum(m.originalCostUsd);
+                 const currentValueSol = safeNum(m.currentValueSol, safeNum(m.currentValueUsd) / 150);
+                 const originalCostUsd = safeNum(m.originalCostUsd, safeNum(m.positionSizeUsd));
                 const tokensHeld      = safeNum(m.tokensHeld);
                 const enteredAt       = m.enteredAt ? new Date(m.enteredAt).toLocaleString() : "—";
                 const dexUrl = `https://dexscreener.com/solana/${m.tokenMint ?? ""}`;
@@ -137,10 +140,11 @@ export default function Portfolio() {
                 return (
                   <div key={m.id} className="bg-background/40 rounded-lg border border-border/40 overflow-hidden">
                     {/* Summary row — tap to expand */}
-                    <button
-                      className="w-full flex justify-between items-center px-2.5 py-2 hover:bg-background/60 transition-colors"
-                      onClick={() => setExpandedMoonbag(isExpanded ? null : m.id)}
-                    >
+                    <div className="flex items-center gap-2 px-2.5 py-2">
+                      <button
+                        className="flex-1 flex justify-between items-center text-left hover:bg-background/60 transition-colors"
+                        onClick={() => setExpandedMoonbag(isExpanded ? null : m.id)}
+                      >
                       <div className="flex items-center gap-2 text-left">
                         <Moon size={9} className="text-primary shrink-0" />
                         <div>
@@ -148,7 +152,7 @@ export default function Portfolio() {
                           <p className="text-[7.5px] text-muted-foreground">Cost: <span className="text-gains">$0</span> (recovered)</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                         <div className="text-right">
                           <p className="text-[10px] text-gains font-black font-mono">{multiplier.toFixed(2)}×</p>
                           <p className="text-[7.5px] text-muted-foreground font-mono">{currentValueSol.toFixed(4)} SOL</p>
@@ -156,8 +160,10 @@ export default function Portfolio() {
                         {isExpanded
                           ? <ChevronUp size={12} className="text-muted-foreground shrink-0" />
                           : <ChevronDown size={12} className="text-muted-foreground shrink-0" />}
-                      </div>
-                    </button>
+                        </div>
+                      </button>
+                      {isPaper && <PaperSellControls id={m.id} scope="moonbags" />}
+                    </div>
 
                     {/* Detail panel */}
                     {isExpanded && (

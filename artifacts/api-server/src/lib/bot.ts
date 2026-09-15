@@ -15,7 +15,19 @@ import { startReportingEngine } from "./reporting";
 import { logReadinessReport } from "./systemReadiness";
 import { loadTradingMode, isPaperMode } from "./tradingMode";
 import { recordSkippedToken } from "./sessionStats";
-import { recordPaperTrade, noRecentPaperTrades, startExitEngine } from "./paperTrading";
+import {
+  addCapitalInjection,
+  getPaperTrades,
+  getMoonbagTrades,
+  getSimBalanceFull,
+  noRecentPaperTrades,
+  recordPaperTrade,
+  resetPaperLedgerData,
+  setBaseCapitalUsd,
+  setPaperTradeWritesAllowed,
+  startExitEngine,
+  stopExitEngine,
+} from "./paperTrading";
 import type { PaperTrade } from "./paperTrading";
 import type { DexToken } from "./dexScreener";
 import { incrementGate } from "./scanStats";
@@ -33,6 +45,7 @@ const state: BotState = {
 };
 
 const seenMints = new Set<string>();
+let resetSequenceReady = true;
 
 // ── Rug detection heuristic for skip reason ────────────────────────────────
 const RUG_SIGNALS = [
@@ -286,7 +299,7 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
     await db.insert(skippedTokensTable).values({
       tokenMint: mint, tokenSymbol, tokenName, logoUrl,
       reason:      riskResult.reasons.join("; "),
-      safetyScore: String(riskResult.score),
+       safetyScore: String(riskResult.rugcheckScore ?? riskResult.score),
       liquidityUsd: String(liquidityUsd ?? 0),
       marketCap,
     }).catch(() => {});
@@ -318,7 +331,12 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       return;
     }
 
-    // C2: base position by tier (% of $100 sim balance)
+    if (isPaperMode() && (!state.isRunning || !resetSequenceReady)) {
+      logger.info({ mint, resetSequenceReady, botRunning: state.isRunning }, "[RESET_GUARD] scanner result not converted into a paper position");
+      return;
+    }
+
+    // C2: base position by tier (% of simulated balance)
     // BONDING = 2% ($2), MOON = 10% ($10), SAFE = 20% ($20)
     let positionSizeUsd = tier === "SAFE" ? 20 : tier === "BONDING" ? 2 : 10;
     if (riskResult.unverified) positionSizeUsd = Math.min(positionSizeUsd, 5);
@@ -369,6 +387,11 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       entryBuys5m: buyTxns5m,
       entrySells5m: sellTxns5m,
       entryRegime: getRegime().regime,
+      status: "OPEN",
+      targetPrice: token.priceUsd * 2.5,
+      stopLoss: token.priceUsd * 0.7,
+      exitMultiplier: null,
+      moonbagAmountUsd: null,
     };
 
     recordPaperTrade(pt);
@@ -432,10 +455,15 @@ export function getBotState(): BotState { return { ...state }; }
 
 export function startBot(): void {
   if (state.isRunning) return;
+  if (!resetSequenceReady) {
+    logger.warn("Trading bot start blocked — reset sequence has not completed verification");
+    return;
+  }
   state.isRunning = true;
   state.lastActivity = new Date();
   seenMints.clear();
   classifyRegime();
+  if (!getScannerState().running) startTripleRadarScanner(handleDiscoveredToken);
   startWatchdog(handleDiscoveredToken);
   startFeedbackLoop();
   logger.info("Trading bot started — watchdog and feedback loop active");
@@ -455,6 +483,57 @@ export function restartScanner(): void {
     startTripleRadarScanner(handleDiscoveredToken);
     console.log("AUTO-RESTART — scanner restarted successfully");
   }, 1500);
+}
+
+export async function resetPaperTradingAndRestartScanner(startingCapitalUsd = 1000) {
+  if (!isPaperMode()) throw new Error("Full paper reset is available only in simulation mode");
+  if (!Number.isFinite(startingCapitalUsd) || startingCapitalUsd <= 0) {
+    throw new Error("startingCapitalUsd must be a positive number");
+  }
+
+  resetSequenceReady = false;
+  setPaperTradeWritesAllowed(false);
+  stopBot();
+  stopExitEngine();
+  stopTripleRadarScanner();
+
+  // The scanner has its own running flag; this confirmation is the gate
+  // before any file is wiped.
+  if (getScannerState().running) {
+    throw new Error("Reset aborted: scanner did not confirm stopped");
+  }
+  logger.warn("[RESET] scanner stopped confirmed — beginning paper ledger wipe");
+
+  const wipe = resetPaperLedgerData();
+  if (!wipe.verifiedEmpty || getPaperTrades().length !== 0 || getMoonbagTrades().length !== 0) {
+    throw new Error("Reset aborted: paper ledger is not empty after wipe");
+  }
+  logger.info("[RESET] ledger empty confirmed before scanner restart");
+
+  setBaseCapitalUsd(0);
+  const injection = addCapitalInjection(startingCapitalUsd, "single starting capital after verified reset");
+  const balance = getSimBalanceFull();
+  if (balance.totalEquity !== startingCapitalUsd || balance.openPositions !== 0 || balance.moonbagCount !== 0) {
+    throw new Error(`Reset verification failed: expected $${startingCapitalUsd} empty equity ledger`);
+  }
+
+  resetSequenceReady = true;
+  setPaperTradeWritesAllowed(true);
+  startTripleRadarScanner(handleDiscoveredToken);
+  logger.info(
+    { scannerRunning: getScannerState().running, ledgerCount: getPaperTrades().length, totalEquity: balance.totalEquity },
+    "[RESET] verified reset complete — scanner restarted with bot stopped; paper writes require bot start",
+  );
+  return {
+    wipe,
+    injection,
+    scannerStoppedBeforeWipe: true,
+    ledgerEmptyBeforeRestart: true,
+    ledgerCountAfterRestart: getPaperTrades().length,
+    balance: getSimBalanceFull(),
+    bot: getBotState(),
+    scanner: getScannerState(),
+  };
 }
 
 export async function initializeOrchestrator(): Promise<void> {

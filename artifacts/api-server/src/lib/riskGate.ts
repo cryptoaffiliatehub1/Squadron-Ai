@@ -34,6 +34,8 @@ export interface RiskGateResult {
   failureLabel?: string;
   unverified?: boolean;
   extraSignals?: ExtraSignals;
+  rugcheckScore?: number;
+  rugcheckRating?: string;
 }
 
 // ── Solana RPC helper ─────────────────────────────────────────────────────────
@@ -674,9 +676,15 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
     failureLabel = "RUGCHECK FAIL";
     reasons.push(`RugCheck: ${specificReasons}`);
     checks.rugcheck = false;
-    return { passed: false, score: 0, reasons, checks, failureLabel };
+    return { passed: false, score: 0, reasons, checks, failureLabel, rugcheckScore: rugData.score, rugcheckRating: rugData.rating };
   } else {
-    checks.rugcheck = `VERIFIED (score: ${rugData.score})`;
+    checks.rugcheck = `VERIFIED (raw: ${rugData.score}, normalized: ${rugData.rating})`;
+    logger.info(
+      { mint: token.tokenMint, rawScore: rugData.score, normalizedScore: rugData.rating, hardRisks: rugData.hardRisks },
+      "[RUGCHECK_PASS] low normalized score is valid; no hard security risk reported",
+    );
+    // Keep raw RugCheck values available to the audit trail even on a pass.
+    score -= 0;
   }
 
   // ── Birdeye security ──────────────────────────────────────────────────────
@@ -728,7 +736,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   // ── C1: Sniper accumulation (async, with 8s timeout) ─────────────────────
   const sniperResult = await Promise.race([
     checkSniperAccumulation(token.tokenMint, token.createdAt),
-    new Promise<{ riskPct: number; blocked: boolean }>((r) => setTimeout(() => r({ riskPct: 0, blocked: false }), 8_000)),
+    new Promise<{ riskPct: number; blocked: boolean; reason?: string }>((r) => setTimeout(() => r({ riskPct: 0, blocked: false }), 8_000)),
   ]);
   if (sniperResult.blocked) {
     failureLabel = "SNIPER ACCUMULATION";
@@ -746,7 +754,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   // ── C1: Wallet seeding detection (async, with 8s timeout) ────────────────
   const seedingResult = await Promise.race([
     checkWalletSeeding(token.tokenMint),
-    new Promise<{ blocked: boolean }>((r) => setTimeout(() => r({ blocked: false }), 8_000)),
+    new Promise<{ blocked: boolean; reason?: string }>((r) => setTimeout(() => r({ blocked: false }), 8_000)),
   ]);
   if (seedingResult.blocked) {
     failureLabel = "WALLET SEEDING";

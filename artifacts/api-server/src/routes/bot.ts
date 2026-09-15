@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { startBot, stopBot, getBotState, getFullSystemState, restartScanner } from "../lib/bot";
+import { startBot, stopBot, getBotState, getFullSystemState, restartScanner, resetPaperTradingAndRestartScanner } from "../lib/bot";
 import { getReadinessReport } from "../lib/systemReadiness";
 import { getCircuitState, resetFortress, humanOverride, engageFortress } from "../lib/circuitBreaker";
 import { getMoonbags, getTotalMoonbagValueSol, getMoonbagProtectionTiers } from "../lib/moonbagVault";
@@ -11,6 +11,9 @@ import { isSystemAtRisk, getWeights } from "../lib/feedbackLoop";
 import { stopBot as _stop } from "../lib/bot";
 import { logger } from "../lib/logger";
 import { getScanStats } from "../lib/scanStats";
+import { db, skippedTokensTable } from "@workspace/db";
+import { desc, ilike } from "drizzle-orm";
+import { RUGCHECK_REJECTION_RULE } from "../lib/rugcheck";
 
 const router = Router();
 
@@ -23,7 +26,7 @@ router.get("/bot/status", (_req, res) => {
   // Fix 8: scannerOnline = scanner has had at least one successful scan
   const scannerOnline = scanner.lastSuccessfulScan !== null;
 
-  res.json({
+   return res.json({
     isRunning: state.isRunning,
     scannerOnline,                                    // Fix 8: true when triple-radar is scanning
     capitalRulePct: 20,
@@ -55,7 +58,7 @@ router.post("/bot/toggle", (req, res) => {
 
   const state = getBotState();
   const scanner = getScannerState();
-  res.json({
+   return res.json({
     isRunning: state.isRunning,
     scannerOnline: scanner.lastSuccessfulScan !== null,
     tradesExecutedToday: state.tradesExecutedToday,
@@ -121,6 +124,33 @@ router.get("/weights", (_req, res) => {
   res.json({ weights: getWeights(), systemAtRisk: isSystemAtRisk() });
 });
 
+router.get("/rugcheck/audit", async (_req, res) => {
+  try {
+    const rows = await db
+      .select({
+        tokenMint: skippedTokensTable.tokenMint,
+        tokenSymbol: skippedTokensTable.tokenSymbol,
+        tokenName: skippedTokensTable.tokenName,
+        reason: skippedTokensTable.reason,
+        rawScore: skippedTokensTable.safetyScore,
+        detectedAt: skippedTokensTable.detectedAt,
+      })
+      .from(skippedTokensTable)
+      .where(ilike(skippedTokensTable.reason, "%RugCheck%"))
+      .orderBy(desc(skippedTokensTable.detectedAt))
+      .limit(15);
+    return res.json({
+      rejectionRule: RUGCHECK_REJECTION_RULE,
+      normalizedScoreDirection: "low normalized score = GOOD",
+      count: rows.length,
+      tokens: rows.map((row) => ({ ...row, rawScore: row.rawScore === null ? null : Number(row.rawScore), detectedAt: row.detectedAt.toISOString() })),
+    });
+  } catch (err) {
+    logger.error({ err }, "GET /rugcheck/audit failed");
+    return res.status(500).json({ error: "RugCheck audit failed" });
+  }
+});
+
 // C1: POST /api/bot/restart — re-initialises scanner without stopping the bot
 router.post("/bot/restart", (_req, res) => {
   logger.info("BOT RESTART requested via API — restarting scanner");
@@ -133,6 +163,19 @@ router.post("/bot/restart", (_req, res) => {
     isRunning: state.isRunning,
     scannerOnline: scanner.lastSuccessfulScan !== null,
   });
+});
+
+router.post("/system/reset-paper", async (req, res) => {
+  try {
+    const startingCapitalUsd = req.body?.startingCapitalUsd === undefined
+      ? 1000
+      : Number(req.body.startingCapitalUsd);
+    return res.json(await resetPaperTradingAndRestartScanner(startingCapitalUsd));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Paper reset failed";
+    logger.error({ err }, "POST /system/reset-paper failed");
+    return res.status(400).json({ error: message });
+  }
 });
 
 // ── GET /api/scan-stats — cumulative gate funnel (today + 7-day) ──────────────
