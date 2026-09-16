@@ -1,0 +1,20 @@
+{
+  "baseCapitalUsd": 100,
+  "injectedCapitalUsd": 1900,
+  "injections": [
+    {
+      "id": "batch1-900-usd",
+      "label": "Existing $900 injection",
+      "amountUsd": 900,
+      "appliedAt": "2026-08-12T05:45:47.060Z"
+    },
+    {
+      "id": "batch2-1000-usd",
+      "label": "Fresh $1,000 injection",
+      "amountUsd": 1000,
+      "appliedAt": "2026-09-13T00:26:14.506Z"
+    }
+  ],
+  "injectionKey": "batch2-1000-usd",
+  "appliedAt": "2026-09-13T00:26:14.506Z"
+}

@@ -1,0 +1,4623 @@
+[
+  {
+    "action": "SELL",
+    "source": "manual-paper-sell",
+    "tradeId": "proof_sell_1786513547130",
+    "tokenMint": "So11111111111111111111111111111111111111112",
+    "tokenSymbol": "PROOF",
+    "sellPct": 100,
+    "sellPrice": 1,
+    "proceedsUsd": 190.66600000000003,
+    "pnlUsd": 0,
+    "status": "WIN",
+    "timestamp": "2026-08-12T05:45:53.132Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Moonbags)",
+    "source": "manual-bulk-sell",
+    "scope": "MOONBAGS",
+    "scopeLabel": "Moonbags",
+    "sellPct": 75,
+    "affectedCount": 7,
+    "totalProceedsUsd": 49.76212127985405,
+    "totalPnlUsd": 49.76212127985405,
+    "positions": [
+      {
+        "tradeId": "mb_pt_1786238596663_EavU1XbH",
+        "tokenSymbol": "CHARITY",
+        "status": "MOONBAG",
+        "sellPrice": 0.0001903,
+        "proceedsUsd": 1.2467243186582808,
+        "pnlUsd": 1.2467243186582808
+      },
+      {
+        "tradeId": "mb_pt_1786514950647_5rRdD6BF",
+        "tokenSymbol": "TOADPUNK",
+        "status": "MOONBAG",
+        "sellPrice": 0.00007818,
+        "proceedsUsd": 11.48662802419355,
+        "pnlUsd": 11.48662802419355
+      },
+      {
+        "tradeId": "mb_pt_1786540820447_5nZMRLSF",
+        "tokenSymbol": "BABYSHIB",
+        "status": "MOONBAG",
+        "sellPrice": 0.0004828,
+        "proceedsUsd": 27.968616551126523,
+        "pnlUsd": 27.968616551126523
+      },
+      {
+        "tradeId": "mb_pt_1786585223909_GzrN3MUC",
+        "tokenSymbol": "Benny",
+        "status": "MOONBAG",
+        "sellPrice": 0.00003182,
+        "proceedsUsd": 1.2754226621475888,
+        "pnlUsd": 1.2754226621475888
+      },
+      {
+        "tradeId": "mb_pt_1786570822643_5BQpi43R",
+        "tokenSymbol": "Chibi",
+        "status": "MOONBAG",
+        "sellPrice": 0.0003286,
+        "proceedsUsd": 7.759483747609943,
+        "pnlUsd": 7.759483747609943
+      },
+      {
+        "tradeId": "mb_pt_1786610137984_JVmZJgsF",
+        "tokenSymbol": "감자",
+        "status": "MOONBAG",
+        "sellPrice": 0.000001863,
+        "proceedsUsd": 0.018156023969722455,
+        "pnlUsd": 0.018156023969722455
+      },
+      {
+        "tradeId": "mb_pt_1786611342060_JVmZJgsF",
+        "tokenSymbol": "감자",
+        "status": "MOONBAG",
+        "sellPrice": 0.000001863,
+        "proceedsUsd": 0.0070899521484375,
+        "pnlUsd": 0.0070899521484375
+      }
+    ],
+    "timestamp": "2026-08-13T10:32:40.750Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Moonbags)",
+    "source": "manual-bulk-sell",
+    "scope": "MOONBAGS",
+    "scopeLabel": "Moonbags",
+    "sellPct": 100,
+    "affectedCount": 7,
+    "totalProceedsUsd": 16.60075489443191,
+    "totalPnlUsd": 16.60075489443191,
+    "positions": [
+      {
+        "tradeId": "mb_pt_1786238596663_EavU1XbH",
+        "tokenSymbol": "CHARITY",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0001903,
+        "proceedsUsd": 0.4155747728860936,
+        "pnlUsd": 0.4155747728860936
+      },
+      {
+        "tradeId": "mb_pt_1786514950647_5rRdD6BF",
+        "tokenSymbol": "TOADPUNK",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.00007818,
+        "proceedsUsd": 3.8288760080645163,
+        "pnlUsd": 3.8288760080645163
+      },
+      {
+        "tradeId": "mb_pt_1786540820447_5nZMRLSF",
+        "tokenSymbol": "BABYSHIB",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004828,
+        "proceedsUsd": 9.32287218370884,
+        "pnlUsd": 9.32287218370884
+      },
+      {
+        "tradeId": "mb_pt_1786585223909_GzrN3MUC",
+        "tokenSymbol": "Benny",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.00003182,
+        "proceedsUsd": 0.4251408873825296,
+        "pnlUsd": 0.4251408873825296
+      },
+      {
+        "tradeId": "mb_pt_1786570822643_5BQpi43R",
+        "tokenSymbol": "Chibi",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003303,
+        "proceedsUsd": 2.5998757170172087,
+        "pnlUsd": 2.5998757170172087
+      },
+      {
+        "tradeId": "mb_pt_1786610137984_JVmZJgsF",
+        "tokenSymbol": "감자",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000001863,
+        "proceedsUsd": 0.006052007989907485,
+        "pnlUsd": 0.006052007989907485
+      },
+      {
+        "tradeId": "mb_pt_1786611342060_JVmZJgsF",
+        "tokenSymbol": "감자",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000001863,
+        "proceedsUsd": 0.0023633173828125,
+        "pnlUsd": 0.0023633173828125
+      }
+    ],
+    "timestamp": "2026-08-13T10:32:54.987Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Open Positions)",
+    "source": "manual-bulk-sell",
+    "scope": "OPEN_POSITIONS",
+    "scopeLabel": "Open Positions",
+    "sellPct": 100,
+    "affectedCount": 4,
+    "totalProceedsUsd": 101.93280926006645,
+    "totalPnlUsd": 51.45080926006644,
+    "positions": [
+      {
+        "tradeId": "pt_1786540820447_5nZMRLSF",
+        "tokenSymbol": "BABYSHIB",
+        "status": "WIN",
+        "sellPrice": 0.0004788,
+        "proceedsUsd": 73.96505719237435,
+        "pnlUsd": 38.31105719237434
+      },
+      {
+        "tradeId": "pt_1786570822643_5BQpi43R",
+        "tokenSymbol": "Chibi",
+        "status": "WIN",
+        "sellPrice": 0.0003303,
+        "proceedsUsd": 20.79900573613767,
+        "pnlUsd": 10.919005736137668
+      },
+      {
+        "tradeId": "pt_1786610134943_AKnrrFCy",
+        "tokenSymbol": "ANTS",
+        "status": "WIN",
+        "sellPrice": 0.0001018,
+        "proceedsUsd": 4.454921399235236,
+        "pnlUsd": 1.3649213992352358
+      },
+      {
+        "tradeId": "pt_1786614894930_5AJ3F1WT",
+        "tokenSymbol": "Plung",
+        "status": "WIN",
+        "sellPrice": 0.0001133,
+        "proceedsUsd": 2.7138249323191954,
+        "pnlUsd": 0.8558249323191955
+      }
+    ],
+    "timestamp": "2026-08-13T10:33:52.297Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Both)",
+    "source": "manual-bulk-sell",
+    "scope": "BOTH",
+    "scopeLabel": "Both",
+    "sellPct": 100,
+    "affectedCount": 300,
+    "totalProceedsUsd": 0,
+    "totalPnlUsd": 0,
+    "positions": [
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000005198,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004861,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004812,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000009057,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004583,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003436,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003521,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003536,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003895,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004221,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.00043,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004724,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004977,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004865,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005053,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004553,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004759,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004789,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004487,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004424,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004851,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004556,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004617,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004479,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004303,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003644,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003827,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003631,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003405,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000334,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004533,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003719,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000472,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004037,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004996,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003909,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004775,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003707,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004935,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000341,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004908,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003523,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005076,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004225,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005054,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003936,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005414,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003799,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005347,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003742,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005227,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003969,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005239,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004089,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004559,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004297,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005082,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004082,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005001,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003753,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004954,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000376,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004871,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004173,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004837,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000379,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004686,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004021,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004963,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004552,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000475,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004367,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004681,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004031,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004985,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004019,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005227,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003928,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000559,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004661,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005505,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004723,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005733,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004669,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005691,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005369,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005826,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005765,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000574,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005803,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005616,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005804,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005509,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005407,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005584,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000564,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005719,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005751,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005578,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005443,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005558,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005127,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005639,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005405,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005877,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005562,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005677,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005458,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005762,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000571,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005528,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005727,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005961,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005746,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005972,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005683,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000622,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000585,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006505,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006131,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006892,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005572,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006927,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005273,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0007006,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005269,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000687,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005718,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000687,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005718,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000687,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005718,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0007383,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005719,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0007637,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005482,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000765,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005544,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000765,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005544,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000765,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005544,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006099,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005993,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006268,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006058,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006268,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006058,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006268,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006058,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006136,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005912,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005796,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005796,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005796,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005796,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005796,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005796,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006081,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005906,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005898,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005711,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005898,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005711,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005898,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005711,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005884,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.00054,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005909,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000526,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005909,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000526,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005909,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000526,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006837,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005732,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006119,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005639,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006119,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005639,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006119,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005639,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005882,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005505,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005541,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005443,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005541,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005443,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005541,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005443,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006209,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004741,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005821,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004839,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005821,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004839,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005821,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004839,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005986,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004245,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006262,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000454,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006262,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000454,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006262,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000454,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005728,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004078,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005728,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004078,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005728,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004078,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005285,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000433,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004719,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004408,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004719,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004408,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004719,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004408,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004664,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000468,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004909,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004992,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004909,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004992,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004909,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004992,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004936,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004814,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004814,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004814,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004482,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004482,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004482,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004482,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004622,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004168,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004912,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004218,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004912,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004218,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004912,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004218,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004877,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003399,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005476,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000356,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005476,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000356,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005476,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000356,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005716,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003842,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006161,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003723,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006161,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003723,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006161,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003723,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005841,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003791,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005801,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003777,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005801,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003777,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005801,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003777,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005748,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0003816,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005679,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004039,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005679,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004039,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005679,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004039,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005823,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000425,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005823,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000425,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0005823,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.000425,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006114,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004738,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006114,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004738,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006114,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004738,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006416,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004778,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006416,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004778,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0006416,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004778,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0007957,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004967,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0007957,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004967,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786629844047_j8RdRQ8t",
+        "tokenSymbol": "PLANSEM",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0007957,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      },
+      {
+        "tradeId": "mb_pt_1786630107479_GDPtXowy",
+        "tokenSymbol": "Niles",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0004967,
+        "proceedsUsd": 0,
+        "pnlUsd": 0
+      }
+    ],
+    "timestamp": "2026-09-06T09:46:17.848Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:18:41.409Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:18:45.409Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:19:56.774Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:20:01.090Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:22:35.902Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:22:38.831Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:29:55.790Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:29:58.496Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "72GzhfdJq9aBWwqQiuDDjCq5TpKySjJhZxmxZ6h265px",
+    "tokenSymbol": "Bonkers",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:30:01.196Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:40:03.580Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "J8X5ygWHY5uHFch7m3MisSC7eDAWpAkgi1pyqfT5pump",
+    "tokenSymbol": "revolve",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:40:06.281Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "72GzhfdJq9aBWwqQiuDDjCq5TpKySjJhZxmxZ6h265px",
+    "tokenSymbol": "Bonkers",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T06:40:08.801Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "AbqBVEVebBazAydzVAUGYkS5MEGCEpvVkKNujnJrpump",
+    "tokenSymbol": "GGEZ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-12T07:44:35.160Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "EUTipzFepgT9614RaCQaKcqL2NnJFDmvpTcZTrXYpump",
+    "tokenSymbol": "MPAIR",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T00:21:29.339Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "7McEWYQfbCc1m744nJUeJgvt78FiJTWWsgoCrUG4pump",
+    "tokenSymbol": "TripleC",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T00:21:32.065Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "DEbvZt2QRA8yqNj2Lvsn8JdWjTmZS4yajwpzYL4ypump",
+    "tokenSymbol": "CATFLIGHT",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T00:21:34.644Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "6zoe9bgB1yQUe3NpeKxuZcGsYsiGdAxWEN4vyQD2rx9f",
+    "tokenSymbol": "CAPY",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T00:26:12.432Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Both)",
+    "source": "manual-bulk-sell",
+    "scope": "BOTH",
+    "scopeLabel": "Both",
+    "sellPct": 100,
+    "affectedCount": 2,
+    "totalProceedsUsd": 231.83440048273707,
+    "totalPnlUsd": 27.79440048273706,
+    "positions": [
+      {
+        "tradeId": "pt_1789259175844_EUTipzFe",
+        "tokenSymbol": "MPAIR",
+        "status": "WIN",
+        "sellPrice": 0.00013,
+        "proceedsUsd": 140.88221797323135,
+        "pnlUsd": 27.526217973231354
+      },
+      {
+        "tradeId": "pt_1789259178909_GKPntZNr",
+        "tokenSymbol": "INFROGNITO",
+        "status": "WIN",
+        "sellPrice": 0.00004748,
+        "proceedsUsd": 90.95218250950572,
+        "pnlUsd": 0.26818250950570643
+      }
+    ],
+    "timestamp": "2026-09-13T00:26:58.263Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "EUTipzFepgT9614RaCQaKcqL2NnJFDmvpTcZTrXYpump",
+    "tokenSymbol": "MPAIR",
+    "reason": "ENTRY BLOCKED — duplicate open position for EUTipzFepgT9614RaCQaKcqL2NnJFDmvpTcZTrXYpump",
+    "timestamp": "2026-09-13T00:37:26.605Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GKPntZNreVvWW8iCitaaH1BakpGLS4fQrQTXu7MGZBN1",
+    "tokenSymbol": "INFROGNITO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T00:37:32.031Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Both)",
+    "source": "manual-bulk-sell",
+    "scope": "BOTH",
+    "scopeLabel": "Both",
+    "sellPct": 100,
+    "affectedCount": 2,
+    "totalProceedsUsd": 177.04547733354573,
+    "totalPnlUsd": -2.752522666454283,
+    "positions": [
+      {
+        "tradeId": "pt_1789259238143_6zoe9bgB",
+        "tokenSymbol": "CAPY",
+        "status": "WIN",
+        "sellPrice": 0.0001536,
+        "proceedsUsd": 128.35692480674635,
+        "pnlUsd": 9.442924806746333
+      },
+      {
+        "tradeId": "pt_1789259849916_DEbvZt2Q",
+        "tokenSymbol": "CATFLIGHT",
+        "status": "LOSS",
+        "sellPrice": 0.0002611,
+        "proceedsUsd": 48.68855252679939,
+        "pnlUsd": -12.195447473200616
+      }
+    ],
+    "timestamp": "2026-09-13T00:40:09.121Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T01:39:20.923Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "ENTRY BLOCKED — duplicate open position for 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "timestamp": "2026-09-13T01:41:05.883Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T01:41:09.517Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Both)",
+    "source": "manual-bulk-sell",
+    "scope": "BOTH",
+    "scopeLabel": "Both",
+    "sellPct": 100,
+    "affectedCount": 3,
+    "totalProceedsUsd": 199.17118578622177,
+    "totalPnlUsd": 39.76118578622173,
+    "positions": [
+      {
+        "tradeId": "pt_1789260438476_EUTipzFe",
+        "tokenSymbol": "MPAIR",
+        "status": "WIN",
+        "sellPrice": 0.0001818,
+        "proceedsUsd": 138.39175384615385,
+        "pnlUsd": 54.27575384615385
+      },
+      {
+        "tradeId": "pt_1789263517637_GaBdgBaD",
+        "tokenSymbol": "MCAT",
+        "status": "WIN",
+        "sellPrice": 0.0002052,
+        "proceedsUsd": 11.827089337175794,
+        "pnlUsd": 1.827089337175794
+      },
+      {
+        "tradeId": "pt_1789263557350_33HJnfrG",
+        "tokenSymbol": "ㅤ",
+        "status": "LOSS",
+        "sellPrice": 0.00004044,
+        "proceedsUsd": 48.9523426028921,
+        "pnlUsd": -16.34165739710791
+      }
+    ],
+    "timestamp": "2026-09-13T01:41:17.493Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "profit-protection",
+    "cooldownType": "profit-cooldown",
+    "tokenMint": "GaBdgBaDCcBsPuWrc8HJ9eX1vLBvAMmrGtjGR3eNpump",
+    "tokenSymbol": "MCAT",
+    "reason": "PROFIT COOLDOWN — GaBdgBaDCcBsPuWrc8HJ9eX1vLBvAMmrGtjGR3eNpump manual profit-take cooldown has 18 minutes remaining",
+    "remainingMs": 1022396,
+    "timestamp": "2026-09-13T01:54:15.049Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T01:54:18.778Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — duplicate open position for DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "timestamp": "2026-09-13T01:54:22.036Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T01:54:52.243Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "tokenSymbol": "PUMPCHAN",
+    "reason": "ENTRY BLOCKED — duplicate open position for BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "timestamp": "2026-09-13T01:54:55.457Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — duplicate open position for DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "timestamp": "2026-09-13T01:54:56.294Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T01:57:00.367Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "tokenSymbol": "PUMPCHAN",
+    "reason": "ENTRY BLOCKED — duplicate open position for BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "timestamp": "2026-09-13T01:57:03.601Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "DSF4CyuWmB5c7S5ig5by3jMHQvqmj1KtgyjE8Sthpump",
+    "tokenSymbol": "PUMPCHAN",
+    "reason": "ENTRY BLOCKED — duplicate open position for DSF4CyuWmB5c7S5ig5by3jMHQvqmj1KtgyjE8Sthpump",
+    "timestamp": "2026-09-13T02:04:48.463Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T02:04:54.661Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "tokenSymbol": "PUMPCHAN",
+    "reason": "ENTRY BLOCKED — duplicate open position for BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "timestamp": "2026-09-13T02:04:56.186Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "ENTRY BLOCKED — duplicate open position for DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "timestamp": "2026-09-13T02:04:58.465Z"
+  },
+  {
+    "action": "MANUAL EXIT — INDIVIDUAL",
+    "source": "manual-paper-sell",
+    "tradeId": "pt_1789264461083_BDS2EAqp",
+    "tokenMint": "BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "tokenSymbol": "PUMPCHAN",
+    "sellPct": 100,
+    "sellPrice": 0.00005728,
+    "proceedsUsd": 53.30332785849653,
+    "pnlUsd": -5.620672141503476,
+    "totalPnlUsd": -5.620672141503476,
+    "status": "LOSS",
+    "timestamp": "2026-09-13T02:06:00.230Z"
+  },
+  {
+    "action": "MANUAL EXIT — INDIVIDUAL",
+    "source": "manual-paper-sell",
+    "tradeId": "pt_1789264162369_DDoDYLQn",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "sellPct": 25,
+    "sellPrice": 0.0001798,
+    "proceedsUsd": 23.397507420494698,
+    "pnlUsd": 4.984007420494699,
+    "totalPnlUsd": 4.984007420494699,
+    "status": "PARTIAL EXIT",
+    "timestamp": "2026-09-13T02:08:39.636Z"
+  },
+  {
+    "action": "MANUAL EXIT — INDIVIDUAL",
+    "source": "manual-paper-sell",
+    "tradeId": "pt_1789264616826_DSF4CyuW",
+    "tokenMint": "DSF4CyuWmB5c7S5ig5by3jMHQvqmj1KtgyjE8Sthpump",
+    "tokenSymbol": "PUMPCHAN",
+    "sellPct": 50,
+    "sellPrice": 0.0001248,
+    "proceedsUsd": 23.179952718676123,
+    "pnlUsd": -0.3900472813238771,
+    "totalPnlUsd": -0.3900472813238771,
+    "status": "PARTIAL EXIT",
+    "timestamp": "2026-09-13T02:09:02.577Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T02:14:57.969Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "profit-protection",
+    "cooldownType": "profit-cooldown",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "PROFIT COOLDOWN — DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump manual profit-take cooldown has 24 minutes remaining",
+    "remainingMs": 1417897,
+    "timestamp": "2026-09-13T02:15:01.737Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T02:24:54.983Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump",
+    "tokenSymbol": "HOBBES",
+    "reason": "LOSS COOLDOWN — DDoDYLQnxo8ppZBiZM5X981aUFmdM2Vi8RP3dSm4pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T02:24:59.233Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "tokenSymbol": "PUMPCHAN",
+    "reason": "ENTRY BLOCKED — duplicate open position for BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "timestamp": "2026-09-13T02:34:53.673Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "tokenSymbol": "STONK10",
+    "reason": "ENTRY BLOCKED — duplicate open position for AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "timestamp": "2026-09-13T02:44:47.991Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV",
+    "tokenSymbol": "ㅤ",
+    "reason": "LOSS COOLDOWN — 33HJnfrGMGtKS3U4RHxiur3pXWso3ddBtxfWbvreAMfV had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 2,
+    "lossesToday": 2,
+    "timestamp": "2026-09-13T02:44:50.817Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump",
+    "tokenSymbol": "PUMPCHAN",
+    "reason": "LOSS COOLDOWN — BDS2EAqpJE5m24wcRMLeVMyy1V3zjLHQznFu8EFopump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T02:44:53.359Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "tokenSymbol": "STONK10",
+    "reason": "ENTRY BLOCKED — duplicate open position for AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "timestamp": "2026-09-13T02:54:48.359Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "tokenSymbol": "STONK10",
+    "reason": "ENTRY BLOCKED — duplicate open position for AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "timestamp": "2026-09-13T03:04:48.541Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "timestamp": "2026-09-13T03:14:49.637Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "53tWQzyhgc3GmUbSZWbQLDaDsxxB6MyCDiw1to6Apump",
+    "tokenSymbol": "CATPUMP",
+    "reason": "ENTRY BLOCKED — duplicate open position for 53tWQzyhgc3GmUbSZWbQLDaDsxxB6MyCDiw1to6Apump",
+    "timestamp": "2026-09-13T03:14:53.070Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "tokenSymbol": "STONK10",
+    "reason": "ENTRY BLOCKED — duplicate open position for AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "timestamp": "2026-09-13T03:14:56.606Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "timestamp": "2026-09-13T03:24:48.003Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "uLcjXSkxtvk1MVvm6hbaHZd2fcte2rcB9PHaZrZpump",
+    "tokenSymbol": "One",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T03:24:50.756Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "timestamp": "2026-09-13T03:24:53.699Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "tokenSymbol": "STONK10",
+    "reason": "ENTRY BLOCKED — duplicate open position for AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "timestamp": "2026-09-13T03:24:56.147Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "timestamp": "2026-09-13T03:34:50.348Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "timestamp": "2026-09-13T03:34:55.601Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "tokenSymbol": "STONK10",
+    "reason": "ENTRY BLOCKED — duplicate open position for AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "timestamp": "2026-09-13T03:34:58.544Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "tokenSymbol": "JubJub",
+    "reason": "LOSS COOLDOWN — 7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3 had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T03:44:51.169Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "timestamp": "2026-09-13T03:44:55.976Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "tokenSymbol": "JubJub",
+    "reason": "LOSS COOLDOWN — 7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3 had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T03:54:50.940Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "tokenSymbol": "JubJub",
+    "reason": "LOSS COOLDOWN — 7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3 had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T04:04:50.023Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "timestamp": "2026-09-13T04:04:53.370Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "8BiroRjTpHbMbiBPLa7RddkaEmy7XmyG7vi4hceHpump",
+    "tokenSymbol": "Solly",
+    "reason": "ENTRY BLOCKED — duplicate open position for 8BiroRjTpHbMbiBPLa7RddkaEmy7XmyG7vi4hceHpump",
+    "timestamp": "2026-09-13T04:14:49.070Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "tokenSymbol": "JubJub",
+    "reason": "LOSS COOLDOWN — 7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3 had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T04:14:52.393Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "timestamp": "2026-09-13T04:14:55.223Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "tokenSymbol": "JubJub",
+    "reason": "LOSS COOLDOWN — 7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3 had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T04:24:53.583Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "tokenSymbol": "JubJub",
+    "reason": "ENTRY BLOCKED — duplicate open position for 88t4EdAjiuUDzHujJnK5nywitQzYQWEJq2ouUgRGpump",
+    "timestamp": "2026-09-13T04:24:56.320Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3",
+    "tokenSymbol": "JubJub",
+    "reason": "LOSS COOLDOWN — 7tFbGa9wt4Q4yxNAdaDcTKahv4WPrJtXh6ty7gjWyKx3 had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T04:34:52.330Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "7eQ6SVLzrqmQCBcwZNCj7dsoqRVufWG8V6viJrfvpump",
+    "tokenSymbol": "LAMBO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T04:40:58.695Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "7eQ6SVLzrqmQCBcwZNCj7dsoqRVufWG8V6viJrfvpump",
+    "tokenSymbol": "LAMBO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T04:44:51.064Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "HoCeDUrd5BqfYmaRk2eiUpzshEvpwfYpgrJ4YKFCpump",
+    "tokenSymbol": "APU",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T04:44:54.868Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "mzSzvyZvvTbNd8MZpo1cXJBeowcfrUDUtdu7fsMNGWT",
+    "tokenSymbol": "BLOXCAT",
+    "reason": "ENTRY BLOCKED — duplicate open position for mzSzvyZvvTbNd8MZpo1cXJBeowcfrUDUtdu7fsMNGWT",
+    "timestamp": "2026-09-13T04:44:59.367Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "5t7fCeQEXcAVAXvBN52fx8u3XY3tWRzqs5AgW3qRpump",
+    "tokenSymbol": "ZEAL",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T04:44:59.464Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "7eQ6SVLzrqmQCBcwZNCj7dsoqRVufWG8V6viJrfvpump",
+    "tokenSymbol": "LAMBO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T04:54:48.673Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "HoCeDUrd5BqfYmaRk2eiUpzshEvpwfYpgrJ4YKFCpump",
+    "tokenSymbol": "APU",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T04:54:51.629Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "mzSzvyZvvTbNd8MZpo1cXJBeowcfrUDUtdu7fsMNGWT",
+    "tokenSymbol": "BLOXCAT",
+    "reason": "ENTRY BLOCKED — duplicate open position for mzSzvyZvvTbNd8MZpo1cXJBeowcfrUDUtdu7fsMNGWT",
+    "timestamp": "2026-09-13T04:54:54.298Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DKyxHEbjGqzp7Fn6uMXCNmyYnrKz6nSnURRdvWwRpump",
+    "tokenSymbol": "HOUSECAT",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:03:53.544Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "HoCeDUrd5BqfYmaRk2eiUpzshEvpwfYpgrJ4YKFCpump",
+    "tokenSymbol": "APU",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:04:49.043Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DKyxHEbjGqzp7Fn6uMXCNmyYnrKz6nSnURRdvWwRpump",
+    "tokenSymbol": "HOUSECAT",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:14:49.414Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "HoCeDUrd5BqfYmaRk2eiUpzshEvpwfYpgrJ4YKFCpump",
+    "tokenSymbol": "APU",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:14:52.660Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GXrRDTMJ8w3h8xh4cftQunC3yAafhHRPF5enUegSiKDw",
+    "tokenSymbol": "GHOSTKITTY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:21:52.664Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GXrRDTMJ8w3h8xh4cftQunC3yAafhHRPF5enUegSiKDw",
+    "tokenSymbol": "GHOSTKITTY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:24:52.620Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "HoCeDUrd5BqfYmaRk2eiUpzshEvpwfYpgrJ4YKFCpump",
+    "tokenSymbol": "APU",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:24:58.804Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GXrRDTMJ8w3h8xh4cftQunC3yAafhHRPF5enUegSiKDw",
+    "tokenSymbol": "GHOSTKITTY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:34:51.520Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "HoCeDUrd5BqfYmaRk2eiUpzshEvpwfYpgrJ4YKFCpump",
+    "tokenSymbol": "APU",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:34:55.991Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "E6xuoa8gUidJYt8J5UmMiKrwF6vzgyVuJC5NSjU1s9kn",
+    "tokenSymbol": "BTRUMP",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:35:52.994Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "E6xuoa8gUidJYt8J5UmMiKrwF6vzgyVuJC5NSjU1s9kn",
+    "tokenSymbol": "BTRUMP",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:44:51.924Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GXrRDTMJ8w3h8xh4cftQunC3yAafhHRPF5enUegSiKDw",
+    "tokenSymbol": "GHOSTKITTY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:44:55.806Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GXrRDTMJ8w3h8xh4cftQunC3yAafhHRPF5enUegSiKDw",
+    "tokenSymbol": "GHOSTKITTY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:54:51.783Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8krV6qsF2PwKCDhw2B6Jn8A8FfSMLawLpvA8MTePpump",
+    "tokenSymbol": "Verity",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:54:56.243Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DKyxHEbjGqzp7Fn6uMXCNmyYnrKz6nSnURRdvWwRpump",
+    "tokenSymbol": "HOUSECAT",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T05:54:56.875Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "E6xuoa8gUidJYt8J5UmMiKrwF6vzgyVuJC5NSjU1s9kn",
+    "tokenSymbol": "BTRUMP",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T06:04:50.354Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GXrRDTMJ8w3h8xh4cftQunC3yAafhHRPF5enUegSiKDw",
+    "tokenSymbol": "GHOSTKITTY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T06:04:53.625Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8krV6qsF2PwKCDhw2B6Jn8A8FfSMLawLpvA8MTePpump",
+    "tokenSymbol": "Verity",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T06:04:57.132Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GXrRDTMJ8w3h8xh4cftQunC3yAafhHRPF5enUegSiKDw",
+    "tokenSymbol": "GHOSTKITTY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T06:14:58.226Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GXrRDTMJ8w3h8xh4cftQunC3yAafhHRPF5enUegSiKDw",
+    "tokenSymbol": "GHOSTKITTY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T06:24:50.120Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8jkhbnbZJjajwdNxNrfQSqjMUH5wJXY8tDXWgtDJgrF1",
+    "tokenSymbol": "BONERO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T07:14:03.042Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8jkhbnbZJjajwdNxNrfQSqjMUH5wJXY8tDXWgtDJgrF1",
+    "tokenSymbol": "BONERO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T07:14:54.600Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "5rE6xNX2su82uXYHAUgsJDqnRJU3cwsKS79PWUqapump",
+    "tokenSymbol": "{CAT}",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T07:15:03.167Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "65rFgEsjPWPmyLRFU2CQRRtnCcjnYwr2KNrqtKsdKfAu",
+    "tokenSymbol": "UCAT",
+    "reason": "ENTRY BLOCKED — duplicate open position for 65rFgEsjPWPmyLRFU2CQRRtnCcjnYwr2KNrqtKsdKfAu",
+    "timestamp": "2026-09-13T08:09:34.868Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8StnEDgfxfvxpCUUMH9ChXaqAkGGtxvnfxCAYHYnPXja",
+    "tokenSymbol": "FLOPPY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T08:09:35.247Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8jkhbnbZJjajwdNxNrfQSqjMUH5wJXY8tDXWgtDJgrF1",
+    "tokenSymbol": "BONERO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T08:09:38.709Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "HsUQhRregk8ZR9QqEXvjyrZP15rwj4au7VdXWt72pump",
+    "tokenSymbol": "SILK",
+    "reason": "ENTRY BLOCKED — duplicate open position for HsUQhRregk8ZR9QqEXvjyrZP15rwj4au7VdXWt72pump",
+    "timestamp": "2026-09-13T08:10:01.225Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8jkhbnbZJjajwdNxNrfQSqjMUH5wJXY8tDXWgtDJgrF1",
+    "tokenSymbol": "BONERO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T08:10:05.934Z"
+  },
+  {
+    "action": "MANUAL EXIT — INDIVIDUAL",
+    "source": "manual-paper-sell",
+    "tradeId": "pt_1789266944821_AqoPZcUu",
+    "tokenMint": "AqoPZcUumKUBHrnfBsNtoNuneYEjoimaiWYq8GH8gpX9",
+    "tokenSymbol": "STONK10",
+    "sellPct": 100,
+    "sellPrice": 0.0008631,
+    "proceedsUsd": 160.09672427652737,
+    "pnlUsd": 113.94672427652736,
+    "totalPnlUsd": 170.92008641479106,
+    "status": "WIN",
+    "timestamp": "2026-09-13T08:11:27.655Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "HsUQhRregk8ZR9QqEXvjyrZP15rwj4au7VdXWt72pump",
+    "tokenSymbol": "SILK",
+    "reason": "ENTRY BLOCKED — duplicate open position for HsUQhRregk8ZR9QqEXvjyrZP15rwj4au7VdXWt72pump",
+    "timestamp": "2026-09-13T08:19:24.501Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "HsUQhRregk8ZR9QqEXvjyrZP15rwj4au7VdXWt72pump",
+    "tokenSymbol": "SILK",
+    "reason": "ENTRY BLOCKED — duplicate open position for HsUQhRregk8ZR9QqEXvjyrZP15rwj4au7VdXWt72pump",
+    "timestamp": "2026-09-13T08:29:34.320Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "8jkhbnbZJjajwdNxNrfQSqjMUH5wJXY8tDXWgtDJgrF1",
+    "tokenSymbol": "BONERO",
+    "reason": "ENTRY BLOCKED — duplicate open position for 8jkhbnbZJjajwdNxNrfQSqjMUH5wJXY8tDXWgtDJgrF1",
+    "timestamp": "2026-09-13T08:29:40.702Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "HsUQhRregk8ZR9QqEXvjyrZP15rwj4au7VdXWt72pump",
+    "tokenSymbol": "SILK",
+    "reason": "LOSS COOLDOWN — HsUQhRregk8ZR9QqEXvjyrZP15rwj4au7VdXWt72pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T08:39:33.077Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "8jkhbnbZJjajwdNxNrfQSqjMUH5wJXY8tDXWgtDJgrF1",
+    "tokenSymbol": "BONERO",
+    "reason": "ENTRY BLOCKED — duplicate open position for 8jkhbnbZJjajwdNxNrfQSqjMUH5wJXY8tDXWgtDJgrF1",
+    "timestamp": "2026-09-13T08:39:35.894Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "DN2H2DMpyLkYqh2ErbxDgsr8vCbexgYthq9d78D8LeRf",
+    "tokenSymbol": "ZEAL",
+    "reason": "ENTRY BLOCKED — duplicate open position for DN2H2DMpyLkYqh2ErbxDgsr8vCbexgYthq9d78D8LeRf",
+    "timestamp": "2026-09-13T09:09:26.807Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump",
+    "tokenSymbol": "MIZO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T09:10:14.049Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump",
+    "tokenSymbol": "MIZO",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T09:19:25.146Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "DN2H2DMpyLkYqh2ErbxDgsr8vCbexgYthq9d78D8LeRf",
+    "tokenSymbol": "ZEAL",
+    "reason": "ENTRY BLOCKED — duplicate open position for DN2H2DMpyLkYqh2ErbxDgsr8vCbexgYthq9d78D8LeRf",
+    "timestamp": "2026-09-13T09:19:27.168Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump",
+    "tokenSymbol": "MIZO",
+    "reason": "LOSS COOLDOWN — 5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T09:39:29.249Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump",
+    "tokenSymbol": "MIZO",
+    "reason": "LOSS COOLDOWN — 5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T09:49:26.007Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump",
+    "tokenSymbol": "MIZO",
+    "reason": "LOSS COOLDOWN — 5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T09:59:27.261Z"
+  },
+  {
+    "action": "MANUAL EXIT — INDIVIDUAL",
+    "source": "manual-paper-sell",
+    "tradeId": "pt_1789288177842_8StnEDgf",
+    "tokenMint": "8StnEDgfxfvxpCUUMH9ChXaqAkGGtxvnfxCAYHYnPXja",
+    "tokenSymbol": "FLOPPY",
+    "sellPct": 100,
+    "sellPrice": 0.00005842,
+    "proceedsUsd": 27.691677888499868,
+    "pnlUsd": 10.091677888499866,
+    "totalPnlUsd": 24.463668192835986,
+    "status": "WIN",
+    "timestamp": "2026-09-13T09:59:59.693Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BbWyczXco4yEP8oz2Z8m7Ttc38yitU5XG6izuneFpump",
+    "tokenSymbol": "Flybook",
+    "reason": "ENTRY BLOCKED — duplicate open position for BbWyczXco4yEP8oz2Z8m7Ttc38yitU5XG6izuneFpump",
+    "timestamp": "2026-09-13T10:09:27.290Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "tokenSymbol": "ETF",
+    "reason": "ENTRY BLOCKED — duplicate open position for BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "timestamp": "2026-09-13T10:09:30.678Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump",
+    "tokenSymbol": "MIZO",
+    "reason": "LOSS COOLDOWN — 5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T10:09:34.038Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Moonbags)",
+    "source": "manual-bulk-sell",
+    "scope": "MOONBAGS",
+    "scopeLabel": "Moonbags",
+    "sellPct": 50,
+    "affectedCount": 3,
+    "totalProceedsUsd": 99.46237521705022,
+    "totalPnlUsd": 99.46237521705022,
+    "positions": [
+      {
+        "tradeId": "mb_pt_1789266944821_AqoPZcUu",
+        "tokenSymbol": "STONK10",
+        "status": "MOONBAG",
+        "sellPrice": 0.001954,
+        "proceedsUsd": 90.6120377813505,
+        "pnlUsd": 90.6120377813505
+      },
+      {
+        "tradeId": "mb_pt_1789269105015_88t4EdAj",
+        "tokenSymbol": "JubJub",
+        "status": "MOONBAG",
+        "sellPrice": 0.0004551,
+        "proceedsUsd": 2.7782663341645892,
+        "pnlUsd": 2.7782663341645892
+      },
+      {
+        "tradeId": "mb_pt_1789288177842_8StnEDgf",
+        "tokenSymbol": "FLOPPY",
+        "status": "MOONBAG",
+        "sellPrice": 0.00005124,
+        "proceedsUsd": 6.072071101535148,
+        "pnlUsd": 6.072071101535148
+      }
+    ],
+    "timestamp": "2026-09-13T10:16:12.605Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "6V9Wt1VXwwYrAPyrzyuE1bYKuRggykaRVmpws9bipump",
+    "tokenSymbol": "ROBINMICHI",
+    "reason": "ENTRY BLOCKED — duplicate open position for 6V9Wt1VXwwYrAPyrzyuE1bYKuRggykaRVmpws9bipump",
+    "timestamp": "2026-09-13T10:19:25.473Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "tokenSymbol": "ETF",
+    "reason": "ENTRY BLOCKED — duplicate open position for BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "timestamp": "2026-09-13T10:19:27.045Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump",
+    "tokenSymbol": "MIZO",
+    "reason": "LOSS COOLDOWN — 5Zspimi8VD6LctJLtaSjLqaSUvmh3Rs849iPtGocpump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T10:19:28.813Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "GNDLWARFKHNsxBbcuHPV8H8EU2FVeuXJQSd1nV5Apump",
+    "tokenSymbol": "batonpepe",
+    "reason": "ENTRY BLOCKED — duplicate open position for GNDLWARFKHNsxBbcuHPV8H8EU2FVeuXJQSd1nV5Apump",
+    "timestamp": "2026-09-13T10:29:27.987Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "tokenSymbol": "ETF",
+    "reason": "ENTRY BLOCKED — duplicate open position for BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "timestamp": "2026-09-13T10:29:29.951Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "GNDLWARFKHNsxBbcuHPV8H8EU2FVeuXJQSd1nV5Apump",
+    "tokenSymbol": "batonpepe",
+    "reason": "LOSS COOLDOWN — GNDLWARFKHNsxBbcuHPV8H8EU2FVeuXJQSd1nV5Apump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T10:39:29.215Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "tokenSymbol": "ETF",
+    "reason": "ENTRY BLOCKED — duplicate open position for BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "timestamp": "2026-09-13T10:39:31.113Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "tokenSymbol": "ETF",
+    "reason": "ENTRY BLOCKED — duplicate open position for BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "timestamp": "2026-09-13T10:49:28.516Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "tokenSymbol": "ETF",
+    "reason": "ENTRY BLOCKED — duplicate open position for BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "timestamp": "2026-09-13T10:59:28.252Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "DpJ7wnXHMAQ1nK7CpXnwgt15F5GXCLqDZbrBQCt1pump",
+    "tokenSymbol": "Cupsey",
+    "reason": "LOSS COOLDOWN — DpJ7wnXHMAQ1nK7CpXnwgt15F5GXCLqDZbrBQCt1pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T11:29:26.403Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "tokenSymbol": "ETF",
+    "reason": "ENTRY BLOCKED — duplicate open position for BUP2ZLDDoZwr4HwULNXvqzUWwbY8sg7z4NZtqJQVdq79",
+    "timestamp": "2026-09-13T11:29:28.803Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "DpJ7wnXHMAQ1nK7CpXnwgt15F5GXCLqDZbrBQCt1pump",
+    "tokenSymbol": "Cupsey",
+    "reason": "LOSS COOLDOWN — DpJ7wnXHMAQ1nK7CpXnwgt15F5GXCLqDZbrBQCt1pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T11:39:27.136Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "Hm5yXP479DcZ4h5UruUmvD6QgNym5j7dxjYmJh6BEmzj",
+    "tokenSymbol": "CONK",
+    "reason": "ENTRY BLOCKED — duplicate open position for Hm5yXP479DcZ4h5UruUmvD6QgNym5j7dxjYmJh6BEmzj",
+    "timestamp": "2026-09-13T11:39:29.853Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "tokenSymbol": "JUBJUB",
+    "reason": "ENTRY BLOCKED — duplicate open position for FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "timestamp": "2026-09-13T11:49:26.814Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "tokenSymbol": "JUBJUB",
+    "reason": "ENTRY BLOCKED — duplicate open position for FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "timestamp": "2026-09-13T11:59:27.557Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "Hm5yXP479DcZ4h5UruUmvD6QgNym5j7dxjYmJh6BEmzj",
+    "tokenSymbol": "CONK",
+    "reason": "ENTRY BLOCKED — duplicate open position for Hm5yXP479DcZ4h5UruUmvD6QgNym5j7dxjYmJh6BEmzj",
+    "timestamp": "2026-09-13T11:59:34.396Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "FnnpTLvQ1LwEEnqkfWgxaBSUw4dHvKway2Ts5mhjmTKp",
+    "tokenSymbol": "EMB",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T12:01:21.730Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "tokenSymbol": "JUBJUB",
+    "reason": "ENTRY BLOCKED — duplicate open position for FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "timestamp": "2026-09-13T12:09:26.961Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "tokenSymbol": "JUBJUB",
+    "reason": "ENTRY BLOCKED — duplicate open position for FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "timestamp": "2026-09-13T12:19:26.447Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "tokenSymbol": "JUBJUB",
+    "reason": "ENTRY BLOCKED — duplicate open position for FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "timestamp": "2026-09-13T12:29:28.711Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "tokenSymbol": "JUBJUB",
+    "reason": "ENTRY BLOCKED — duplicate open position for FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "timestamp": "2026-09-13T12:39:28.095Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "GigA5pdDKQSkCVPSbCQVcrdisZW1ZZ9eWK7rahDrKj4j",
+    "tokenSymbol": "GIGABRAIN",
+    "reason": "LOSS COOLDOWN — GigA5pdDKQSkCVPSbCQVcrdisZW1ZZ9eWK7rahDrKj4j had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T12:49:29.173Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "FnnpTLvQ1LwEEnqkfWgxaBSUw4dHvKway2Ts5mhjmTKp",
+    "tokenSymbol": "EMB",
+    "reason": "ENTRY BLOCKED — duplicate open position for FnnpTLvQ1LwEEnqkfWgxaBSUw4dHvKway2Ts5mhjmTKp",
+    "timestamp": "2026-09-13T12:49:31.679Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "tokenSymbol": "JUBJUB",
+    "reason": "ENTRY BLOCKED — duplicate open position for FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "timestamp": "2026-09-13T12:49:34.155Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "69g7ckSic9iZxXZ7q8jCPfUjWsUV6PC9DNGY5wKbpump",
+    "tokenSymbol": "NASDAWG",
+    "reason": "ENTRY BLOCKED — duplicate open position for 69g7ckSic9iZxXZ7q8jCPfUjWsUV6PC9DNGY5wKbpump",
+    "timestamp": "2026-09-13T13:09:27.862Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DfaUmD3SbBGMw6CLvNn6uXKhrvqpaiLdwyt3FNSqTs6a",
+    "tokenSymbol": "REI",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T13:09:29.601Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "69g7ckSic9iZxXZ7q8jCPfUjWsUV6PC9DNGY5wKbpump",
+    "tokenSymbol": "NASDAWG",
+    "reason": "ENTRY BLOCKED — duplicate open position for 69g7ckSic9iZxXZ7q8jCPfUjWsUV6PC9DNGY5wKbpump",
+    "timestamp": "2026-09-13T13:19:28.732Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DfaUmD3SbBGMw6CLvNn6uXKhrvqpaiLdwyt3FNSqTs6a",
+    "tokenSymbol": "REI",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T13:19:30.363Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "69g7ckSic9iZxXZ7q8jCPfUjWsUV6PC9DNGY5wKbpump",
+    "tokenSymbol": "NASDAWG",
+    "reason": "ENTRY BLOCKED — duplicate open position for 69g7ckSic9iZxXZ7q8jCPfUjWsUV6PC9DNGY5wKbpump",
+    "timestamp": "2026-09-13T13:29:28.584Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "5bHq2we35u8zezq8iB3cPxSUew6GSHMqCvxCsvM8TE3q",
+    "tokenSymbol": "ZABUBU",
+    "reason": "ENTRY BLOCKED — duplicate open position for 5bHq2we35u8zezq8iB3cPxSUew6GSHMqCvxCsvM8TE3q",
+    "timestamp": "2026-09-13T13:39:28.454Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "DfaUmD3SbBGMw6CLvNn6uXKhrvqpaiLdwyt3FNSqTs6a",
+    "tokenSymbol": "REI",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T13:39:33.931Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8p7uhDVpe5Pw4fg2tfHXskHmCicfr7gTrnbRtzAopump",
+    "tokenSymbol": "THIEVES",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T14:24:49.635Z"
+  },
+  {
+    "action": "MANUAL EXIT — BULK (Moonbags)",
+    "source": "manual-bulk-sell",
+    "scope": "MOONBAGS",
+    "scopeLabel": "Moonbags",
+    "sellPct": 100,
+    "affectedCount": 3,
+    "totalProceedsUsd": 60.43867141725731,
+    "totalPnlUsd": 60.43867141725731,
+    "positions": [
+      {
+        "tradeId": "mb_pt_1789266944821_AqoPZcUu",
+        "tokenSymbol": "STONK10",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0007287,
+        "proceedsUsd": 33.79170518488747,
+        "pnlUsd": 33.79170518488747
+      },
+      {
+        "tradeId": "mb_pt_1789288177842_8StnEDgf",
+        "tokenSymbol": "FLOPPY",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0001005,
+        "proceedsUsd": 11.909507137085917,
+        "pnlUsd": 11.909507137085917
+      },
+      {
+        "tradeId": "mb_pt_1789299975793_FZPneSgK",
+        "tokenSymbol": "JUBJUB",
+        "status": "MOONBAG EXIT",
+        "sellPrice": 0.0001793,
+        "proceedsUsd": 14.737459095283926,
+        "pnlUsd": 14.737459095283926
+      }
+    ],
+    "timestamp": "2026-09-13T14:26:01.865Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "8p7uhDVpe5Pw4fg2tfHXskHmCicfr7gTrnbRtzAopump",
+    "tokenSymbol": "THIEVES",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T14:26:24.944Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "4CstzpH8ZxXofjZh9d7FszM7J8UJewgCYKEC23dzpump",
+    "tokenSymbol": "Pleun",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T14:26:33.377Z"
+  },
+  {
+    "action": "MANUAL EXIT — INDIVIDUAL",
+    "source": "manual-paper-sell",
+    "tradeId": "pt_1789299975793_FZPneSgK",
+    "tokenMint": "FZPneSgKCpVuPapSoXw1h1N7866nZB27eN7xJS7dJEXG",
+    "tokenSymbol": "JUBJUB",
+    "sellPct": 100,
+    "sellPrice": 0.0001762,
+    "proceedsUsd": 28.96531280076997,
+    "pnlUsd": 22.133312800769968,
+    "totalPnlUsd": 33.19996920115495,
+    "status": "WIN",
+    "timestamp": "2026-09-13T14:28:17.581Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "8p7uhDVpe5Pw4fg2tfHXskHmCicfr7gTrnbRtzAopump",
+    "tokenSymbol": "THIEVES",
+    "reason": "ENTRY BLOCKED — duplicate open position for 8p7uhDVpe5Pw4fg2tfHXskHmCicfr7gTrnbRtzAopump",
+    "timestamp": "2026-09-13T14:44:54.558Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "8p7uhDVpe5Pw4fg2tfHXskHmCicfr7gTrnbRtzAopump",
+    "tokenSymbol": "THIEVES",
+    "reason": "LOSS COOLDOWN — 8p7uhDVpe5Pw4fg2tfHXskHmCicfr7gTrnbRtzAopump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T14:54:52.169Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "2HFakYaUp8au5oZThEvZ8wvSqoTreTQAvqtvoKarpump",
+    "tokenSymbol": "Mizzy",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T14:54:54.036Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "9dWDjBdiA186JVEKLvHCSbKaMZqLqrkW9WJ8j5S6pump",
+    "tokenSymbol": "rat",
+    "reason": "LOSS COOLDOWN — 9dWDjBdiA186JVEKLvHCSbKaMZqLqrkW9WJ8j5S6pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T15:04:50.259Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "TMf6rnjfRc5uANLt9A4Fa9H4N6p1KFxunk77szTpump",
+    "tokenSymbol": "DONGLE",
+    "reason": "LOSS COOLDOWN — TMf6rnjfRc5uANLt9A4Fa9H4N6p1KFxunk77szTpump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T15:14:51.576Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "9dWDjBdiA186JVEKLvHCSbKaMZqLqrkW9WJ8j5S6pump",
+    "tokenSymbol": "rat",
+    "reason": "LOSS COOLDOWN — 9dWDjBdiA186JVEKLvHCSbKaMZqLqrkW9WJ8j5S6pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T15:14:54.027Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "5fR7Qj7XPQV5yQ79Zzyj8E28oCgCBx7BUB27Xz6Ppump",
+    "tokenSymbol": "cheese",
+    "reason": "ENTRY BLOCKED — duplicate open position for 5fR7Qj7XPQV5yQ79Zzyj8E28oCgCBx7BUB27Xz6Ppump",
+    "timestamp": "2026-09-13T15:24:49.176Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "5fR7Qj7XPQV5yQ79Zzyj8E28oCgCBx7BUB27Xz6Ppump",
+    "tokenSymbol": "cheese",
+    "reason": "ENTRY BLOCKED — duplicate open position for 5fR7Qj7XPQV5yQ79Zzyj8E28oCgCBx7BUB27Xz6Ppump",
+    "timestamp": "2026-09-13T15:34:51.673Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "5fR7Qj7XPQV5yQ79Zzyj8E28oCgCBx7BUB27Xz6Ppump",
+    "tokenSymbol": "cheese",
+    "reason": "ENTRY BLOCKED — duplicate open position for 5fR7Qj7XPQV5yQ79Zzyj8E28oCgCBx7BUB27Xz6Ppump",
+    "timestamp": "2026-09-13T15:44:55.585Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "3Sv4Jriwo2V7c1wturGVrrpfKc9XbGxewnDHpMLrpbWQ",
+    "tokenSymbol": "INDEX",
+    "reason": "ENTRY BLOCKED — duplicate open position for 3Sv4Jriwo2V7c1wturGVrrpfKc9XbGxewnDHpMLrpbWQ",
+    "timestamp": "2026-09-13T16:04:53.518Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "3Sv4Jriwo2V7c1wturGVrrpfKc9XbGxewnDHpMLrpbWQ",
+    "tokenSymbol": "INDEX",
+    "reason": "ENTRY BLOCKED — duplicate open position for 3Sv4Jriwo2V7c1wturGVrrpfKc9XbGxewnDHpMLrpbWQ",
+    "timestamp": "2026-09-13T16:14:52.936Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "3Sv4Jriwo2V7c1wturGVrrpfKc9XbGxewnDHpMLrpbWQ",
+    "tokenSymbol": "INDEX",
+    "reason": "ENTRY BLOCKED — duplicate open position for 3Sv4Jriwo2V7c1wturGVrrpfKc9XbGxewnDHpMLrpbWQ",
+    "timestamp": "2026-09-13T16:24:55.134Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "H22aquDouZNFyfykwnXmY5Y9z5sMQtLFy5tUKR99pump",
+    "tokenSymbol": "NINA",
+    "reason": "LOSS COOLDOWN — H22aquDouZNFyfykwnXmY5Y9z5sMQtLFy5tUKR99pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T16:34:49.106Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "J53EGLkGxyC3mh45RVWxYtETEj2T9G3YnUPX5nn6AXGc",
+    "tokenSymbol": "EBT",
+    "reason": "ENTRY BLOCKED — duplicate open position for J53EGLkGxyC3mh45RVWxYtETEj2T9G3YnUPX5nn6AXGc",
+    "timestamp": "2026-09-13T16:44:50.002Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "9TfWxszAhU2pGRmtmkTVcmFtfMhB8adA9x3nfW6vAETf",
+    "tokenSymbol": "BLUE",
+    "reason": "LOSS COOLDOWN — 9TfWxszAhU2pGRmtmkTVcmFtfMhB8adA9x3nfW6vAETf had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T16:44:56.897Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "H22aquDouZNFyfykwnXmY5Y9z5sMQtLFy5tUKR99pump",
+    "tokenSymbol": "NINA",
+    "reason": "LOSS COOLDOWN — H22aquDouZNFyfykwnXmY5Y9z5sMQtLFy5tUKR99pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T16:44:57.464Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "J53EGLkGxyC3mh45RVWxYtETEj2T9G3YnUPX5nn6AXGc",
+    "tokenSymbol": "EBT",
+    "reason": "ENTRY BLOCKED — duplicate open position for J53EGLkGxyC3mh45RVWxYtETEj2T9G3YnUPX5nn6AXGc",
+    "timestamp": "2026-09-13T16:54:50.713Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "H22aquDouZNFyfykwnXmY5Y9z5sMQtLFy5tUKR99pump",
+    "tokenSymbol": "NINA",
+    "reason": "LOSS COOLDOWN — H22aquDouZNFyfykwnXmY5Y9z5sMQtLFy5tUKR99pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T16:54:53.221Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "9TfWxszAhU2pGRmtmkTVcmFtfMhB8adA9x3nfW6vAETf",
+    "tokenSymbol": "BLUE",
+    "reason": "LOSS COOLDOWN — 9TfWxszAhU2pGRmtmkTVcmFtfMhB8adA9x3nfW6vAETf had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T16:54:55.393Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "H22aquDouZNFyfykwnXmY5Y9z5sMQtLFy5tUKR99pump",
+    "tokenSymbol": "NINA",
+    "reason": "LOSS COOLDOWN — H22aquDouZNFyfykwnXmY5Y9z5sMQtLFy5tUKR99pump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T17:04:50.061Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "CVStKr4Y8EEGmCrQCCEweTLGAkwURZzGZ5ozJBpPnu1c",
+    "tokenSymbol": "PREDICT",
+    "reason": "ENTRY BLOCKED — duplicate open position for CVStKr4Y8EEGmCrQCCEweTLGAkwURZzGZ5ozJBpPnu1c",
+    "timestamp": "2026-09-13T17:14:49.784Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "ApS8Sb3oXpFV5zcok9ii83PhCo2DSUV3N5UMzcYcWhHs",
+    "tokenSymbol": "BURNED",
+    "reason": "LOSS COOLDOWN — ApS8Sb3oXpFV5zcok9ii83PhCo2DSUV3N5UMzcYcWhHs had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T17:14:52.373Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "J53EGLkGxyC3mh45RVWxYtETEj2T9G3YnUPX5nn6AXGc",
+    "tokenSymbol": "EBT",
+    "reason": "ENTRY BLOCKED — duplicate open position for J53EGLkGxyC3mh45RVWxYtETEj2T9G3YnUPX5nn6AXGc",
+    "timestamp": "2026-09-13T17:14:55.217Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "CVStKr4Y8EEGmCrQCCEweTLGAkwURZzGZ5ozJBpPnu1c",
+    "tokenSymbol": "PREDICT",
+    "reason": "ENTRY BLOCKED — duplicate open position for CVStKr4Y8EEGmCrQCCEweTLGAkwURZzGZ5ozJBpPnu1c",
+    "timestamp": "2026-09-13T17:24:50.907Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "ApS8Sb3oXpFV5zcok9ii83PhCo2DSUV3N5UMzcYcWhHs",
+    "tokenSymbol": "BURNED",
+    "reason": "LOSS COOLDOWN — ApS8Sb3oXpFV5zcok9ii83PhCo2DSUV3N5UMzcYcWhHs had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T17:24:52.865Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "27mxRiTewKmSpMQ1V9LmKPwNFe3rUpqtvPN452KcDppy",
+    "tokenSymbol": "SALARY",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T17:24:54.835Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "J53EGLkGxyC3mh45RVWxYtETEj2T9G3YnUPX5nn6AXGc",
+    "tokenSymbol": "EBT",
+    "reason": "LOSS COOLDOWN — J53EGLkGxyC3mh45RVWxYtETEj2T9G3YnUPX5nn6AXGc had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T17:24:55.520Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "8eaTKu3hpJwaLQbsVbUjAVt1CPCvwP3PfYHP8k5Ypump",
+    "tokenSymbol": "CHARLEY",
+    "reason": "LOSS COOLDOWN — 8eaTKu3hpJwaLQbsVbUjAVt1CPCvwP3PfYHP8k5Ypump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T17:34:49.651Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "ExhH6bcrQfe8B3ojuuwKpE8mKgh4upa46RArcJRqriUX",
+    "tokenSymbol": "QUACKER",
+    "reason": "ENTRY BLOCKED — duplicate open position for ExhH6bcrQfe8B3ojuuwKpE8mKgh4upa46RArcJRqriUX",
+    "timestamp": "2026-09-13T17:44:50.429Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "8eaTKu3hpJwaLQbsVbUjAVt1CPCvwP3PfYHP8k5Ypump",
+    "tokenSymbol": "CHARLEY",
+    "reason": "LOSS COOLDOWN — 8eaTKu3hpJwaLQbsVbUjAVt1CPCvwP3PfYHP8k5Ypump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T17:44:57.224Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "CVStKr4Y8EEGmCrQCCEweTLGAkwURZzGZ5ozJBpPnu1c",
+    "tokenSymbol": "PREDICT",
+    "reason": "ENTRY BLOCKED — duplicate open position for CVStKr4Y8EEGmCrQCCEweTLGAkwURZzGZ5ozJBpPnu1c",
+    "timestamp": "2026-09-13T17:44:58.037Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "loss-protection",
+    "cooldownType": "loss-cooldown",
+    "tokenMint": "8eaTKu3hpJwaLQbsVbUjAVt1CPCvwP3PfYHP8k5Ypump",
+    "tokenSymbol": "CHARLEY",
+    "reason": "LOSS COOLDOWN — 8eaTKu3hpJwaLQbsVbUjAVt1CPCvwP3PfYHP8k5Ypump had a stop-loss on 2026-09-13 UTC; blocked until 2026-09-14T00:00:00.000Z",
+    "totalLosses": 1,
+    "lossesToday": 1,
+    "timestamp": "2026-09-13T17:54:54.010Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "7DXhvavaFKG673yWBQ8Di8e6qyMHYkywT4913Uj9pump",
+    "tokenSymbol": "PEPSUIN",
+    "reason": "ENTRY BLOCKED — duplicate open position for 7DXhvavaFKG673yWBQ8Di8e6qyMHYkywT4913Uj9pump",
+    "timestamp": "2026-09-13T18:04:50.140Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "7DXhvavaFKG673yWBQ8Di8e6qyMHYkywT4913Uj9pump",
+    "tokenSymbol": "PEPSUIN",
+    "reason": "ENTRY BLOCKED — duplicate open position for 7DXhvavaFKG673yWBQ8Di8e6qyMHYkywT4913Uj9pump",
+    "timestamp": "2026-09-13T18:14:53.175Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "4775QEyTS7ECpvhbeEg1a5XUjpK6CtEJwRpw6vvwpump",
+    "tokenSymbol": "ニーナ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T18:24:48.938Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "Frzru381bacm9KddQhA5Zyj7p4zmJsYZwrizWo6FRVJs",
+    "tokenSymbol": "POOR",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T18:24:51.240Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GJRxYW8MiEPhJztdh41EXsuZvNQj7sJZRnuKSrTBpump",
+    "tokenSymbol": "aicate",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T18:28:34.010Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GJRxYW8MiEPhJztdh41EXsuZvNQj7sJZRnuKSrTBpump",
+    "tokenSymbol": "aicate",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T18:34:53.582Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "4775QEyTS7ECpvhbeEg1a5XUjpK6CtEJwRpw6vvwpump",
+    "tokenSymbol": "ニーナ",
+    "reason": "ENTRY BLOCKED — duplicate open position for 4775QEyTS7ECpvhbeEg1a5XUjpK6CtEJwRpw6vvwpump",
+    "timestamp": "2026-09-13T18:34:57.551Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "4775QEyTS7ECpvhbeEg1a5XUjpK6CtEJwRpw6vvwpump",
+    "tokenSymbol": "ニーナ",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T18:44:52.161Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "ZAjeG8XBzoAvogXBgSKZMv4hdXqs8JByGBTJ5iKpump",
+    "tokenSymbol": "MEMESCOPE",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T18:54:51.638Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "deduplication",
+    "tokenMint": "4775QEyTS7ECpvhbeEg1a5XUjpK6CtEJwRpw6vvwpump",
+    "tokenSymbol": "ニーナ",
+    "reason": "ENTRY BLOCKED — duplicate open position for 4775QEyTS7ECpvhbeEg1a5XUjpK6CtEJwRpw6vvwpump",
+    "timestamp": "2026-09-13T18:54:59.152Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "3KsTy7PHRnfjrbFp2JBqUbg49x3aBGoRWgt6sUh2pump",
+    "tokenSymbol": "wtf",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T19:04:52.034Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "74SRMGMJYYrCh6MQM543H3bBuyf4w9pCc33w9zUmpump",
+    "tokenSymbol": "pisscoin",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T19:08:34.394Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "366tTMgvmV8TgezFiKQ8Tv3FPkqzAFVVifMDviivpump",
+    "tokenSymbol": "[KAT]",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T19:10:36.206Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "C5tbgAjNh53TTzZwE8kYGmLz9xW1jEMhEuvhTw2A3iX4",
+    "tokenSymbol": "AI",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T19:30:35.349Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "C5tbgAjNh53TTzZwE8kYGmLz9xW1jEMhEuvhTw2A3iX4",
+    "tokenSymbol": "AI",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T19:34:50.477Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "C5tbgAjNh53TTzZwE8kYGmLz9xW1jEMhEuvhTw2A3iX4",
+    "tokenSymbol": "AI",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T19:44:50.874Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GeukSURCwLgjRzHiKEN4qZy6eHcDMt4JDXtNJs4EQgj8",
+    "tokenSymbol": "ONCHAIN",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T19:57:39.670Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GeukSURCwLgjRzHiKEN4qZy6eHcDMt4JDXtNJs4EQgj8",
+    "tokenSymbol": "ONCHAIN",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T20:04:51.407Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "GpTEmPGmgx9HDThCR44xMyJoXZkDYtzTkPs5zAY7YDcY",
+    "tokenSymbol": "AMC",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-13T20:06:44.855Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "GpTEmPGmgx9HDThCR44xMyJoXZkDYtzTkPs5zAY7YDcY",
+    "tokenSymbol": "AMC",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T20:14:53.319Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "paper-ledger",
+    "tokenMint": "GeukSURCwLgjRzHiKEN4qZy6eHcDMt4JDXtNJs4EQgj8",
+    "tokenSymbol": "ONCHAIN",
+    "reason": "ENTRY BLOCKED — zero-value position",
+    "timestamp": "2026-09-13T20:15:00.563Z"
+  },
+  {
+    "action": "PAPER ENTRY BLOCKED",
+    "source": "position-cap",
+    "tokenMint": "28nL48UNhtT3CaqzbsNJEeqrai5qYFG1uFkbmVabQvXm",
+    "tokenSymbol": "BATMAN",
+    "reason": "ENTRY BLOCKED — maximum 3 open positions reached",
+    "timestamp": "2026-09-14T05:36:02.382Z"
+  }
+]
