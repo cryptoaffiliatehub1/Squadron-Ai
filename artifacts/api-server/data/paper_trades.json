@@ -1,1 +1,65 @@
-[]
+[
+  {
+    "id": "pt_1789538776309_ER5Mk4jK",
+    "tokenMint": "ER5Mk4jK2gpLSTneD14hHczodi3rsVU4mEGFaa9rQMjw",
+    "tokenSymbol": "MUSEBOOK",
+    "tokenName": "MUSEBOOK",
+    "logoUrl": "https://cdn.dexscreener.com/cms/images/EE96hqKh9x-jkJe7?width=64&height=64&fit=crop&quality=95&format=auto",
+    "socialLinks": {
+      "twitter": "https://x.com/alexandr_wang/status/2100088844251267314?s=46"
+    },
+    "type": "buy",
+    "amountSol": 0.06666666666666667,
+    "positionSizeUsd": 10,
+    "tier": "MOON",
+    "entryPrice": 0.00006218,
+    "exitPrice": null,
+    "pnlSol": null,
+    "pnlUsd": null,
+    "filtersPassedCount": 13,
+    "filtersFailedCount": 0,
+    "filterDetails": {
+      "deadToken": true,
+      "sellPressureEntry": true,
+      "liquidity": true,
+      "volume": true,
+      "sellPressure": true,
+      "rugcheck": "VERIFIED (score: 10001)",
+      "birdeye": true,
+      "supplyAudit": true,
+      "washTrade": true,
+      "volumeMomentum": true,
+      "sniperAccumulation": true,
+      "walletSeeding": true,
+      "lpBurn": true
+    },
+    "probabilityScore": 84,
+    "scoreBreakdownJson": "{\"rugcheck\":20,\"holderConcentration\":20,\"volumeMomentum\":10,\"liquidityQuality\":20,\"socialPresence\":4,\"dualSignalBonus\":10,\"c1Adjustments\":0}",
+    "signalsTriggered": [
+      "RUGCHECK_VERIFIED",
+      "VELOCITY_UP",
+      "HIGH_LIQ_RATIO",
+      "DUAL_SIGNAL",
+      "SIM_RELAXED"
+    ],
+    "regime": "CHOP",
+    "timestamp": "2026-09-16T06:06:16.309Z",
+    "exitTimestamp": null,
+    "relaxedMode": true,
+    "sniperRiskPct": 0,
+    "walletAgeDays": 0,
+    "volumeConsistencyScore": 0,
+    "holderGrowthPattern": null,
+    "entryLiquidity": 20037.56,
+    "entryMarketCap": 62182,
+    "entryVolume5m": 26510.75,
+    "entryBuys5m": 296,
+    "entrySells5m": 177,
+    "entryRegime": "CHOP",
+    "status": "OPEN",
+    "targetPrice": 0.00015545,
+    "stopLoss": 0.000043526,
+    "exitMultiplier": null,
+    "moonbagAmountUsd": null
+  }
+]
