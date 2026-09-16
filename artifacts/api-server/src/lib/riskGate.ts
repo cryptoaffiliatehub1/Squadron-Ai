@@ -34,6 +34,8 @@ export interface RiskGateResult {
   failureLabel?: string;
   unverified?: boolean;
   extraSignals?: ExtraSignals;
+  rugcheckScore?: number;
+  rugcheckRating?: string;
 }
 
 // ── Solana RPC helper ─────────────────────────────────────────────────────────
@@ -254,6 +256,33 @@ function checkSellPressureAtEntry(buyTxns5m: number, sellTxns5m: number): { bloc
     return {
       blocked: true,
       reason: `HIGH SELL PRESSURE AT ENTRY — sells:buys = ${ratio.toFixed(2)}:1 in last 5m`,
+    };
+  }
+  return { blocked: false };
+}
+
+// ── C2: Post-peak entry guard — blocks stale pumped tokens ────────────────────
+
+function checkPostPeakEntry(
+  createdAt: number,
+  priceChange24h: number,
+  volume5m: number,
+  buyTxns5m: number,
+  sellTxns5m: number,
+): { blocked: boolean; reason?: string } {
+  const tokenAgeHours = (Date.now() - createdAt) / (1_000 * 60 * 60);
+  // Very new tokens (<2h) legitimately have high 24h priceChange — skip check
+  if (tokenAgeHours < 2) return { blocked: false };
+
+  const wasHeavilyPumped = priceChange24h > 300;  // spiked >300% in 24h
+  const volumeDying      = volume5m < 2_000;       // now <$2k in last 5m
+  const sellingPressure  =
+    buyTxns5m <= 0 || sellTxns5m >= Math.ceil(buyTxns5m * 0.8); // sells ≥80% of buys
+
+  if (wasHeavilyPumped && volumeDying && sellingPressure) {
+    return {
+      blocked: true,
+      reason: `POST-PEAK ENTRY BLOCKED — ${tokenAgeHours.toFixed(1)}h old, pumped +${priceChange24h.toFixed(0)}%, vol $${volume5m.toFixed(0)}/5m`,
     };
   }
   return { blocked: false };
@@ -584,6 +613,22 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   }
   checks.sellPressureEntry = true;
 
+  // ── C2: Post-peak entry guard ──────────────────────────────────────────────
+  const postPeak = checkPostPeakEntry(
+    token.createdAt,
+    token.priceChange24h,
+    token.volume5m,
+    token.buyTxns5m,
+    token.sellTxns5m,
+  );
+  if (postPeak.blocked) {
+    failureLabel = "POST-PEAK ENTRY";
+    reasons.push(postPeak.reason!);
+    checks.postPeakEntry = false;
+    return { passed: false, score: 0, reasons, checks, failureLabel };
+  }
+  checks.postPeakEntry = true;
+
   // ── Liquidity floor (skip for BONDING tokens) ─────────────────────────────
   if (!isBonding) {
     if (token.liquidityUsd < 15_000) {
@@ -631,9 +676,15 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
     failureLabel = "RUGCHECK FAIL";
     reasons.push(`RugCheck: ${specificReasons}`);
     checks.rugcheck = false;
-    return { passed: false, score: 0, reasons, checks, failureLabel };
+    return { passed: false, score: 0, reasons, checks, failureLabel, rugcheckScore: rugData.score, rugcheckRating: rugData.rating };
   } else {
-    checks.rugcheck = `VERIFIED (score: ${rugData.score})`;
+    checks.rugcheck = `VERIFIED (raw: ${rugData.score}, normalized: ${rugData.rating})`;
+    logger.info(
+      { mint: token.tokenMint, rawScore: rugData.score, normalizedScore: rugData.rating, hardRisks: rugData.hardRisks },
+      "[RUGCHECK_PASS] low normalized score is valid; no hard security risk reported",
+    );
+    // Keep raw RugCheck values available to the audit trail even on a pass.
+    score -= 0;
   }
 
   // ── Birdeye security ──────────────────────────────────────────────────────
@@ -685,7 +736,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   // ── C1: Sniper accumulation (async, with 8s timeout) ─────────────────────
   const sniperResult = await Promise.race([
     checkSniperAccumulation(token.tokenMint, token.createdAt),
-    new Promise<{ riskPct: number; blocked: boolean }>((r) => setTimeout(() => r({ riskPct: 0, blocked: false }), 8_000)),
+    new Promise<{ riskPct: number; blocked: boolean; reason?: string }>((r) => setTimeout(() => r({ riskPct: 0, blocked: false }), 8_000)),
   ]);
   if (sniperResult.blocked) {
     failureLabel = "SNIPER ACCUMULATION";
@@ -703,7 +754,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   // ── C1: Wallet seeding detection (async, with 8s timeout) ────────────────
   const seedingResult = await Promise.race([
     checkWalletSeeding(token.tokenMint),
-    new Promise<{ blocked: boolean }>((r) => setTimeout(() => r({ blocked: false }), 8_000)),
+    new Promise<{ blocked: boolean; reason?: string }>((r) => setTimeout(() => r({ blocked: false }), 8_000)),
   ]);
   if (seedingResult.blocked) {
     failureLabel = "WALLET SEEDING";
@@ -755,7 +806,7 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
   const ageMinutes = (Date.now() - token.createdAt) / 60_000;
   checks.lpBurn = ageMinutes > 60 ? "Assumed (token >1h)" : true;
 
-  const passed = reasons.length === 0 || score >= 60;
+  const passed = reasons.length === 0;
 
   if (passed) {
     logger.info(

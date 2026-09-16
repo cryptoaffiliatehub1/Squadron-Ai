@@ -29,10 +29,10 @@ router.get("/trades", async (req, res) => {
       .limit(isNaN(limit) ? 50 : limit)
       .offset(isNaN(offset) ? 0 : offset);
 
-    res.json(trades.map(serializeTrade));
+     return res.json(trades.map(serializeTrade));
   } catch (err) {
     logger.error({ err }, "GET /trades failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -71,10 +71,10 @@ router.get("/trades/pnl", async (req, res) => {
     };
 
     cache.set(CACHE_KEYS.PNL_SUMMARY, result, CACHE_TTL.PNL_SUMMARY);
-    res.json(result);
+    return res.json(result);
   } catch (err) {
     logger.error({ err }, "GET /trades/pnl failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -97,10 +97,10 @@ router.patch("/trades/:id", async (req, res) => {
     if (!updated) return res.status(404).json({ error: "Trade not found" });
 
     cache.invalidate(CACHE_KEYS.PNL_SUMMARY);
-    res.json(serializeTrade(updated));
+    return res.json(serializeTrade(updated));
   } catch (err) {
     logger.error({ err }, "PATCH /trades/:id failed");
-    res.status(500).json({ error: "Internal server error" });
+     return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -171,10 +171,10 @@ router.get("/history", async (req, res) => {
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit);
 
-    res.json(combined);
+    return res.json(combined);
   } catch (err) {
     logger.error({ err }, "GET /history failed");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

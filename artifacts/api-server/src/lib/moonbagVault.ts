@@ -1,5 +1,6 @@
 import axios from "axios";
 import { logger } from "./logger";
+import { recordDexScreenerCall } from "./dexMetrics";
 
 export interface MoonbagPosition {
   id: string;
@@ -79,6 +80,7 @@ async function fetchMoonbagLiveData(mint: string): Promise<{
   sellTxns5m: number;
 } | null> {
   try {
+    recordDexScreenerCall("paper-moonbag");
     const resp = await axios.get<{ pairs?: any[] }>(
       `https://api.dexscreener.com/latest/dex/tokens/${mint}`,
       { timeout: 6_000 },
@@ -242,6 +244,12 @@ export function removeMoonbag(id: string): void {
   vault.delete(id);
   monitorState.delete(id);
   logger.info({ id }, "Moonbag removed from vault");
+}
+
+export function clearMoonbags(): void {
+  vault.clear();
+  monitorState.clear();
+  logger.info("MOONBAG VAULT CLEARED — reset verification complete");
 }
 
 export function getTotalMoonbagValueSol(): number {

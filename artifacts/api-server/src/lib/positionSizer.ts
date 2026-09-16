@@ -39,7 +39,20 @@ export function calculatePositionSize(
   probabilityScore: number,
 ): PositionSize {
   const { isPaperMode } = require("./tradingMode") as { isPaperMode: () => boolean };
-  const effectiveBalance = isPaperMode() ? PAPER_TRADE_SOL : walletBalanceSol;
+  const paperMode = isPaperMode();
+
+  // In paper mode: scale off live sim balance (USD→SOL via live price) so position
+  // sizing reflects actual portfolio growth AND uses the real SOL price each entry.
+  let effectiveBalance: number;
+  if (paperMode) {
+    const { getSimBalance } = require("./paperTrading") as {
+      getSimBalance: () => { currentBalanceUsd: number };
+    };
+    const simUsd = getSimBalance().currentBalanceUsd;
+    effectiveBalance = solPriceUsd > 0 && simUsd > 0 ? simUsd / solPriceUsd : PAPER_TRADE_SOL;
+  } else {
+    effectiveBalance = walletBalanceSol;
+  }
 
   const regime = getRegime();
   const regimeMultiplier = getMultiplier();
@@ -64,5 +77,12 @@ export function calculatePositionSize(
   };
 
   logger.info(result, "[POSITION_SIZER] Calculated entry size");
+  console.log(
+    `POSITION SIZER: SOL@$${solPriceUsd.toFixed(2)} | ${
+      paperMode
+        ? `sim_usd=$${(effectiveBalance * solPriceUsd).toFixed(2)}`
+        : `wallet=${effectiveBalance.toFixed(4)}SOL`
+    } | score=${pScore} | ${regime.regime}×${regimeMultiplier} → $${amountUsd.toFixed(2)} (${amountSol.toFixed(4)}SOL)`,
+  );
   return result;
 }

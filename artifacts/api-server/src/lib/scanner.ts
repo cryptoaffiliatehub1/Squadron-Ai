@@ -3,10 +3,12 @@ import { logger } from "./logger";
 import { getRotatedHeaders } from "./headerFactory";
 import type { DexToken } from "./dexScreener";
 import { setScannerOnline } from "./systemReadiness";
+import { recordDexScreenerCall } from "./dexMetrics";
 
 export type ScannerSource = "dexscreener" | "pumpfun" | "birdeye";
 
 interface ScannerState {
+  running: boolean;
   activeSource: ScannerSource;
   dexScreenerRateLimited: boolean;
   dexScreenerRateLimitedUntil: Date | null;
@@ -20,6 +22,7 @@ interface ScannerState {
 }
 
 const state: ScannerState = {
+  running: false,
   activeSource: "dexscreener",
   dexScreenerRateLimited: false,
   dexScreenerRateLimitedUntil: null,
@@ -139,6 +142,7 @@ function buildToken(
 
 async function fetchBestPair(tokenAddress: string): Promise<PairDataRaw | undefined> {
   try {
+    recordDexScreenerCall("scanner");
     const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
       `https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`,
       { headers: getRotatedHeaders(), timeout: 8_000 },
@@ -162,6 +166,7 @@ async function fetchPairsForAddresses(addresses: string[]): Promise<Map<string, 
 
   await Promise.allSettled(
     chunks.map(async (chunk) => {
+      recordDexScreenerCall("scanner");
       const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
         `https://api.dexscreener.com/latest/dex/tokens/${chunk.join(",")}`,
         { headers: getRotatedHeaders(), timeout: 12_000 },
@@ -183,6 +188,7 @@ async function fetchPairsForAddresses(addresses: string[]): Promise<Map<string, 
 
 async function searchFallbackParser(): Promise<Partial<DexToken>[]> {
   try {
+    recordDexScreenerCall("scanner");
     const resp = await axios.get<{ pairs?: PairDataRaw[] }>(
       "https://api.dexscreener.com/latest/dex/search?q=solana&order=h6_volume",
       { headers: getRotatedHeaders(), timeout: 10_000 },
@@ -198,6 +204,7 @@ async function searchFallbackParser(): Promise<Partial<DexToken>[]> {
 
 async function scanDexScreener(): Promise<Partial<DexToken>[]> {
   try {
+    recordDexScreenerCall("scanner");
     const profileResp = await axios.get<unknown>(
       "https://api.dexscreener.com/token-profiles/latest/v1",
       { headers: getRotatedHeaders(), timeout: 10_000 },
@@ -299,6 +306,7 @@ async function scanBirdeye(): Promise<Partial<DexToken>[]> {
 
 async function probeDexScreener(): Promise<boolean> {
   try {
+    recordDexScreenerCall("scanner");
     const resp = await axios.get("https://api.dexscreener.com/token-profiles/latest/v1", {
       headers: getRotatedHeaders(),
       timeout: 8000,
@@ -312,7 +320,7 @@ async function probeDexScreener(): Promise<boolean> {
 }
 
 function connectPumpFun(): void {
-  if (pumpFunWs) return;
+  if (!state.running || pumpFunWs) return;
   try {
     const WebSocket = (globalThis as any).WebSocket ?? require("ws");
     const ws = new WebSocket("wss://pumpportal.fun/api/data");
@@ -380,13 +388,13 @@ function connectPumpFun(): void {
       if (state.wsReconnectAttempts > 3 && state.activeSource === "pumpfun") {
         failover("birdeye", "Pump.fun WebSocket failed repeatedly");
       }
-      setTimeout(() => connectPumpFun(), Math.min(5000 * state.wsReconnectAttempts, 30000));
+       if (state.running) setTimeout(() => connectPumpFun(), Math.min(5000 * state.wsReconnectAttempts, 30000));
     };
 
     ws.onclose = () => {
       state.pumpFunConnected = false;
       pumpFunWs = null;
-      setTimeout(() => connectPumpFun(), 5000);
+       if (state.running) setTimeout(() => connectPumpFun(), 5000);
     };
 
     pumpFunWs = ws;
@@ -397,6 +405,7 @@ function connectPumpFun(): void {
 }
 
 async function runScanCycle(): Promise<void> {
+  if (!state.running) return;
   let tokens: Partial<DexToken>[] = [];
 
   if (
@@ -424,9 +433,9 @@ async function runScanCycle(): Promise<void> {
     state.lastTokenCount = tokens.length;
   }
 
-  if (onToken) {
+  if (state.running && onToken) {
     for (const token of tokens) {
-      if (token.tokenMint) {
+      if (state.running && token.tokenMint) {
         await onToken(token).catch((err) =>
           logger.error({ err, mint: token.tokenMint }, "Scanner: token callback error"),
         );
@@ -458,6 +467,7 @@ function scheduleDailyReset(): void {
 
 export function startTripleRadarScanner(callback: TokenCallback): void {
   if (scanInterval) return;
+  state.running = true;
   onToken = callback;
 
   runScanCycle().catch((e) => logger.error({ e }, "Scanner: initial cycle failed"));
@@ -497,7 +507,10 @@ export function stopTripleRadarScanner(): void {
   if (probeInterval) { clearInterval(probeInterval); probeInterval = null; }
   if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; }
   if (dailyResetTimeout) { clearTimeout(dailyResetTimeout); dailyResetTimeout = null; }
+  state.running = false;
+  const ws = pumpFunWs as any;
   pumpFunWs = null;
+  try { ws?.close?.(); } catch {}
   setScannerOnline(false);
   logger.info("[SCANNER] Triple-radar scanner stopped");
 }

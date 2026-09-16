@@ -7,6 +7,7 @@ import {
   AlertTriangle, CheckCircle2, Layers, Flame,
 } from "lucide-react";
 import { useTradingMode } from "@/contexts/trading-mode";
+import { PaperSellControls } from "@/components/paper-sell-controls";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -134,7 +135,7 @@ function TokenLogo({ logoUrl, symbol }: { logoUrl?: string | null; symbol?: stri
 
 // ── Trade card ────────────────────────────────────────────────────────────────
 
-function TradeCard({ t }: { t: any }) {
+function TradeCard({ t, sellable = false }: { t: any; sellable?: boolean }) {
   const ep = t.entryPrice as number | null;
   const cp = (t.currentPrice ?? ep) as number | null;
 
@@ -195,7 +196,13 @@ function TradeCard({ t }: { t: any }) {
       </div>
 
       {/* Row 3: social icons */}
-      <SocialRow mint={t.tokenMint} links={t.socialLinks} />
+      <div className="flex items-center justify-between gap-2">
+        <SocialRow mint={t.tokenMint} links={t.socialLinks} />
+        {sellable && <PaperSellControls id={t.id} scope={t.status === "MOONBAG" ? "moonbags" : "open"} />}
+      </div>
+      <p className="text-[7px] text-muted-foreground/60 font-mono">
+        Entry: {t.entryTimestamp ? new Date(t.entryTimestamp).toLocaleString() : "—"} · Exit: {t.exitTimestamp ? new Date(t.exitTimestamp).toLocaleString() : "OPEN"}
+      </p>
     </div>
   );
 }
@@ -242,12 +249,16 @@ export default function Simulation() {
   const sb = simBal as any;
   const rp = report as any;
   const paperTrades: any[] = (trades as any[]) ?? [];
+  const openTrades = paperTrades.filter((trade) => trade.status === "OPEN");
+  const moonbagTrades = paperTrades.filter((trade) => trade.status === "MOONBAG");
+  const allTimeStats = rp?.allTime ?? rp ?? {};
+  const todayStats = rp?.today ?? {};
 
-  const winRate   = rp?.winRate ?? 0;
-  const totalTrades = rp?.totalTrades ?? 0;
-  const expectancy  = rp?.expectancy ?? 0;
-  const avgWinUsd   = rp?.avgWinUsd ?? 0;
-  const avgLossUsd  = rp?.avgLossUsd ?? 0;
+  const winRate   = allTimeStats?.winRate ?? 0;
+  const totalTrades = allTimeStats?.totalTrades ?? 0;
+  const expectancy  = allTimeStats?.expectancyUsd ?? rp?.expectancy ?? 0;
+  const avgWinUsd   = allTimeStats?.avgWinUsd ?? rp?.avgWinUsd ?? 0;
+  const avgLossUsd  = allTimeStats?.avgLossUsd ?? rp?.avgLossUsd ?? 0;
 
   const dailyPnL      = sb?.todayPnL ?? 0;
   const dailyTarget   = sb?.dailyTarget ?? 0;
@@ -258,6 +269,7 @@ export default function Simulation() {
   const returnPct     = sb?.returnPct ?? 0;
   const openPositions = sb?.openPositions ?? 0;
   const moonbagCount  = sb?.moonbagCount ?? 0;
+  const todayRealizedPnl = sb?.todayRealizedPnlUsd ?? todayStats?.totalPnlUsd ?? 0;
 
   const panelCls = "bg-card border border-border rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.25)]";
   const progressBarPct = Math.min(Math.max(progressPct, 0), 100);
@@ -323,7 +335,25 @@ export default function Simulation() {
                 {totalPnL >= 0 ? "+" : ""}${totalPnL.toFixed(2)} ({returnPct >= 0 ? "+" : ""}{returnPct.toFixed(1)}%)
               </p>
             </div>
-            <p className="text-[7.5px] text-muted-foreground mt-1">Started at $100 · net realized P&L only</p>
+              <div className="grid grid-cols-3 gap-2 mt-3 border-t border-border/50 pt-2 text-center">
+                <div>
+                  <p className="text-[7px] text-muted-foreground uppercase">Cash</p>
+                  <p className="text-[10px] font-mono font-bold">${(sb?.cashBalance ?? simBalance).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[7px] text-muted-foreground uppercase">Total Equity</p>
+                  <p className="text-[10px] font-mono font-bold text-primary">${(sb?.totalEquity ?? sb?.totalValue ?? simBalance).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-[7px] text-muted-foreground uppercase">Today Realized</p>
+                  <p className={`text-[10px] font-mono font-bold ${todayRealizedPnl >= 0 ? "text-gains" : "text-losses"}`}>
+                    {todayRealizedPnl >= 0 ? "+" : ""}{fmtUsd(todayRealizedPnl)}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[7.5px] text-muted-foreground mt-2">
+                Starting capital ${(sb?.startingCapitalUsd ?? 100).toFixed(2)} · all-time realized P&amp;L excludes open value
+              </p>
           </div>
         )}
 
@@ -374,7 +404,7 @@ export default function Simulation() {
               label="Win Rate"
               value={`${(winRate * 100).toFixed(1)}%`}
               color={winRate >= 0.5 ? "gains" : "losses"}
-              sub={`${totalTrades} total trades`}
+               sub={`${totalTrades} all-time realized trades`}
             />
             <StatCard
               label="Expectancy"
@@ -415,33 +445,51 @@ export default function Simulation() {
           </div>
         )}
 
-        {/* Trade log */}
+         {/* Active paper positions */}
         <div>
-          <div className="flex items-center justify-between mb-2">
+           <div className="flex items-center justify-between mb-2">
             <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1">
-              <BarChart2 size={8} /> Trade Log
+               <BarChart2 size={8} /> Active Positions
             </p>
-            {paperTrades.length > 0 && (
-              <span className="text-[8px] text-primary font-mono font-bold">{paperTrades.length} entries</span>
+             {openTrades.length > 0 && (
+               <PaperSellControls allowScope scope="open" />
             )}
           </div>
 
           {tradesLoading ? (
             <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
-          ) : paperTrades.length === 0 ? (
+           ) : openTrades.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Activity size={24} className="mx-auto mb-2 opacity-20" />
-              <p className="text-xs font-mono uppercase">No trades yet</p>
-              <p className="text-[9px] text-muted-foreground/60 mt-1">Start the bot to begin paper trading</p>
+               <p className="text-xs font-mono uppercase">No open positions</p>
+               <p className="text-[9px] text-muted-foreground/60 mt-1">Open paper positions will appear here</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {[...paperTrades].reverse().slice(0, 50).map((t: any) => (
-                <TradeCard key={t.id} t={t} />
+               {[...openTrades].reverse().map((t: any) => (
+                 <TradeCard key={t.id} t={t} sellable />
               ))}
             </div>
           )}
         </div>
+
+         <div>
+           <div className="flex items-center justify-between mb-2">
+             <p className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-1">
+               <Flame size={8} className="text-purple-400" /> Moonbag Vault
+             </p>
+             {moonbagTrades.length > 0 && <PaperSellControls scope="moonbags" />}
+           </div>
+           {moonbagTrades.length === 0 ? (
+             <div className={`${panelCls} p-4 text-center text-[8px] text-muted-foreground`}>
+               No moonbags. A 2.5× exit creates a separate zero-cost position here.
+             </div>
+           ) : (
+             <div className="space-y-2">
+               {[...moonbagTrades].reverse().map((t: any) => <TradeCard key={t.id} t={t} sellable />)}
+             </div>
+           )}
+         </div>
 
         {/* Daily compounding history section */}
         {!simLoading && sb && (

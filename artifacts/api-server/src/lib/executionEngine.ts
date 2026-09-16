@@ -1,6 +1,6 @@
 import axios from "axios";
 import { logger } from "./logger";
-import { isPaperMode, recordPaperTrade } from "./paperTrading";
+import { isPaperMode, recordPaperTrade, sellPaperTrade } from "./paperTrading";
 import { getQuote, executeSwap } from "./jupiter";
 import { db, tradesTable } from "@workspace/db";
 import { getMoonbags, addMoonbag, removeMoonbag } from "./moonbagVault";
@@ -103,6 +103,8 @@ export async function executeBuy(
       tokenName: token.tokenName,
       type: "buy",
       amountSol: positionSize.amountSol,
+      positionSizeUsd: positionSize.amountUsd,
+      tier: "MOON",
       entryPrice: token.priceUsd,
       exitPrice: null,
       pnlSol: null,
@@ -170,27 +172,7 @@ export async function executeGoldenExit(
   );
 
   if (isPaperMode()) {
-    const proceedsSol = halfTokens * currentPrice;
-    const pnlSol = proceedsSol - entryAmountSol;
-    recordPaperTrade({
-      id: `paper_exit_${Date.now()}`,
-      tokenMint: token.tokenMint,
-      tokenSymbol: token.tokenSymbol,
-      tokenName: token.tokenName,
-      type: "sell",
-      amountSol: proceedsSol,
-      entryPrice: entryAmountSol / tokensHeld,
-      exitPrice: currentPrice,
-      pnlSol,
-      pnlUsd: pnlSol * 150,
-      filtersPassedCount: 0,
-      filtersFailedCount: 0,
-      filterDetails: { goldenExit: true },
-      probabilityScore: 100,
-      regime: "GOLDEN_EXIT",
-      timestamp: new Date().toISOString(),
-      exitTimestamp: new Date().toISOString(),
-    });
+    sellPaperTrade(tradeId, 50);
     recordOutcome("win");
     recordTradeResult(false);
   }
