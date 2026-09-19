@@ -160,6 +160,16 @@ export async function executeGoldenExit(
 ): Promise<void> {
   const currentMultiplier =
     entryAmountSol > 0 ? (tokensHeld * currentPrice) / entryAmountSol : 0;
+  // entryAmountSol is the original token position cost and tokensHeld is the
+  // token quantity held immediately before the 50% sale. Preserve the true
+  // per-token entry price in the vault; currentPrice is only the golden-exit
+  // snapshot and must not become the moonbag's performance baseline.
+  const originalEntryPrice =
+    entryAmountSol > 0 && tokensHeld > 0
+      ? entryAmountSol / tokensHeld
+      : currentMultiplier > 0
+        ? currentPrice / currentMultiplier
+        : currentPrice;
 
   if (currentMultiplier < TAKE_PROFIT_MULTIPLIER) return;
 
@@ -185,7 +195,7 @@ export async function executeGoldenExit(
     originalCostSol: 0,
     originalCostUsd: 0,
     tokensHeld: remainingTokens,
-    entryPrice: currentPrice,
+    entryPrice: originalEntryPrice,
     currentPrice,
     devWalletDistance: null,
     enteredAt: new Date().toISOString(),

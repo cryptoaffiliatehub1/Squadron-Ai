@@ -14,3 +14,9 @@ Simulation funding is an append-only injection ledger: preserve each injection a
 **Why:** A second funding request must increase available cash without overwriting the original injection or making the balance breakdown ambiguous.
 
 **How to apply:** Use a unique idempotency key for every funding batch and expose the individual rows to the Sim UI alongside the aggregate and formula.
+
+Every moonbag path must preserve the original per-token entry price as its `entryPrice`; the golden-exit price is a later snapshot and must only be derived as `entryPrice * 2.5`.
+
+**Why:** The paper lifecycle already stored the original price, but the legacy live vault path and duplicate portfolio UI treated the golden-exit snapshot as entry, producing incorrect multipliers and percentage returns.
+
+**How to apply:** When creating or displaying a moonbag, calculate multiplier and return as `currentPrice / originalEntryPrice` and `(multiplier - 1) * 100`; keep the golden-exit snapshot separate.

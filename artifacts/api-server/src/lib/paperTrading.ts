@@ -1064,7 +1064,16 @@ export function resetPaperLedgerData(): {
   clearedFiles.push(path.basename(CAPITAL_INJECTIONS_FILE));
   setBaseCapitalUsd(0);
 
-  for (const file of [DAILY_REPORT_FILE, DAILY_COMPOUND_FILE, path.join(DATA_DIR, "session_stats.json"), path.join(DATA_DIR, "scan_stats.json"), path.join(DATA_DIR, "notification_errors.json")]) {
+  for (const file of [
+    DAILY_REPORT_FILE,
+    DAILY_COMPOUND_FILE,
+    path.join(DATA_DIR, "session_stats.json"),
+    path.join(DATA_DIR, "scan_stats.json"),
+    path.join(DATA_DIR, "notification_errors.json"),
+    path.join(DATA_DIR, "paper_trade_log.json"),
+    path.join(DATA_DIR, "paper_exit_audit.jsonl"),
+    path.join(DATA_DIR, "sim_capital.json"),
+  ]) {
     if (fs.existsSync(file)) {
       fs.unlinkSync(file);
       clearedFiles.push(path.basename(file));

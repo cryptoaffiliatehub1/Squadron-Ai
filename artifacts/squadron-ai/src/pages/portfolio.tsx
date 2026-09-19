@@ -125,12 +125,16 @@ export default function Portfolio() {
                {moonbagList.map((m: any) => {
                 const isExpanded = expandedMoonbag === m.id;
                 const tier = (m.protectionTier ?? "HOLD") as string;
-                // entryPrice is the golden-exit price (= 2.5× from original)
-                // Original buy price ≈ entryPrice / 2.5
-                const goldenExitPrice = safeNum(m.entryPrice);
-                const originalBuyPrice = goldenExitPrice > 0 ? goldenExitPrice / 2.5 : 0;
-                const currentPrice    = safeNum(m.currentPrice);
-                const multiplier      = safeNum(m.currentMultiplier, 1);
+                // entryPrice is the original buy price across OPEN, PARTIAL
+                // EXIT, and MOONBAG states. Derive all performance values from
+                // it rather than treating the golden-exit snapshot as entry.
+                const originalEntryPrice = safeNum(m.entryPrice);
+                const goldenExitPrice = originalEntryPrice > 0 ? originalEntryPrice * 2.5 : 0;
+                const currentPrice = safeNum(m.currentPrice);
+                const multiplier = originalEntryPrice > 0 && currentPrice > 0
+                  ? currentPrice / originalEntryPrice
+                  : safeNum(m.currentMultiplier, 1);
+                const returnPct = (multiplier - 1) * 100;
                  const currentValueSol = safeNum(m.currentValueSol, safeNum(m.currentValueUsd) / 150);
                  const originalCostUsd = safeNum(m.originalEntryUsd, safeNum(m.originalCostUsd, safeNum(m.positionSizeUsd)));
                 const tokensHeld      = safeNum(m.tokensHeld);
@@ -188,7 +192,7 @@ export default function Portfolio() {
                           <div className="bg-card/60 rounded-lg p-2 space-y-1.5 text-[8.5px]">
                              <div className="flex justify-between">
                                <span className="text-muted-foreground">Original entry price</span>
-                               <span className="font-mono text-white">{fmtPrice(goldenExitPrice > 0 ? originalBuyPrice : goldenExitPrice)}</span>
+                              <span className="font-mono text-white">{fmtPrice(originalEntryPrice)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Golden exit at (2.5×)</span>
@@ -215,11 +219,11 @@ export default function Portfolio() {
                             </div>
                             <div className="flex justify-between">
                                <span className="text-muted-foreground">Moonbag entry price</span>
-                               <span className="font-mono text-primary">{fmtPrice(m.entryPrice)}</span>
+                              <span className="font-mono text-primary">{fmtPrice(originalEntryPrice)}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Current price</span>
-                              <span className={`font-mono ${currentPrice > goldenExitPrice ? "text-gains" : "text-losses"}`}>
+                              <span className={`font-mono ${returnPct >= 0 ? "text-gains" : "text-losses"}`}>
                                 {fmtPrice(currentPrice)}
                               </span>
                             </div>
@@ -231,6 +235,12 @@ export default function Portfolio() {
                               <span className="text-muted-foreground">Multiplier vs entry</span>
                               <span className={`font-mono font-bold ${multiplier >= 1 ? "text-gains" : "text-losses"}`}>
                                 {multiplier.toFixed(3)}×
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">Return vs original entry</span>
+                              <span className={`font-mono font-bold ${returnPct >= 0 ? "text-gains" : "text-losses"}`}>
+                                {returnPct >= 0 ? "+" : ""}{returnPct.toFixed(2)}%
                               </span>
                             </div>
                             <div className="flex justify-between">
