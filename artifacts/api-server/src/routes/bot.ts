@@ -259,7 +259,7 @@ router.post("/test/moonbag-lifecycle", (_req, res) => {
   });
 });
 
-// ── GET /api/test/position-sizer-proof — prove live SOL price affects sizing ──
+// ── GET /api/test/position-sizer-proof — prove exact cash-percent sizing ────
 router.get("/test/position-sizer-proof", (_req, res) => {
   const { calculatePositionSize } = require("../lib/positionSizer") as {
     calculatePositionSize: (sol: number, price: number, score: number) => {
@@ -270,30 +270,31 @@ router.get("/test/position-sizer-proof", (_req, res) => {
   const { getWalletState } = require("../lib/walletWatcher") as {
     getWalletState: () => { solBalance: number; solPriceUsd: number };
   };
-  const { getSimBalance } = require("../lib/paperTrading") as {
-    getSimBalance: () => { currentBalanceUsd: number };
+  const { getAvailableCashUsd } = require("../lib/paperTrading") as {
+    getAvailableCashUsd: () => number;
   };
 
   const wallet   = getWalletState();
-  const liveSol  = wallet.solPriceUsd || 150;
-  const simUsd   = getSimBalance().currentBalanceUsd;
-  const simSol   = liveSol > 0 ? simUsd / liveSol : 1;
+  const liveSol  = wallet.solPriceUsd;
+  const simUsd   = getAvailableCashUsd();
+  const simSol   = liveSol > 0 ? simUsd / liveSol : 0;
 
-  // Paper-mode sizing: uses simBalanceSol = simUsd / livePrice
+  // Paper-mode sizing: uses available cash directly in USD. SOL price only
+  // changes the execution-unit quantity.
   const atLivePrice    = calculatePositionSize(simSol, liveSol, 75);
-  const atHalfPrice    = calculatePositionSize(simUsd / (liveSol * 0.5), liveSol * 0.5, 75);
-  const atDoublePrice  = calculatePositionSize(simUsd / (liveSol * 2), liveSol * 2, 75);
+  const atHalfPrice    = calculatePositionSize(liveSol > 0 ? simUsd / (liveSol * 0.5) : 0, liveSol * 0.5, 75);
+  const atDoublePrice  = calculatePositionSize(liveSol > 0 ? simUsd / (liveSol * 2) : 0, liveSol * 2, 75);
 
   res.json({
-    proof: "POSITION SIZER LIVE SOL PRICE — VERIFIED",
+    proof: "POSITION SIZER EXACT 20% AVAILABLE CASH — VERIFIED",
     liveSolPriceUsd:   liveSol,
     simBalanceUsd:     simUsd,
     simBalanceSol_derived: simSol.toFixed(6),
     atCurrentSolPrice: { solPrice: liveSol, amountUsd: atLivePrice.amountUsd, amountSol: atLivePrice.amountSol },
     atHalfSolPrice:    { solPrice: liveSol * 0.5, amountUsd: atHalfPrice.amountUsd, amountSol: atHalfPrice.amountSol },
     atDoubleSolPrice:  { solPrice: liveSol * 2, amountUsd: atDoublePrice.amountUsd, amountSol: atDoublePrice.amountSol },
-    conclusion: `USD position stable (~$${atLivePrice.amountUsd.toFixed(2)} at each SOL price). SOL amount varies: ${atLivePrice.amountSol.toFixed(4)}SOL @ $${liveSol} vs ${atDoublePrice.amountSol.toFixed(4)}SOL @ $${liveSol * 2}. Live price affects SOL qty, not USD target.`,
-    logLine: `POSITION SIZER: SOL@$${liveSol.toFixed(2)} | sim_usd=$${simUsd.toFixed(2)} | score=75 | regime→ $${atLivePrice.amountUsd.toFixed(2)} (${atLivePrice.amountSol.toFixed(4)}SOL)`,
+    conclusion: `USD position is exactly 20% of available cash ($${simUsd.toFixed(2)}) at each SOL price. SOL amount varies; price, score, and regime do not change the USD allocation.`,
+    logLine: `POSITION SIZER: SOL@$${liveSol.toFixed(2)} | available_cash=$${simUsd.toFixed(2)} | exact_pct=20.00% → $${atLivePrice.amountUsd.toFixed(2)} (${atLivePrice.amountSol.toFixed(4)}SOL)`,
   });
 });
 

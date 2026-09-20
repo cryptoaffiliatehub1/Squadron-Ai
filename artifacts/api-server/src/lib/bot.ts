@@ -337,17 +337,20 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
       return;
     }
 
-    // C2: base position by tier (% of simulated balance)
-    // BONDING = 2% ($2), MOON = 10% ($10), SAFE = 20% ($20)
-    let positionSizeUsd = tier === "SAFE" ? 20 : tier === "BONDING" ? 2 : 10;
-    if (riskResult.unverified) positionSizeUsd = Math.min(positionSizeUsd, 5);
-
-    // C2: apply holder concentration / liquidity quality position adjustment
-    const adjPct = riskResult.positionAdjustmentPct ?? 100;
-    if (adjPct < 100) {
-      positionSizeUsd = Math.max(1, Math.round(positionSizeUsd * adjPct / 100));
+    // Every paper entry is exactly 20% of current available cash. Tier,
+    // probability, holder concentration, and verification remain eligibility
+    // metadata; none of them may alter the order allocation.
+    const positionSize = calculatePositionSize(
+      0,
+      getWalletState().solPriceUsd,
+      probabilityScore,
+    );
+    if (positionSize.amountUsd <= 0 || positionSize.amountSol <= 0) {
+      logger.info({ positionSize }, "[SIM] No valid cash/SOL price — skipped");
+      return;
     }
-    const positionSizeSol = positionSizeUsd / 150;
+    const positionSizeUsd = positionSize.amountUsd;
+    const positionSizeSol = positionSize.amountSol;
 
     const extraSig = riskResult.extraSignals;
     const signalsArr: string[] = [...(riskResult.signalsTriggered ?? [])];
@@ -432,9 +435,10 @@ async function handleDiscoveredToken(rawToken: Partial<DexToken>): Promise<void>
   }
 
   const regime       = getRegime();
+  const wallet = getWalletState();
   const positionSize = calculatePositionSize(
-    getWalletState().solBalance  || 1,
-    getWalletState().solPriceUsd || 150,
+    wallet.solBalance,
+    wallet.solPriceUsd,
     probabilityScore,
   );
 
@@ -592,7 +596,7 @@ export async function initializeOrchestrator(): Promise<void> {
   console.log("FIX 2 ACTIVE — RUGCHECK RADAR: safetyStatus=risky tokens excluded from /tokens/recent feed");
   console.log("FIX 2 ACTIVE — RISK GATE: passed= uses reasons.length===0 only (OR-bug removed)");
   console.log("FIX 3 ACTIVE — POST-PEAK ENTRY GUARD: 2h+ old, >300% pumped, vol<$2k blocks entry");
-  console.log("FIX 4 ACTIVE — POSITION SIZER: sim balance scales off live SOL price each entry");
+  console.log("FIX 4 ACTIVE — POSITION SIZER: exact 20% of available cash per approved entry");
   console.log("CORRECTIONS COMPLETE.");
   logger.info("Squadron AI orchestrator initialized");
 }

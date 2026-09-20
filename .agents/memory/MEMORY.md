@@ -5,3 +5,4 @@
 - [GitHub HTTPS push authentication](github-push-auth.md) — HTTPS pushes can hang on askpass without usable GitHub credentials; verify the remote ref explicitly.
 - [Imported repository runtime](imported-repo-runtime.md) — Squadron AI frontend/API and development schema must be resumed as a paired runtime.
 - [Paper ledger invariants](paper-ledger-invariants.md) — Paper-trade IDs are deduplicated; only positive-value active positions count, and active prices come from DexScreener snapshots.
+- [Sizing and cluster security](position-sizing-and-cluster-gate.md) — Approved entries use exact 20% cash sizing; holder concentration and linked-wallet data fail closed at the final gate.

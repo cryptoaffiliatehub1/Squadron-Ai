@@ -11,6 +11,17 @@ export interface RugCheckResult {
   isRugged: boolean;
   topHolderPct: number;
   holderCount: number;
+  topHolders: RugCheckHolder[];
+  knownAccounts: Record<string, { name?: string; type?: string }>;
+  graphInsidersDetected: number;
+  insiderNetworks: Array<{ id?: string; size?: number; type?: string; activeAccounts?: number }>;
+}
+
+export interface RugCheckHolder {
+  address?: string;
+  owner?: string;
+  pct?: number;
+  uiAmount?: number;
 }
 
 export interface RugCheckResponse {
@@ -62,7 +73,9 @@ async function drainQueue(): Promise<void> {
 // ── Raw HTTP fetch (no rate-limit logic here) ─────────────────────────────────
 async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
   try {
-    const resp = await axios.get(`${RUGCHECK_BASE}/tokens/${tokenMint}/report/summary`, {
+    // The full report is required for the final concentration/cluster gate.
+    // The summary endpoint omits topHolders and insider-network fields.
+    const resp = await axios.get(`${RUGCHECK_BASE}/tokens/${tokenMint}/report`, {
       timeout: 10_000,
       validateStatus: () => true,
     });
@@ -91,10 +104,18 @@ async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
     const hardRisks = risks.filter(isHardRisk);
     const normalizedScore = data?.score_normalised ?? data?.score_normalized ?? "unknown";
 
+    const topHolders: RugCheckHolder[] = Array.isArray(data?.topHolders)
+      ? data.topHolders.map((h: RugCheckHolder) => ({
+          address: typeof h?.address === "string" ? h.address : undefined,
+          owner: typeof h?.owner === "string" ? h.owner : undefined,
+          pct: Number.isFinite(Number(h?.pct)) ? Number(h.pct) : undefined,
+          uiAmount: Number.isFinite(Number(h?.uiAmount)) ? Number(h.uiAmount) : undefined,
+        }))
+      : [];
     const topHolderPct =
-      (data?.topHolders ?? [])
+      topHolders
         .slice(0, 10)
-        .reduce((sum: number, h: { pct?: number }) => sum + (h.pct ?? 0), 0) * 100;
+        .reduce((sum: number, h: RugCheckHolder) => sum + (h.pct ?? 0), 0);
 
     return {
       statusCode: resp.status,
@@ -106,6 +127,10 @@ async function _doFetch(tokenMint: string): Promise<RugCheckResponse> {
         isRugged: hardRisks.length > 0,
         topHolderPct,
         holderCount: data?.totalHolders ?? 0,
+        topHolders,
+        knownAccounts: data?.knownAccounts ?? {},
+        graphInsidersDetected: Number(data?.graphInsidersDetected ?? 0),
+        insiderNetworks: Array.isArray(data?.insiderNetworks) ? data.insiderNetworks : [],
       },
     };
   } catch (err) {

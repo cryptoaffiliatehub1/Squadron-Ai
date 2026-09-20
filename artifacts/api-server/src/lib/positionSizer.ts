@@ -1,5 +1,4 @@
 import { getMultiplier, getRegime } from "./marketRegime";
-import { getMaxEntryPct, getCircuitState } from "./circuitBreaker";
 import { logger } from "./logger";
 
 export interface PositionSize {
@@ -13,7 +12,7 @@ export interface PositionSize {
 }
 
 const MAX_OPEN_POSITIONS = 3;
-const PAPER_TRADE_SOL = 1.0;
+const EXACT_ENTRY_PCT = 0.20;
 
 let openPositionsCount = 0;
 
@@ -41,48 +40,43 @@ export function calculatePositionSize(
   const { isPaperMode } = require("./tradingMode") as { isPaperMode: () => boolean };
   const paperMode = isPaperMode();
 
-  // In paper mode: scale off live sim balance (USD→SOL via live price) so position
-  // sizing reflects actual portfolio growth AND uses the real SOL price each entry.
-  let effectiveBalance: number;
+  // The USD allocation is always exactly 20% of available cash. SOL is only
+  // the execution-unit conversion and must not influence the USD allocation.
+  let availableCashUsd: number;
   if (paperMode) {
-    const { getSimBalance } = require("./paperTrading") as {
-      getSimBalance: () => { currentBalanceUsd: number };
+    const { getAvailableCashUsd } = require("./paperTrading") as {
+      getAvailableCashUsd: () => number;
     };
-    const simUsd = getSimBalance().currentBalanceUsd;
-    effectiveBalance = solPriceUsd > 0 && simUsd > 0 ? simUsd / solPriceUsd : PAPER_TRADE_SOL;
+    const simUsd = getAvailableCashUsd();
+    availableCashUsd = Number.isFinite(simUsd) && simUsd > 0 ? simUsd : 0;
   } else {
-    effectiveBalance = walletBalanceSol;
+    const walletUsd = walletBalanceSol * solPriceUsd;
+    availableCashUsd = Number.isFinite(walletUsd) && walletUsd > 0 ? walletUsd : 0;
   }
 
   const regime = getRegime();
   const regimeMultiplier = getMultiplier();
-  const maxPct = getMaxEntryPct();
   const pScore = Math.min(Math.max(probabilityScore, 0), 100);
-
-  const rawPct = (pScore / 100) * regimeMultiplier * 100;
-  const cappedPct = Math.min(rawPct, maxPct);
-  const cappedByRule = rawPct > maxPct;
-
-  const amountSol = effectiveBalance * (cappedPct / 100);
-  const amountUsd = amountSol * solPriceUsd;
+  const amountUsd = availableCashUsd * EXACT_ENTRY_PCT;
+  const amountSol = solPriceUsd > 0 ? amountUsd / solPriceUsd : 0;
 
   const result: PositionSize = {
     amountSol,
     amountUsd,
-    pctOfWallet: cappedPct,
+    pctOfWallet: EXACT_ENTRY_PCT * 100,
     regimeMultiplier,
     probabilityScore: pScore,
-    cappedByRule,
-    reason: cappedByRule ? `Capped at ${maxPct}% (20% rule or conservative mode)` : `Score ${pScore} × ${regime.regime} (${regimeMultiplier}×)`,
+    cappedByRule: false,
+    reason: `Exact 20% of available cash (${regime.regime} context; score ${pScore} is eligibility metadata)`,
   };
 
   logger.info(result, "[POSITION_SIZER] Calculated entry size");
   console.log(
     `POSITION SIZER: SOL@$${solPriceUsd.toFixed(2)} | ${
       paperMode
-        ? `sim_usd=$${(effectiveBalance * solPriceUsd).toFixed(2)}`
-        : `wallet=${effectiveBalance.toFixed(4)}SOL`
-    } | score=${pScore} | ${regime.regime}×${regimeMultiplier} → $${amountUsd.toFixed(2)} (${amountSol.toFixed(4)}SOL)`,
+        ? `sim_cash=$${availableCashUsd.toFixed(2)}`
+        : `wallet_cash=$${availableCashUsd.toFixed(2)}`
+    } | exact_pct=20.00% | score=${pScore} | ${regime.regime}×${regimeMultiplier} → $${amountUsd.toFixed(2)} (${amountSol.toFixed(4)}SOL)`,
   );
   return result;
 }

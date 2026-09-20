@@ -447,6 +447,12 @@ export function getSimBalance(): SimBalance {
   };
 }
 
+// Raw ledger cash for execution sizing. Unlike the dashboard balance fields,
+// this value is intentionally not rounded for display.
+export function getAvailableCashUsd(): number {
+  return computeSimCash();
+}
+
 // ── C2: full sim balance object for /api/sim/balance ─────────────────────────
 export function getSimBalanceFull() {
   const cash = computeSimCash();

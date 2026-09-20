@@ -1,7 +1,7 @@
 import axios from "axios";
 import { logger } from "./logger";
 import type { DexToken } from "./dexScreener";
-import { checkTokenWithStatus } from "./rugcheck";
+import { checkTokenWithStatus, type RugCheckResult, type RugCheckHolder } from "./rugcheck";
 import { Connection, PublicKey } from "@solana/web3.js";
 
 // ── Extra signal interface ────────────────────────────────────────────────────
@@ -36,6 +36,94 @@ export interface RiskGateResult {
   extraSignals?: ExtraSignals;
   rugcheckScore?: number;
   rugcheckRating?: string;
+}
+
+interface ClusterGateResult {
+  passed: boolean;
+  available: boolean;
+  top10NonLpPct: number | null;
+  largestNonLpPct: number | null;
+  clusterFlagged: boolean | null;
+  reason?: string;
+}
+
+const MAX_TOP10_NON_LP_PCT = 15;
+const MAX_SINGLE_NON_LP_PCT = 5;
+
+function evaluateHolderClusterGate(rugData: RugCheckResult): ClusterGateResult {
+  const topHolders = rugData.topHolders ?? [];
+  if (topHolders.length === 0) {
+    return {
+      passed: false,
+      available: false,
+      top10NonLpPct: null,
+      largestNonLpPct: null,
+      clusterFlagged: null,
+      reason: "RugCheck returned no top-holder concentration data",
+    };
+  }
+
+  const knownAccounts = rugData.knownAccounts ?? {};
+  const isKnownLiquidityAccount = (holder: RugCheckHolder): boolean => {
+    const addresses = [holder.address, holder.owner].filter(
+      (address): address is string => Boolean(address),
+    );
+    return addresses.some((address) => {
+      const account = knownAccounts[address];
+      return Boolean(account?.type && /AMM|LOCKER|POOL|LIQUIDITY/i.test(account.type));
+    });
+  };
+
+  const nonLpHolders = topHolders
+    .filter((holder) => !isKnownLiquidityAccount(holder))
+    .filter((holder) => Number.isFinite(holder.pct))
+    .map((holder) => ({
+      // RugCheck's report schema expresses pct in percentage points:
+      // 0.42 means 0.42%, while 99.25 means 99.25%.
+      pct: holder.pct ?? 0,
+      address: holder.address ?? holder.owner ?? "unknown",
+    }));
+
+  if (nonLpHolders.length === 0) {
+    return {
+      passed: false,
+      available: false,
+      top10NonLpPct: null,
+      largestNonLpPct: null,
+      clusterFlagged: null,
+      reason: "RugCheck returned no non-LP top-holder concentration data",
+    };
+  }
+
+  const top10NonLpPct = nonLpHolders
+    .slice(0, 10)
+    .reduce((sum, holder) => sum + holder.pct, 0);
+  const largestNonLpPct = Math.max(...nonLpHolders.map((holder) => holder.pct));
+  const clusterFlagged =
+    rugData.graphInsidersDetected > 0 ||
+    (rugData.insiderNetworks?.length ?? 0) > 0;
+
+  const reasons: string[] = [];
+  if (top10NonLpPct > MAX_TOP10_NON_LP_PCT) {
+    reasons.push(`top 10 non-LP holders control ${top10NonLpPct.toFixed(2)}% (>15%)`);
+  }
+  if (largestNonLpPct > MAX_SINGLE_NON_LP_PCT) {
+    reasons.push(`largest non-LP holder controls ${largestNonLpPct.toFixed(2)}% (>5%)`);
+  }
+  if (clusterFlagged) {
+    reasons.push(
+      `RugCheck linked-wallet signal: ${rugData.graphInsidersDetected} graph insiders, ${rugData.insiderNetworks.length} insider network(s)`,
+    );
+  }
+
+  return {
+    passed: reasons.length === 0,
+    available: true,
+    top10NonLpPct,
+    largestNonLpPct,
+    clusterFlagged,
+    reason: reasons.length > 0 ? reasons.join("; ") : undefined,
+  };
 }
 
 // ── Solana RPC helper ─────────────────────────────────────────────────────────
@@ -805,6 +893,37 @@ export async function runRiskGate(token: DexToken): Promise<RiskGateResult> {
 
   const ageMinutes = (Date.now() - token.createdAt) / 60_000;
   checks.lpBurn = ageMinutes > 60 ? "Assumed (token >1h)" : true;
+
+  // ── MAX-SECURITY FINAL STEP: non-LP concentration and linked-wallet gate ──
+  // This is intentionally evaluated only after RugCheck, liquidity, wallet,
+  // activity, wash-trade, sniper, and holder-growth checks have completed.
+  const clusterGate = rugData
+    ? evaluateHolderClusterGate(rugData)
+    : {
+        passed: false,
+        available: false,
+        top10NonLpPct: null,
+        largestNonLpPct: null,
+        clusterFlagged: null,
+        reason: "RugCheck data unavailable",
+      };
+  if (clusterGate.passed) {
+    checks.holderClusterGate =
+      `PASS (top10 non-LP ${clusterGate.top10NonLpPct!.toFixed(2)}%, largest non-LP ${clusterGate.largestNonLpPct!.toFixed(2)}%, linked clusters: no)`;
+  } else {
+    failureLabel = "HOLDER CLUSTER";
+    reasons.push(`Holder cluster gate: ${clusterGate.reason}`);
+    checks.holderClusterGate = false;
+    return {
+      passed: false,
+      score: 0,
+      reasons,
+      checks,
+      failureLabel,
+      rugcheckScore: rugData?.score,
+      rugcheckRating: rugData?.rating,
+    };
+  }
 
   const passed = reasons.length === 0;
 
